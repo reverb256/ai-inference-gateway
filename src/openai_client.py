@@ -115,6 +115,13 @@ class OpenAIClientWrapper:
         # Remove 'stream' from kwargs to avoid duplicate parameter error
         kwargs.pop("stream", None)
 
+        # Move chat_template_kwargs into extra_body for OpenAI SDK compatibility
+        # llama-server supports this via --jinja but the Python SDK doesn't accept it as a top-level kwarg
+        if "chat_template_kwargs" in kwargs:
+            extra_body = kwargs.get("extra_body", {})
+            extra_body["chat_template_kwargs"] = kwargs.pop("chat_template_kwargs")
+            kwargs["extra_body"] = extra_body
+
         # Filter out parameters not supported by OpenAI SDK
         # These are used by llama.cpp/Qwen models but not supported by OpenAI Python SDK
         unsupported_params = [
