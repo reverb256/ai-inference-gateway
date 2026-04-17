@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# SearXNG MCP Server Wrapper - Uses uvx for dependency management
+#
+# This wrapper provides a simple way to run the SearXNG MCP server
+# without requiring the ai-inference-gateway package.
+#
+# Environment variables:
+#   SEARXNG_URL - SearXNG instance URL (default: http://searxng.search.svc.cluster.local:8080)
+#
+
+set -euo pipefail
+
+# Default configuration
+SEARXNG_URL="${SEARXNG_URL:-http://searxng.search.svc.cluster.local:8080}"
+
+# Export for the mcp-searxng package
+export SEARXNG_URL
+
+# Run the mcp-searxng server via uvx
+exec uvx --from mcp-searxng mcp-searxng "$@"

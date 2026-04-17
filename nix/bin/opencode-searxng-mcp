@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+#
+# OpenCode SearXNG MCP Server Wrapper
+#
+# This wrapper dynamically locates the ai-inference-gateway package
+# and launches the SearXNG MCP server with the correct environment.
+#
+# Used by: OpenCode configuration (~/.config/opencode/opencode.json)
+#
+
+set -euo pipefail
+
+# Get the ai-inference-gateway package path from the running systemd service
+# This ensures we always use the currently active version
+GATEWAY_PATH=$(systemctl show ai-inference-gateway --property=ExecStart 2>/dev/null | \
+  grep -oP 'app-dir \K[^ ]+' || true)
+
+# Fallback: search nix store if service isn't running
+if [[ -z "$GATEWAY_PATH" ]] || [[ ! -d "$GATEWAY_PATH" ]]; then
+  GATEWAY_PATH=$(nix-store -q --references /run/current-system/sw 2>/dev/null | \
+    grep 'ai-inference-gateway-modular-pkg-v1' | \
+    sort -V | \
+    tail -1 || true)
+fi
+
+# Second fallback: search all gateway packages
+if [[ -z "$GATEWAY_PATH" ]] || [[ ! -d "$GATEWAY_PATH" ]]; then
+  GATEWAY_PATH=$(find /nix/store -maxdepth 1 -type d -name 'ai-inference-gateway-modular-pkg-v1*' 2>/dev/null | \
+    sort -V | \
+    tail -1 || true)
+fi
+
+# Final check
+if [[ -z "$GATEWAY_PATH" ]] || [[ ! -d "$GATEWAY_PATH" ]]; then
+  echo "Error: Cannot find ai-inference-gateway package" >&2
+  echo "Please ensure ai-inference-gateway service is enabled" >&2
+  exit 1
+fi
+
+# Get Python interpreter from the running systemd service
+# Extract from uvicorn path, then convert to python path
+UVICORN_PATH=$(systemctl show ai-inference-gateway --property=ExecStart 2>/dev/null | \
+  grep -o 'path=/nix/store[^ ]*uvicorn' | \
+  sed 's|^path=||')
+
+if [[ -n "$UVICORN_PATH" ]] && [[ -x "$UVICORN_PATH" ]]; then
+  # Convert /path/to/.../bin/uvicorn to /path/to/.../bin/python
+  PYTHON_BIN="${UVICORN_PATH%/uvicorn}/python"
+fi
+
+# Fallback: search for Python environment with mcp package
+if [[ -z "$PYTHON_BIN" ]] || [[ ! -x "$PYTHON_BIN" ]]; then
+  PYTHON_BIN=$(find /nix/store -maxdepth 1 -type d -name 'python3-3.13.*-env' 2>/dev/null | \
+    while read -r env_path; do
+      # Check if this environment can import mcp
+      if "$env_path/bin/python" -c "import mcp.server" 2>/dev/null; then
+        echo "$env_path/bin/python"
+        break
+      fi
+    done | head -1)
+fi
+
+# Final fallback to system python (will likely fail but gives clear error)
+if [[ -z "$PYTHON_BIN" ]] || [[ ! -x "$PYTHON_BIN" ]]; then
+  PYTHON_BIN="python3"
+fi
+
+# Set environment variables
+export PYTHONPATH="$GATEWAY_PATH"
+export SEARXNG_URL="${SEARXNG_URL:-http://searxng.search.svc.cluster.local:8080}"
+export SEARXNG_CACHE_TTL="${SEARXNG_CACHE_TTL:-300}"
+
+# Launch the MCP server
+echo "Starting SearXNG MCP server..." >&2
+echo "  Gateway: $GATEWAY_PATH" >&2
+echo "  Python: $PYTHON_BIN" >&2
+echo "  SearXNG: $SEARXNG_URL" >&2
+
+exec "$PYTHON_BIN" -m ai_inference_gateway.mcp_servers.searxng_server "$@"

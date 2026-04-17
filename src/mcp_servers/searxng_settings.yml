@@ -1,0 +1,462 @@
+# SearXNG Configuration for AI Inference Gateway
+# Optimized for multi-domain AI search with enhanced engine coverage
+
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "Zephyr AI Search"
+  contact:
+    mail: "admin@local"
+
+# Enable comprehensive search formats for AI consumption
+search:
+  safe_search: 0
+  autocomplete: 'duckduckgo'
+  default_lang: "auto"
+  formats:
+    - html
+    - json
+    - csv
+
+# Server performance and security
+server:
+  # Is overwritten by ${SEARXNG_SECRET} in production
+  secret_key: "CHANGE_THIS_IN_PRODUCTION"
+
+  # Enable rate limiting and bot protection
+  limiter: true
+  image_proxy: true
+
+  # Performance settings
+  method: "GET"
+  default_http_headers:
+    X-Content-Type-Options: "nosniff"
+    X-Frame-Options: "SAMEORIGIN"
+    X-XSS-Protection: "1; mode=block"
+
+# ============================================================================
+# ENGINE CONFIGURATION - Optimize for AI Workflows
+# ============================================================================
+
+engines:
+  # ========================================================================
+  # GENERAL SEARCH ENGINES (Primary web search)
+  # ========================================================================
+
+  - name: google
+    engine: google
+    disabled: false
+    weight: 2.0  # Higher weight for primary engine
+
+  - name: bing
+    engine: bing
+    disabled: false
+    weight: 1.5
+
+  - name: duckduckgo
+    engine: duckduckgo
+    disabled: false
+    weight: 1.5
+
+  - name: brave
+    engine: brave
+    disabled: false
+    weight: 1.0
+
+  - name: startpage
+    engine: startpage
+    disabled: false
+    weight: 1.0
+
+  # ========================================================================
+  # CODE & DEVELOPMENT ENGINES
+  # ========================================================================
+
+  - name: github
+    engine: github
+    disabled: false
+    weight: 2.0
+    categories: [it, general]
+
+  - name: gitlab
+    engine: gitlab
+    disabled: false
+    weight: 1.5
+    categories: [it, general]
+
+  - name: stackoverflow
+    engine: stackoverflow
+    disabled: false
+    weight: 2.0
+    categories: [it, general]
+
+  - name: stackexchange
+    engine: stackexchange
+    disabled: false
+    weight: 1.5
+    categories: [it, general]
+
+  - name: debian
+    engine: debian
+    disabled: false
+    categories: [it, general]
+
+  - name: arch linux wiki
+    engine: archlinux
+    disabled: false
+    categories: [it, general]
+
+  - name: gentoo
+    engine: gentoo
+    disabled: false
+    categories: [it, general]
+
+  - name: fedora
+    engine: fedora
+    disabled: false
+    categories: [it, general]
+
+  # ========================================================================
+  # ACADEMIC & RESEARCH ENGINES
+  # ========================================================================
+
+  - name: google scholar
+    engine: google_scholar
+    disabled: false
+    weight: 2.0
+    categories: [science, general]
+
+  - name: semantic scholar
+    engine: semantic_scholar
+    disabled: false
+    weight: 1.5
+    categories: [science, general]
+
+  - name: arxiv
+    engine: arxiv
+    disabled: false
+    weight: 2.0
+    categories: [science, general]
+
+  - name: pubmed
+    engine: pubmed
+    disabled: false
+    weight: 1.5
+    categories: [science, general]
+
+  - name: crossref
+    engine: crossref
+    disabled: false
+    weight: 1.0
+    categories: [science, general]
+
+  - name: doaj
+    engine: doaj
+    disabled: false
+    weight: 1.0
+    categories: [science, general]
+
+  - name: base
+    engine: base
+    disabled: false
+    weight: 1.0
+    categories: [science, general]
+
+  # ========================================================================
+  # DOCUMENTATION & REFERENCE ENGINES
+  # ========================================================================
+
+  - name: wikipedia
+    engine: wikipedia
+    disabled: false
+    weight: 1.5
+    categories: [general]
+
+  - name: wikidata
+    engine: wikidata
+    disabled: false
+    categories: [general]
+
+  - name: dictzone
+    engine: dictzone
+    disabled: false
+    categories: [general]
+
+  # ========================================================================
+  # SOCIAL & COMMUNITY ENGINES
+  # ========================================================================
+
+  - name: reddit
+    engine: reddit
+    disabled: false
+    weight: 1.5
+    categories: [social, general]
+
+  - name: twitter
+    engine: twitter
+    disabled: false
+    weight: 1.0
+    categories: [social, general]
+
+  - name: mastodon
+    engine: mastodon
+    disabled: false
+    categories: [social, general]
+
+  # ========================================================================
+  # MULTILINGUAL SEARCH (for comprehensive results)
+  # ========================================================================
+
+  - name: google english
+    engine: google
+    language: en
+    disabled: false
+    weight: 1.0
+
+  - name: google german
+    engine: google
+    language: de
+    disabled: false
+    weight: 0.5
+
+  - name: google french
+    engine: google
+    language: fr
+    disabled: false
+    weight: 0.5
+
+  - name: google spanish
+    engine: google
+    language: es
+    disabled: false
+    weight: 0.5
+
+  # ========================================================================
+  # CONTENT-SPECIFIC ENGINES
+  # ========================================================================
+
+  # Images
+  - name: google images
+    engine: google_images
+    disabled: false
+    categories: [images]
+
+  - name: bing images
+    engine: bing_images
+    disabled: false
+    categories: [images]
+
+  # Videos
+  - name: youtube
+    engine: youtube
+    disabled: false
+    categories: [videos, general]
+
+  - name: dailymotion
+    engine: dailymotion
+    disabled: false
+    categories: [videos]
+
+  # News
+  - name: google news
+    engine: google_news
+    disabled: false
+    categories: [news]
+
+  - name: bing news
+    engine: bing_news
+    disabled: false
+    categories: [news]
+
+  # Files & Torrents
+  - name: piratebay
+    engine: piratebay
+    disabled: false
+    categories: [files]
+
+  - name: yts
+    engine: yts
+    disabled: false
+    categories: [files]
+
+  # Music
+  - name: soundcloud
+    engine: soundcloud
+    disabled: false
+    categories: [music]
+
+  - name: deezer
+    engine: deezer
+    disabled: false
+    categories: [music]
+
+  # Maps & Location
+  - name: openstreetmap
+    engine: openstreetmap
+    disabled: false
+    categories: [map]
+
+  # IT & Software
+  - name: docker hub
+    engine: docker_hub
+    disabled: false
+    categories: [it]
+
+  - name: npm
+    engine: npm
+    disabled: false
+    categories: [it]
+
+  - name: pypi
+    engine: pypi
+    disabled: false
+    categories: [it]
+
+# ============================================================================
+# CATEGORIES AS TABS (UI organization)
+# ============================================================================
+
+categories_as_tabs:
+  general:
+    - 'general'
+
+  images:
+    - 'images'
+
+  videos:
+    - 'videos'
+
+  news:
+    - 'news'
+
+  it:
+    - 'it'
+
+  science:
+    - 'science'
+
+  social:
+    - 'social'
+
+# ============================================================================
+# OUTGOING REQUEST CONFIGURATION (Performance optimization)
+# ============================================================================
+
+outgoing:
+  # Connection pooling for high concurrency
+  pool_connections: 100        # Number of connection pools to cache
+  pool_maxsize: 100            # Maximum number of connections in pool
+  keepalive_expiry: 5.0        # Keepalive connections expire after 5 seconds
+
+  # Enable HTTP/2 for better performance
+  enable_http2: true
+
+  # Retry configuration
+  retries: 2
+  retry_on_http_error: [403, 429, 500, 502, 503, 504]
+
+  # Timeouts
+  request_timeout: 5.0
+  max_request_timeout: 10.0
+
+  # User agent
+  useragent: "Mozilla/5.0 (compatible; SearXNG-AI/1.0; +https://github.com/searxng/searxng)"
+
+# ============================================================================
+# RATE LIMITING & BOT PROTECTION
+# ============================================================================
+
+limiter: true
+botdetection:
+  # No IP limit for local AI agents
+  ip_limit: 0
+
+  # Token limit (disabled for internal use)
+  # token_limit: 0
+
+  # Disable link token verification (was blocking MCP gateway requests)
+  link_token: false
+
+# ============================================================================
+# REDIS/VALKEY CONFIGURATION (Persistent caching)
+# ============================================================================
+
+# Uncomment and configure when Redis/Valkey is available
+# redis:
+#   url: "redis://localhost:6379/0"
+
+# valkey:
+#   url: "valkey://localhost:6379/0"
+
+# ============================================================================
+# PLUGINS (Built-in extensions)
+# ============================================================================
+
+plugins:
+  - 'Tracker URL remover'
+  - 'Self HTTPS'
+  - 'Infinite scroll'
+  - 'Hash password'
+  - 'Autodetect search language'
+  - 'SketchFab-embeddings'
+  - 'Vim-like hotkeys'
+  - 'Tor check'
+
+# ============================================================================
+# UI CONFIGURATION
+# ============================================================================
+
+ui:
+  static_path: "/usr/local/searxng/searxng/static"
+  templates_path: "/usr/local/searxng/searxng/templates"
+
+  # Themes
+  theme_args:
+    simple_style: "auto"
+
+  # Results per page
+  results_on_new_tab: false
+
+  # Infinite scroll
+  infinite_scroll: true
+
+  # Search URL
+  search_url: "/"
+
+  # Proxy settings
+  image_proxy: true
+
+  # Center alignment
+  center_alignment: true
+
+# ============================================================================
+# BRAND CONFIGURATION
+# ============================================================================
+
+brand:
+  documents:
+    browse:
+      url: "https://github.com/searxng/searxng/issues"
+      text: "Issue tracker"
+      aria_label: "View issue tracker on GitHub"
+
+    about:
+      url: "https://docs.searxng.org"
+      text: "About SearXNG"
+      aria_label: "Learn more about SearXNG"
+
+    blog:
+      url: "https://searxng.org/blog"
+      text: "Blog"
+      aria_label: "View SearXNG blog"
+
+    donate:
+      url: "https://searxng.org/donate"
+      text: "Donate"
+      aria_label: "Donate to SearXNG project"
+
+    contact:
+      url: "mailto:admin@local"
+      text: "Contact"
+      aria_label: "Contact SearXNG administrators"
