@@ -46,6 +46,10 @@ class RAGKnowledgeSource:
         # Note: search_service can be None for runtime injection
         # It will be validated during retrieve() if needed
 
+    def can_handle(self, capabilities: "SourceCapability") -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
+
     async def retrieve(self, query: str, **kwargs) -> KnowledgeResult:
         """
         Retrieve knowledge chunks from RAG knowledge base.

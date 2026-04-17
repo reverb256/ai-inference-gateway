@@ -124,6 +124,10 @@ class SearXNGKnowledgeSource:
 
         return min(score, 1.0)
 
+    def can_handle(self, capabilities: "SourceCapability") -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
+
     async def retrieve(
         self,
         query: str,
@@ -342,6 +346,10 @@ class SearxngSimilarityKnowledgeSource:
     _rag_indexer: Optional[Any] = field(default=None, repr=False)
     _search_service: Optional[Any] = field(default=None, repr=False)
 
+    def can_handle(self, capabilities: "SourceCapability") -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
+
     async def retrieve(
         self,
         query: str,
@@ -466,6 +474,10 @@ class SearxngClusteringKnowledgeSource:
     # Injected dependencies
     _clusterer: Optional[Any] = field(default=None, repr=False)
     _searxng_client: Optional[Any] = field(default=None, repr=False)
+
+    def can_handle(self, capabilities: "SourceCapability") -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
 
     async def retrieve(
         self,

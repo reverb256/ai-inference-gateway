@@ -36,6 +36,10 @@ class WebSearchKnowledgeSource:
     capabilities: SourceCapability = SourceCapability.REALTIME | SourceCapability.FACTUAL
     enabled: bool = True
 
+    def can_handle(self, capabilities: "SourceCapability") -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
+
     async def retrieve(self, query: str, **kwargs) -> KnowledgeResult:
         """
         Execute web search via MCP web_search_prime tool.

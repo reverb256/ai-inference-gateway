@@ -178,6 +178,10 @@ class BrainWikiSource:
             logger.debug(f"Failed to read {filepath}: {e}")
             return None
 
+    def can_handle(self, capabilities: "SourceCapability") -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
+
     async def retrieve(
         self,
         query: str,

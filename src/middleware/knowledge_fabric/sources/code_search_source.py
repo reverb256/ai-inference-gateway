@@ -6,11 +6,9 @@ Provides code search integration using semantic and literal search.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
-import httpx
+from typing import List
 
 from ..core import (
-    KnowledgeChunk,
     KnowledgeResult,
     SourceCapability,
     SourcePriority,
@@ -38,6 +36,10 @@ class CodeSearchKnowledgeSource:
         SourceCapability.PROCEDURAL
     )
     enabled: bool = True
+
+    def can_handle(self, capabilities: 'SourceCapability') -> bool:
+        """Check if this source has the required capabilities."""
+        return bool(self.capabilities & capabilities)
 
     async def retrieve(self, query: str, **kwargs) -> KnowledgeResult:
         """
