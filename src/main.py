@@ -2,46 +2,46 @@
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse, Response, StreamingResponse
 import httpx
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 # Initialize logger early (needed for import error handling)
 logger = logging.getLogger(__name__)
 
 from ai_inference_gateway.config import GatewayConfig
-from ai_inference_gateway.pipeline import MiddlewarePipeline
-from ai_inference_gateway.utils.redis_client import RedisClient
-from ai_inference_gateway.openai_client import create_openai_client, OpenAIBackendError
-from ai_inference_gateway.utils.tool_utils import (
-    extract_tool_calls_openai,
-    create_tool_result_openai,
-)
-from ai_inference_gateway.router import (
-    create_default_router,
-    RouteDecision,
-    get_optimal_qwen_params,
-)
 from ai_inference_gateway.mcp_broker import create_mcp_broker_from_config
 from ai_inference_gateway.metrics import ModelMetricsTracker
+from ai_inference_gateway.openai_client import OpenAIBackendError, create_openai_client
+from ai_inference_gateway.pipeline import MiddlewarePipeline
 from ai_inference_gateway.response_format import transform_request
+from ai_inference_gateway.router import (
+    RouteDecision,
+    create_default_router,
+    get_optimal_qwen_params,
+)
+from ai_inference_gateway.utils.redis_client import RedisClient
+from ai_inference_gateway.utils.tool_utils import (
+    create_tool_result_openai,
+    extract_tool_calls_openai,
+)
 
 # Import TTS handler
 try:
     from ai_inference_gateway.tts_handler import (
-        get_tts_handler,
-        close_tts_handler,
-        TTSRequest,
-        TTSResponse,
+        POLLINATIONS_TTS_URL,
+        QWEN3_TTS_LANGUAGES,
         QWEN3_TTS_MODELS,
         QWEN3_TTS_SPEAKERS,
-        QWEN3_TTS_LANGUAGES,
-        get_content_type,
+        TTSRequest,
+        TTSResponse,
+        close_tts_handler,
         get_audio_extension,
-        POLLINATIONS_TTS_URL,
+        get_content_type,
+        get_tts_handler,
     )
 
     TTS_AVAILABLE = True
@@ -59,14 +59,14 @@ except ImportError as e:
 # Import Audio handler (STT - Speech-to-Text)
 try:
     from ai_inference_gateway.audio_handler import (
-        get_audio_handler,
-        close_audio_handler,
+        QWEN3_AUDIO_MODELS,
+        SUPPORTED_AUDIO_FORMATS,
         TranscriptionRequest,
         TranscriptionResponse,
         TranslationRequest,
-        QWEN3_AUDIO_MODELS,
+        close_audio_handler,
+        get_audio_handler,
         read_audio_file,
-        SUPPORTED_AUDIO_FORMATS,
     )
 
     AUDIO_AVAILABLE = True
@@ -83,15 +83,15 @@ except ImportError as e:
 # Import Vision handler (Qwen3-VL for image understanding)
 try:
     from ai_inference_gateway.vision_handler import (
-        get_vision_handler,
-        close_vision_handler,
+        QWEN3_VISION_MODELS,
+        ImageContent,
+        VisionMessage,
         VisionRequest,
         VisionResponse,
-        VisionMessage,
-        ImageContent,
-        QWEN3_VISION_MODELS,
-        read_image_from_url,
+        close_vision_handler,
         encode_image_to_base64,
+        get_vision_handler,
+        read_image_from_url,
     )
 
     VISION_AVAILABLE = True
@@ -109,8 +109,8 @@ except ImportError as e:
 # Import semantic cache
 try:
     from ai_inference_gateway.semantic_cache import (
-        SemanticCache,
         CacheConfig,
+        SemanticCache,
     )
 
     SEMANTIC_CACHE_AVAILABLE = True
@@ -150,9 +150,9 @@ except ImportError as e:
 
 # Import Self-Improvement System (meta-learning from all interactions)
 try:
-    from ai_inference_gateway.self_improvement_api import create_self_improvement_router
-    from ai_inference_gateway.self_improvement import get_self_improvement_engine
     from ai_inference_gateway.hermes_integration import get_hermes_bridge
+    from ai_inference_gateway.self_improvement import get_self_improvement_engine
+    from ai_inference_gateway.self_improvement_api import create_self_improvement_router
 
     SELF_IMPROVEMENT_AVAILABLE = True
 except ImportError as e:
@@ -189,9 +189,9 @@ except ImportError as e:
 # Import RAG ingestion
 try:
     from ai_inference_gateway.rag.ingestion import (
-        URLIngestionService,
         IngestionConfig,
         IngestionSource,
+        URLIngestionService,
         create_ingestion_service,
     )
 
@@ -222,8 +222,8 @@ except ImportError as e:
 try:
     from ai_inference_gateway.moderation import (
         ContentModerator,
-        ModerationResult,
         ModerationCategory,
+        ModerationResult,
         get_default_moderator,
     )
 
@@ -256,14 +256,14 @@ except ImportError as e:
 # Import files module (Garage S3 storage)
 try:
     from ai_inference_gateway.files import (
-        GarageS3Client,
-        get_garage_client,
         FileMetadata,
-        FileStorageError,
         FileNotFoundError,
+        FileStorageError,
         FileUploadError,
-        get_mime_type,
+        GarageS3Client,
         generate_file_id,
+        get_garage_client,
+        get_mime_type,
     )
 
     FILES_AVAILABLE = True
@@ -274,17 +274,17 @@ except ImportError as e:
     get_garage_client = None
 
 # Import middleware (placed here after conditional imports)
-from ai_inference_gateway.middleware.observability import ObservabilityMiddleware  # noqa: E402
-from ai_inference_gateway.middleware.security_filter import SecurityFilterMiddleware  # noqa: E402
-from ai_inference_gateway.middleware.rate_limiter import RateLimiterMiddleware  # noqa: E402
 from ai_inference_gateway.middleware.circuit_breaker import CircuitBreaker  # noqa: E402
 from ai_inference_gateway.middleware.concurrency_limiter import ConcurrencyLimiter  # noqa: E402
+from ai_inference_gateway.middleware.observability import ObservabilityMiddleware  # noqa: E402
+from ai_inference_gateway.middleware.rate_limiter import RateLimiterMiddleware  # noqa: E402
+from ai_inference_gateway.middleware.security_filter import SecurityFilterMiddleware  # noqa: E402
 
 # Try to import prometheus_client for metrics endpoint
 try:
     from prometheus_client import (
-        generate_latest,
         CONTENT_TYPE_LATEST,
+        generate_latest,
     )
 
     PROMETHEUS_AVAILABLE = True
@@ -503,14 +503,14 @@ async def lifespan(app: FastAPI):
 
             # Build RAG config from environment variables
             from ai_inference_gateway.rag.config import (
-                RAGConfig,
-                EmbeddingConfig,
                 ChunkingConfig,
-                SearchConfig,
+                EmbeddingConfig,
+                RAGConfig,
                 RerankerConfig,
+                SearchConfig,
             )
-            from ai_inference_gateway.rag.qdrant_client import get_qdrant_manager
             from ai_inference_gateway.rag.embeddings import create_embedding_service
+            from ai_inference_gateway.rag.qdrant_client import get_qdrant_manager
             from ai_inference_gateway.rag.search import create_search_service
 
             # Get environment variables
@@ -1480,9 +1480,11 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 logger.warning(f"Failed to apply Qwen optimal params: {qwen_error}")
                 # Continue without Qwen params - not critical
 
-        # Gemma 4 thinking control — disable thinking for simple tasks
+        # Qwen/Gemma thinking control — disable thinking for simple tasks
         # Thinking is useful for code/debug/reasoning, wasteful for summarization/QA
-        if "gemma" in route_decision.model.lower():
+        # Supported by llama-server when started with --jinja --reasoning-format deepseek
+        model_lower = route_decision.model.lower()
+        if "gemma" in model_lower or "qwen" in model_lower:
             try:
                 # Determine if thinking should be enabled based on task
                 messages_text = " ".join([m.get("content", "") for m in messages])
@@ -1509,15 +1511,15 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 if "enable_thinking" not in body["chat_template_kwargs"]:
                     body["chat_template_kwargs"]["enable_thinking"] = enable_thinking
                     logger.debug(
-                        f"Gemma thinking control: enable_thinking={enable_thinking} "
+                        f"Thinking control: enable_thinking={enable_thinking} "
                         f"(model={route_decision.model})"
                     )
             except Exception as gemma_error:
-                logger.warning(f"Failed to apply Gemma thinking control: {gemma_error}")
+                logger.warning(f"Failed to apply thinking control: {gemma_error}")
 
-        # llama-server doesn't support chat_template_kwargs — strip it
-        if route_decision.backend == "llama-cpp" and "chat_template_kwargs" in body:
-            del body["chat_template_kwargs"]
+        # llama-server supports chat_template_kwargs when started with --jinja
+        # Keep it for thinking control (enable_thinking: true/false)
+        # Only strip if the backend is a legacy llama-server without --jinja support
 
         # Track request start for smart load balancing
         import uuid
@@ -4760,8 +4762,8 @@ async def stream_anthropic_response(
 
     Converts OpenAI streaming chunks to Anthropic format.
     """
-    import time
     import json
+    import time
 
     start_time = time.time()
     first_chunk_sent = False
