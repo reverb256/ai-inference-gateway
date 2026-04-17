@@ -125,6 +125,8 @@
 
       nixosModules.default = import ./nix;
 
+      kubernetesModules.default = import ./kubernetes/module.nix;
+
       devShells.${system}.default = pkgs.mkShell {
         buildInputs =
           with python3.pkgs;
