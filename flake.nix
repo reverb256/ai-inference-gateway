@@ -57,9 +57,12 @@
       gatewaySrcPkg = python3.pkgs.buildPythonPackage {
         pname = "ai-inference-gateway";
         version = "2.0.0";
-        src = ./src;
-        pyproject = false;
+        src = ./.;
+        pyproject = true;
         propagatedBuildInputs = gatewayDeps;
+        # Disable cmake/ninja hooks pulled in by transitive deps (torch, etc.)
+        dontUseCmakeConfigure = true;
+        build-system = with python3.pkgs; [ setuptools wheel ];
         # No tests in the package build (run separately via devShell)
         doCheck = false;
       };
@@ -73,13 +76,9 @@
         tag = "latest";
         extraCommands = ''
           mkdir -p home/ai-gateway
-          chown 1000:1000 home/ai-gateway
           mkdir -p var/cache/ai-inference
-          chown 1000:1000 var/cache/ai-inference
           mkdir -p tmp
-          chown 1000:1000 tmp
           mkdir -p run/ai-inference
-          chown 1000:1000 run/ai-inference
         '';
         contents = [
           gatewayPython
