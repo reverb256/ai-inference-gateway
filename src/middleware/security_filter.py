@@ -22,14 +22,59 @@ class SecurityFilterMiddleware(Middleware):
     - Configurable enable/disable
     """
 
-    # Prompt injection patterns (case-insensitive)
+    # Comprehensive prompt injection patterns (case-insensitive)
+    # Covers: instruction override, role play, system prompt extraction,
+    # jailbreak, hidden HTML, encoded payloads, multi-language
     INJECTION_PATTERNS = [
-        r"ignore\s+all\s+previous\s+instructions",
-        r"disregard\s+everything\s+above",
-        r"forget\s+the\s+above",
-        r"override\s+your\s+instructions",
+        # --- Instruction override ---
+        r"ignore\s+(all\s+)?previous\s+instructions",
+        r"disregard\s+(everything\s+)?(above|before|prior)",
+        r"forget\s+(the\s+)?(above|previous|prior|everything)",
+        r"override\s+(your\s+)?instructions",
         r"pretend\s+you\s+are\s+not",
         r"act\s+as\s+if\s+you\s+are",
+        r"you\s+are\s+now\s+(a\s+)?(DAN|evil|unfiltered|uncensored)",
+        r"stop\s+being\s+(an?\s+)?(AI|assistant|helpful)",
+        r"new\s+instructions?\s*:",
+        r"system\s*(override|update|reset|instruction)\s*:",
+        # --- Role play / persona ---
+        r"simulate\s+(being|a|an)\s+(?!a\s+professional)",
+        r"role[\-\s]?play\s+as",
+        r"pretend\s+to\s+be\s+(?!a\s+professional)",
+        r"you\s+are\s+no\s+longer\s+(an?\s+)?(AI|assistant|LLM)",
+        r"(always|never)\s+(respond|answer|reply|comply|refuse)",
+        # --- System prompt extraction ---
+        r"(what\s+are\s+your|show\s+me\s+your|reveal\s+your)\s+(system|initial|original)\s+(prompt|instructions)",
+        r"repeat\s+(your|the)\s+(system|initial|original)\s+(prompt|instructions)",
+        r"output\s+(your|the)\s+system\s+prompt",
+        # --- Credential/secret requests ---
+        r"(show|reveal|give|send|share|display|print)\s+(me\s+)?(your\s+)?(api\s+key|secret|password|token|private\s+key|seed|credential)",
+        r"(cat|type|read|print|echo)\s+.*(\.env|\.ssh|\.config|/etc/passwd|/etc/shadow)",
+        r"\$\(\s*cat\s+",
+        r"\b(exec|eval|system|subprocess|os\.system|os\.popen)\s*\(",
+        # --- Hidden HTML/invisible content ---
+        r"<!--\s*(system|important|instruction|override|admin)",
+        r"<style[^>]*>[\s\S]*?(position\s*:\s*absolute|visibility\s*:\s*hidden|display\s*:\s*none|opacity\s*:\s*0|font-size\s*:\s*0|color\s*:\s*transparent)",
+        r"<img\s+[^>]*(?:alt|title|src)\s*=\s*[\"'][^\"']*(?:ignore|override|system|instruction)[^\"']*[\"']",
+        r"data:text/html[,;].*(?:ignore|override|system)",
+        # --- Encoded payloads ---
+        r"(base64|b64|atob|btoa)\s*[\(\[]",
+        r"\\x[0-9a-fA-F]{2}.*\\x[0-9a-fA-F]{2}",
+        r"\\u[0-9a-fA-F]{4}.*\\u[0-9a-fA-F]{4}",
+        r"&#x[0-9a-fA-F]+;",
+        # --- Shell injection in content ---
+        r"(curl|wget|bash|sh|python|perl|ruby|node)\s+.*\|.*\|",
+        r"(curl|wget)\s+https?://\S+\s*\|\s*(bash|sh|python)",
+        r"`[^`]*(?:rm|curl|wget|bash|sh|chmod|chown)[^`]*`",
+        # --- Multi-language (Korean, Chinese, Japanese, Russian) ---
+        r"이전\s*(모든\s*)?지시",
+        r"무시하고",
+        r"API\s*키\s*(보여|알려|전달)",
+        r"忽略\s*(之前|所有|上述)\s*(指令|指示)",
+        r"假装\s*(你|您)\s*(不是|是)",
+        r"前\s*の\s*指示\s*を\s*無視",
+        r"игнорир(уй|овать)\s*(все\s+)?предыдущ",
+        r"покажи\s+(мне\s+)?(свой\s+)?(api|ключ|пароль)",
     ]
 
     # PII redaction patterns

@@ -199,11 +199,14 @@ in
         NVIDIA_NIM_BASE_URL = cfg.backend.nvidia-nim.baseUrl;
       }
       // lib.optionalAttrs cfg.backend.pollinations.enable {
-        POLLINATIONS_API_KEY_FILE =
+        POLLINATIONS_API_KEY_FILE = "***" + 
           if cfg.backend.pollinations.apiKeyFile != null then
             toString cfg.backend.pollinations.apiKeyFile
           else
             "";
+      }
+      // lib.optionalAttrs cfg.gateway.middleware.redis.enable {
+        REDIS_URL = "redis://${cfg.gateway.middleware.redis.host}:${toString cfg.gateway.middleware.redis.port}";
       }
       // lib.optionalAttrs cfg.gateway.middleware.knowledgeFabric.enable {
         MIDDLEWARE__KNOWLEDGE_FABRIC__ENABLED = "true";

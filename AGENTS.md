@@ -59,7 +59,7 @@ inputs.ai-inference-gateway.url = "path:/data/projects/own/ai-inference-gateway"
 
 ## Important Notes
 
-- **Source of truth:** This project is the canonical source. The NixOS config at `/etc/nixos/modules/services/ai-inference/` is the original location.
+- **Extracted** from `/etc/nixos/modules/services/ai-inference/` into standalone project. Wired as `ai-gateway` flake input in `/etc/nixos/flake.nix`.
 - **112 Python files** across middleware, routing, RAG, services, and MCP.
 - **Docker container** buildable via `nix build .#container`.
 - Tests require Redis and Qdrant for integration tests (marked `requires_redis`, `requires_qdrant`).

@@ -3401,6 +3401,40 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         return {"embedding": embedding}
 
+    @app.post("/embed")
+    async def knowledge_fabric_embed(request: Request):
+        """
+        Knowledge Fabric compatible embed endpoint.
+
+        Expects: {"texts": ["...", "..."]}
+        Returns: {"vectors": [[...], [...]], "dim": 384}
+        """
+        state: GatewayState = app.state.gateway
+
+        if not state.rag_search or not state.rag_search.embedder:
+            raise HTTPException(
+                status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true"
+            )
+
+        body = await request.json()
+        texts = body.get("texts", [])
+
+        if not texts:
+            return {"vectors": [], "dim": 0}
+
+        vectors = await state.rag_search.embedder.embed_dense(texts)
+        dim = len(vectors[0]) if vectors else 0
+
+        return {"vectors": vectors, "dim": dim}
+
+    @app.get("/embed/health")
+    async def embed_health():
+        """Health check for the embed endpoint."""
+        state: GatewayState = app.state.gateway
+        if state.rag_search and state.rag_search.embedder:
+            return {"status": "ok", "model": state.rag_config.embedding.model}
+        return {"status": "unavailable"}
+
     # TTS (Text-to-Speech) API endpoints
     if TTS_AVAILABLE:
 
