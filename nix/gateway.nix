@@ -165,8 +165,10 @@ in
       description = "AI Inference Gateway";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
+      path = [ pkgs.k3s ];
 
       environment = {
+        KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
         PYTHONPATH = "${modularGatewayPkgBase}:${gatewayPython}/lib/python3.13/site-packages";
         BACKEND_URL = cfg.backend.url;
         BACKEND_TYPE = cfg.backend.type;
@@ -239,7 +241,8 @@ in
           "${gatewayPython}/bin/python -m uvicorn ai_inference_gateway.main:app ${lib.concatStringsSep " " args}";
 
         ReadOnlyPaths =
-          lib.optionals (cfg.backend.zai.apiKeyFile != null) [ cfg.backend.zai.apiKeyFile ]
+          [ "/etc/rancher/k3s/k3s.yaml" ]
+          ++ lib.optionals (cfg.backend.zai.apiKeyFile != null) [ cfg.backend.zai.apiKeyFile ]
           ++ lib.optionals (cfg.backend.pollinations.apiKeyFile != null) [
             cfg.backend.pollinations.apiKeyFile
           ];
