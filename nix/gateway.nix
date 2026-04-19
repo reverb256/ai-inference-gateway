@@ -182,6 +182,14 @@ in
         EMBEDDING_MODEL = cfg.rag.embeddingModel;
         EMBEDDING_DEVICE = cfg.rag.embeddingDevice;
         RERANKER_ENABLED = if cfg.rag.reranker.enable then "true" else "false";
+        RERANKER_MODEL = cfg.rag.reranker.model;
+        # Query expansion
+        QUERY_EXPANSION_ENABLED = if cfg.queryExpansion.enable then "true" else "false";
+        QUERY_EXPANSION_MODEL = cfg.queryExpansion.model;
+        # Semantic cache
+        SEMANTIC_CACHE_ENABLED = if cfg.semanticCache.enable then "true" else "false";
+        SEMANTIC_CACHE_TTL_SECONDS = toString cfg.semanticCache.ttlSeconds;
+        SEMANTIC_CACHE_SIMILARITY_THRESHOLD = toString cfg.semanticCache.similarityThreshold;
         HF_HOME = "/var/cache/ai-inference";
         TRANSFORMERS_CACHE = "/var/cache/ai-inference";
       }

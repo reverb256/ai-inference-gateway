@@ -668,6 +668,40 @@ in
       };
     };
 
+    queryExpansion = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable LLM-powered query expansion for better retrieval";
+      };
+
+      model = mkOption {
+        type = types.str;
+        default = "qwen3.6-35b-a3b";
+        description = "Model used for query expansion";
+      };
+    };
+
+    semanticCache = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Enable semantic cache for similar-query deduplication";
+      };
+
+      ttlSeconds = mkOption {
+        type = types.int;
+        default = 86400;
+        description = "Cache TTL in seconds for semantic cache entries";
+      };
+
+      similarityThreshold = mkOption {
+        type = types.float;
+        default = 0.85;
+        description = "Cosine similarity threshold for semantic cache hits (0.0-1.0)";
+      };
+    };
+
     rag = {
       enable = mkEnableOption "RAG (Retrieval Augmented Generation) with hybrid search";
 

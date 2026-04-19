@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 
 from ai_inference_gateway.searxng_integration import SearxngIntegration
 from ai_inference_gateway.query_expansion import expand_query
+from ai_inference_gateway.search_cache import get_cached, set_cache
 
 try:
     from ai_inference_gateway.middleware.knowledge_fabric.routing import (
@@ -95,6 +96,15 @@ class HybridSearchEngine:
         start_time = datetime.now()
         all_results = []
         source_counts = {"rag": 0, "web": 0}
+
+        # Semantic cache lookup — return instantly if hit
+        cached_result = await get_cached(query)
+        if cached_result is not None:
+            cached_result["metadata"]["cache_hit"] = cached_result.pop("_cache_hit", "exact")
+            cached_result["metadata"]["cache_age_seconds"] = cached_result.pop("_cache_age_seconds", 0)
+            if "_cache_similarity" in cached_result:
+                cached_result["metadata"]["cache_similarity"] = cached_result.pop("_cache_similarity")
+            return cached_result
 
         # Classify query intent for source weighting
         routing_intent = None
@@ -191,6 +201,22 @@ class HybridSearchEngine:
 
         all_results = all_expansion_results
 
+        # Multi-hop: extract [[wiki-links]] from RAG results and follow them
+        wiki_links = self._extract_wiki_links(all_results)
+        if wiki_links and effective_use_rag and self.rag_search:
+            for link_query in wiki_links:
+                try:
+                    hop_result = await self._search_rag(link_query, collection, False)
+                    if hop_result and hop_result.get("results"):
+                        for r in hop_result["results"]:
+                            r["source"] = "rag"
+                            r["source_type"] = "local_knowledge_base"
+                            r["hop_origin"] = link_query
+                        all_results.extend(hop_result["results"])
+                        logger.info(f"Multi-hop: followed [[{link_query}]] -> {len(hop_result['results'])} results")
+                except Exception as e:
+                    logger.debug(f"Multi-hop failed for [[{link_query}]]: {e}")
+
         # Count sources
         for r in all_results:
             src = r.get("source", "")
@@ -206,15 +232,19 @@ class HybridSearchEngine:
         else:
             ranked_results = deduped_results
 
+        # Synthesize LLM-ready context from results
+        synthesized_context = self._synthesize_context(ranked_results, query, routing_intent)
+
         # Limit to max_results
         final_results = ranked_results[:max_results]
 
         end_time = datetime.now()
         duration_ms = (end_time - start_time).total_seconds() * 1000
 
-        return {
+        response = {
             "results": final_results,
             "sources": source_counts,
+            "context": synthesized_context,
             "metadata": {
                 "query": query,
                 "total_found": len(deduped_results),
@@ -229,6 +259,11 @@ class HybridSearchEngine:
                 "timestamp": end_time.isoformat(),
             }
         }
+
+        # Cache the result for future semantic lookups
+        await set_cache(query, response)
+
+        return response
 
     async def _search_rag(
         self,
@@ -354,7 +389,12 @@ class HybridSearchEngine:
                 scores = future.result(timeout=30)
 
             for result, score in zip(results, scores):
-                result["reranker_score"] = float(score)
+                # Apply temporal decay: multiply by exp(-lambda * days_old)
+                decay = self._temporal_decay(result)
+                adjusted = float(score) * decay
+                result["reranker_score"] = adjusted
+                result["reranker_score_raw"] = float(score)
+                result["temporal_decay"] = round(decay, 4)
                 result["rerank_method"] = "cross_encoder"
 
             results.sort(key=lambda x: x.get("reranker_score", 0), reverse=True)
@@ -364,6 +404,136 @@ class HybridSearchEngine:
         except Exception as e:
             logger.warning(f"Cross-encoder reranking failed: {e}, falling back to heuristic")
             return results
+
+    def _temporal_decay(self, result: Dict[str, Any], half_life_days: float = 180.0) -> float:
+        """
+        Compute temporal decay multiplier: exp(-lambda * days_old).
+
+        Args:
+            result: Search result dict (may have date/timestamp metadata)
+            half_life_days: Days for score to decay to 50% (default 180 = 6 months)
+
+        Returns:
+            Decay multiplier in [0, 1]. Returns 1.0 if no date found (no penalty).
+        """
+        import math
+        lam = math.log(2) / half_life_days  # decay constant
+
+        # Try to extract date from various metadata fields
+        date_str = (
+            result.get("date") or
+            result.get("publishedDate") or
+            result.get("published_date") or
+            result.get("metadata", {}).get("date") or
+            result.get("metadata", {}).get("timestamp") or
+            ""
+        )
+        if not date_str:
+            return 1.0  # no date = no decay
+
+        try:
+            # Parse ISO date (full or date-only)
+            from datetime import timezone
+            date_str = date_str[:19]  # truncate to YYYY-MM-DDTHH:MM:SS
+            if "T" in date_str:
+                doc_date = datetime.fromisoformat(date_str).replace(tzinfo=None)
+            else:
+                doc_date = datetime.strptime(date_str[:10], "%Y-%m-%d")
+
+            days_old = (datetime.now() - doc_date).days
+            if days_old <= 0:
+                return 1.0  # future docs get no penalty
+            decay = math.exp(-lam * days_old)
+            return max(0.1, min(1.0, decay))  # floor at 10%
+        except (ValueError, TypeError):
+            return 1.0
+
+    def _extract_wiki_links(self, results: List[Dict[str, Any]]) -> List[str]:
+        """Extract [[wiki-links]] from RAG results for multi-hop retrieval."""
+        import re
+        links = set()
+        for r in results:
+            if r.get("source") != "rag":
+                continue
+            content = r.get("content", "")
+            title = r.get("title", "")
+            text = f"{title} {content}"
+            found = re.findall(r'\[\[([^\]]+)\]\]', text)
+            links.update(link.strip() for link in found if len(link.strip()) > 2)
+        return list(links)[:5]  # cap at 5 hops to avoid explosion
+
+    def _synthesize_context(
+        self,
+        results: List[Dict[str, Any]],
+        query: str,
+        intent: Optional[Any] = None,
+    ) -> str:
+        """
+        Synthesize search results into LLM-ready context string.
+
+        Formats results by source type with attribution, tailored to the
+        detected query intent. This is the output that downstream LLM calls
+        or agents can consume directly.
+        """
+        if not results:
+            return ""
+
+        intent_val = intent.value if intent else "unknown"
+
+        # Group results by source
+        rag_results = [r for r in results if r.get("source") == "rag"]
+        web_results = [r for r in results if r.get("source") == "web"]
+
+        parts = []
+
+        # Header based on intent
+        headers = {
+            "realtime": "Current Information Retrieved:",
+            "code": "Code Examples and Implementations:",
+            "procedural": "Step-by-Step References:",
+            "factual": "Factual Information Retrieved:",
+            "comparative": "Comparisons and Alternatives:",
+            "contextual": "Contextual Background:",
+        }
+        parts.append(headers.get(intent_val, "Search Results:"))
+
+        # Format RAG results (local knowledge)
+        if rag_results:
+            parts.append(f"\n--- Local Knowledge ({len(rag_results)} results) ---")
+            for i, r in enumerate(rag_results[:7], 1):
+                title = r.get("title", "Untitled")
+                content = r.get("content", "")[:300]
+                score = r.get("reranker_score", r.get("dense_score", r.get("score", 0)))
+                hop = r.get("hop_origin")
+                hop_tag = f" [via [[{hop}]]]" if hop else ""
+                parts.append(f"[{i}] {title} (relevance: {score:.2f}){hop_tag}")
+                parts.append(f"    {content}")
+
+        # Format web results
+        if web_results:
+            parts.append(f"\n--- Web Sources ({len(web_results)} results) ---")
+            for i, r in enumerate(web_results[:5], 1):
+                title = r.get("title", "Untitled")
+                url = r.get("url", "")
+                snippet = r.get("content", r.get("snippet", ""))[:200]
+                parts.append(f"[{i}] {title}")
+                if url:
+                    parts.append(f"    {url}")
+                parts.append(f"    {snippet}")
+
+        # Source attribution
+        sources = set()
+        for r in rag_results:
+            sources.add(f"brain-wiki ({len(rag_results)})")
+            break
+        for r in web_results:
+            domain = urlparse(r.get("url", "")).netloc
+            if domain:
+                sources.add(domain)
+        if sources:
+            parts.append(f"\nSources: {', '.join(sorted(sources))}")
+
+        return "\n".join(parts)
 
     def _rerank_results(
         self,
