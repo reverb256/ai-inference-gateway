@@ -27,11 +27,14 @@ async def expand_query(
     gateway_url: str = "http://127.0.0.1:8080",
     max_expansions: int = 3,
     min_query_length: int = 50,
+    skip_for_realtime: bool = True,
+    intent: str = None,
 ) -> List[str]:
     """
     Expand a query using the local LLM.
 
     Only expands short queries (< min_query_length chars).
+    Skips expansion for REALTIME intent queries (latency-sensitive).
     Returns list including original + expansions.
     """
     if len(query) > min_query_length:
@@ -39,6 +42,9 @@ async def expand_query(
         return [query]
     enabled = os.getenv("QUERY_EXPANSION_ENABLED", "false").lower() == "true"
     if not enabled:
+        return [query]
+    if skip_for_realtime and intent == "realtime":
+        logger.debug("Skipping expansion for REALTIME query")
         return [query]
     logger.info(f"Expanding query: '{query}'")
 
@@ -74,7 +80,7 @@ async def expand_query(
         loop = asyncio.get_event_loop()
         resp_data = await loop.run_in_executor(
             None,
-            lambda: urllib.request.urlopen(req, timeout=15).read()
+            lambda: urllib.request.urlopen(req, timeout=5).read()
         )
         data = json.loads(resp_data)
         content = data["choices"][0]["message"]["content"]

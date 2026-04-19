@@ -127,8 +127,9 @@ class HybridSearchEngine:
         effective_use_rag = use_rag and intent_weights["rag"] > 0
         effective_use_web = use_web and intent_weights["web"] > 0
 
-        # Query expansion for short queries
-        query_variants = await expand_query(query)
+        # Query expansion for short queries (skip for REALTIME intent)
+        intent_str = routing_intent.value if routing_intent else None
+        query_variants = await expand_query(query, intent=intent_str)
 
         # Adaptive local-first: run RAG first, conditionally run web
         rag_confidence = 0.0
@@ -219,8 +220,8 @@ class HybridSearchEngine:
                 "total_found": len(deduped_results),
                 "returned": len(final_results),
                 "duration_ms": round(duration_ms, 2),
-                "used_rag": use_rag and self.rag_search is not None,
-                "used_web": use_web,
+                "used_rag": effective_use_rag and self.rag_search is not None,
+                "used_web": effective_use_web,
                 "reranked": rerank,
                 "routing_intent": routing_intent.value if routing_intent else None,
                 "intent_weights": intent_weights,
