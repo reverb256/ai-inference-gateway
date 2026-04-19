@@ -36,6 +36,7 @@ class SearchResult:
     score: float
     metadata: Dict[str, Any]
     sparse_score: Optional[float] = None
+    dense_score: Optional[float] = None
 
 
 class QdrantManager:
@@ -338,40 +339,41 @@ class QdrantManager:
             Fused and sorted results
         """
         # Calculate RRF scores
-        scores: Dict[str, Tuple[float, SearchResult]] = {}
+        scores: Dict[str, Tuple[float, SearchResult, Optional[float]]] = {}
 
         for rank, result in enumerate(dense_results, start=1):
             rrf_score = 1.0 / (k + rank)
             if result.id not in scores:
-                scores[result.id] = (rrf_score, result)
+                scores[result.id] = (rrf_score, result, result.score)
             else:
-                current_score, _ = scores[result.id]
-                scores[result.id] = (current_score + rrf_score, result)
+                current_score, _, _ = scores[result.id]
+                scores[result.id] = (current_score + rrf_score, result, result.score)
 
         for rank, result in enumerate(sparse_results, start=1):
             rrf_score = 1.0 / (k + rank)
             if result.id not in scores:
-                scores[result.id] = (rrf_score, result)
+                scores[result.id] = (rrf_score, result, result.sparse_score)
             else:
-                current_score, _ = scores[result.id]
-                scores[result.id] = (current_score + rrf_score, result)
+                current_score, _, existing_dense = scores[result.id]
+                scores[result.id] = (current_score + rrf_score, result, existing_dense)
 
         # Sort by RRF score
         sorted_results = sorted(
-            [(score, result) for score, result in scores.values()],
+            [(score, result, dense) for score, result, dense in scores.values()],
             key=lambda x: x[0],
             reverse=True,
         )
 
-        # Update scores in results
+        # Update scores in results, preserving dense_score for downstream reranking
         return [
             SearchResult(
                 id=result.id,
                 content=result.content,
                 score=score,  # RRF score
                 metadata=result.metadata,
+                dense_score=dense,  # Original cosine similarity
             )
-            for score, result in sorted_results
+            for score, result, dense in sorted_results
         ]
 
     async def get_collection_info(

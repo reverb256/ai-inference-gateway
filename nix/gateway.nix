@@ -180,6 +180,7 @@ in
         RAG_ENABLED = if cfg.rag.enable then "true" else "false";
         QDRANT_URL = cfg.rag.qdrantUrl;
         EMBEDDING_MODEL = cfg.rag.embeddingModel;
+        EMBEDDING_DEVICE = cfg.rag.embeddingDevice;
         RERANKER_ENABLED = if cfg.rag.reranker.enable then "true" else "false";
         HF_HOME = "/var/cache/ai-inference";
         TRANSFORMERS_CACHE = "/var/cache/ai-inference";

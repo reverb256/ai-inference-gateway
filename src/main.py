@@ -528,7 +528,7 @@ async def lifespan(app: FastAPI):
                 qdrant_url=qdrant_url,
                 embedding=EmbeddingConfig(
                     model=embedding_model,
-                    device="cuda",  # Use CUDA by default
+                    device=os.getenv("EMBEDDING_DEVICE", "cpu"),  # CPU by default (GPU often mining)
                 ),
                 chunking=ChunkingConfig(
                     chunk_size=chunk_size, chunk_overlap=chunk_overlap
@@ -2736,7 +2736,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 "max_results": int (optional, default=10),
                 "use_rag": bool (optional, default=true),
                 "use_web": bool (optional, default=true),
-                "collection": str (optional, default="default"),
+                "collection": str (optional, default="brain-wiki"),
                 "rerank": bool (optional, default=true),
                 "time_range": str (optional, values: day, week, month, year)
             }
@@ -2758,7 +2758,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             max_results = min(body.get("max_results", 10), 50)
             use_rag = body.get("use_rag", True)
             use_web = body.get("use_web", True)
-            collection = body.get("collection", "default")
+            collection = body.get("collection", "brain-wiki")
             rerank = body.get("rerank", True)
             time_range = body.get("time_range")
 
@@ -2843,7 +2843,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise HTTPException(status_code=501, detail="RAG service not enabled")
 
             body = await request.json()
-            collection = body.get("collection", "default")
+            collection = body.get("collection", "brain-wiki")
             documents = body.get("documents", [])
 
             if not documents:
@@ -2890,7 +2890,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                     status_code=400, detail="Missing required parameter: query"
                 )
 
-            collection = request.query_params.get("collection", "default")
+            collection = request.query_params.get("collection", "brain-wiki")
             top_k = int(request.query_params.get("top_k", 5))
             rerank = request.query_params.get("rerank", "true").lower() == "true"
 
@@ -2920,7 +2920,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise HTTPException(status_code=501, detail="RAG service not enabled")
 
             body = await request.json()
-            collection = body.get("collection", "default")
+            collection = body.get("collection", "brain-wiki")
             document_id = body.get("document_id")
 
             if not document_id:

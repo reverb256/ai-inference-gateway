@@ -18,8 +18,29 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 from ai_inference_gateway.searxng_integration import SearxngIntegration
+from ai_inference_gateway.query_expansion import expand_query
+
+try:
+    from ai_inference_gateway.middleware.knowledge_fabric.routing import (
+        SemanticRouter,
+        QueryIntent,
+    )
+    ROUTER_AVAILABLE = True
+except ImportError:
+    ROUTER_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+# Intent → source weight multipliers
+_INTENT_WEIGHTS = {
+    QueryIntent.REALTIME: {"rag": 0.0, "web": 1.0},
+    QueryIntent.CODE: {"rag": 1.5, "web": 0.8},
+    QueryIntent.FACTUAL: {"rag": 1.5, "web": 0.8},
+    QueryIntent.PROCEDURAL: {"rag": 1.3, "web": 0.9},
+    QueryIntent.COMPARATIVE: {"rag": 1.0, "web": 1.0},
+    QueryIntent.CONTEXTUAL: {"rag": 1.3, "web": 0.7},
+    QueryIntent.UNKNOWN: {"rag": 1.0, "web": 1.0},
+}
 
 
 class HybridSearchEngine:
@@ -40,6 +61,8 @@ class HybridSearchEngine:
     ):
         self.searxng = searxng
         self.rag_search = rag_search
+        self._reranker = None
+        self._reranker_loaded = False
 
     async def search(
         self,
@@ -73,44 +96,105 @@ class HybridSearchEngine:
         all_results = []
         source_counts = {"rag": 0, "web": 0}
 
-        # Parallel search of RAG and SearXNG
-        tasks = []
+        # Classify query intent for source weighting
+        routing_intent = None
+        intent_weights = {"rag": 1.0, "web": 1.0}
+        if ROUTER_AVAILABLE:
+            try:
+                # Use classify directly with pre-compiled regex patterns
+                query_lower = query.lower().strip()
+                patterns = SemanticRouter._get_compiled_patterns()
+                intent_scores = {}
+                for intent, regex_list in patterns.items():
+                    score = sum(1 for regex in regex_list if regex.search(query))
+                    if score > 0:
+                        intent_scores[intent] = score
 
-        if use_rag and self.rag_search:
-            tasks.append(self._search_rag(query, collection, rerank))
+                if intent_scores:
+                    routing_intent = max(intent_scores, key=intent_scores.get)
+                    weights = _INTENT_WEIGHTS.get(routing_intent, {"rag": 1.0, "web": 1.0})
+                    intent_weights = weights
+                    confidence = min(0.9, max(intent_scores.values()) * 0.2)
+                    logger.info(
+                        f"Query intent: {routing_intent.value} "
+                        f"(confidence: {confidence:.2f}), "
+                        f"weights: rag={weights['rag']:.1f} web={weights['web']:.1f}"
+                    )
+            except Exception as e:
+                logger.warning(f"Semantic routing failed: {e}")
 
-        if use_web:
-            tasks.append(self._search_web(query, time_range, max_results))
+        # Apply intent-based source overrides
+        effective_use_rag = use_rag and intent_weights["rag"] > 0
+        effective_use_web = use_web and intent_weights["web"] > 0
 
-        # Execute searches in parallel
-        search_results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Query expansion for short queries
+        query_variants = await expand_query(query)
 
-        # Process RAG results
-        if use_rag and self.rag_search:
-            rag_result = search_results[0] if search_results else None
-            if isinstance(rag_result, Exception):
-                logger.warning(f"RAG search failed: {rag_result}")
-            elif rag_result:
-                rag_results = rag_result.get("results", [])
-                for result in rag_results:
-                    result["source"] = "rag"
-                    result["source_type"] = "local_knowledge_base"
-                all_results.extend(rag_results)
-                source_counts["rag"] = len(rag_results)
+        # Adaptive local-first: run RAG first, conditionally run web
+        rag_confidence = 0.0
+        rag_result = None
+        web_result = None
+        all_expansion_results = []
 
-        # Process web results
-        if use_web:
-            web_idx = 1 if (use_rag and self.rag_search) else 0
-            web_result = search_results[web_idx] if web_idx < len(search_results) else None
-            if isinstance(web_result, Exception):
-                logger.warning(f"Web search failed: {web_result}")
-            elif web_result:
-                web_results = web_result.get("results", [])
-                for result in web_results:
-                    result["source"] = "web"
-                    result["source_type"] = "searxng"
-                all_results.extend(web_results)
-                source_counts["web"] = len(web_results)
+        # Search all query variants (merge results from each)
+        for variant in query_variants:
+            variant_rag = None
+            variant_web = None
+
+            if effective_use_rag and self.rag_search:
+                rag_task = self._search_rag(variant, collection, rerank)
+                sr = await asyncio.gather(rag_task, return_exceptions=True)
+                variant_rag = sr[0] if sr else None
+                if isinstance(variant_rag, Exception):
+                    variant_rag = None
+
+            if effective_use_web and variant_rag is not None:
+                top = variant_rag.get("results", [{}])[0] if variant_rag.get("results") else {}
+                conf = top.get("dense_score", top.get("score", 0))
+                intent_val = routing_intent.value if routing_intent else ""
+                if intent_val != "realtime" and conf >= 0.7:
+                    # High confidence — skip web for this and remaining variants
+                    effective_use_web = False
+
+            if effective_use_web:
+                web_task = self._search_web(variant, time_range, max_results)
+                wr = await asyncio.gather(web_task, return_exceptions=True)
+                variant_web = wr[0] if wr else None
+                if isinstance(variant_web, Exception):
+                    variant_web = None
+
+            # Collect results from this variant
+            if variant_rag and variant_rag.get("results"):
+                for r in variant_rag["results"]:
+                    r["source"] = "rag"
+                    r["source_type"] = "local_knowledge_base"
+                    r["query_variant"] = variant
+                all_expansion_results.extend(variant_rag["results"])
+
+            if variant_web and variant_web.get("results"):
+                for r in variant_web["results"]:
+                    r["source"] = "web"
+                    r["source_type"] = "searxng"
+                    r["query_variant"] = variant
+                all_expansion_results.extend(variant_web["results"])
+
+            # Use first variant's RAG result for confidence tracking
+            if rag_result is None and variant_rag and variant_rag.get("results"):
+                rag_result = variant_rag
+                top_rag = variant_rag["results"][0]
+                rag_confidence = top_rag.get("dense_score", top_rag.get("score", 0))
+
+            # Stop expanding if we already have enough results
+            if len(all_expansion_results) >= max_results * 2:
+                break
+
+        all_results = all_expansion_results
+
+        # Count sources
+        for r in all_results:
+            src = r.get("source", "")
+            if src in source_counts:
+                source_counts[src] += 1
 
         # Deduplicate results
         deduped_results = self._deduplicate_results(all_results)
@@ -138,6 +222,9 @@ class HybridSearchEngine:
                 "used_rag": use_rag and self.rag_search is not None,
                 "used_web": use_web,
                 "reranked": rerank,
+                "routing_intent": routing_intent.value if routing_intent else None,
+                "intent_weights": intent_weights,
+                "rag_confidence": round(rag_confidence, 4),
                 "timestamp": end_time.isoformat(),
             }
         }
@@ -219,51 +306,139 @@ class HybridSearchEngine:
 
         return deduped
 
+    def _load_reranker(self):
+        """Lazy-load cross-encoder reranker (once)."""
+        if self._reranker_loaded:
+            return
+        self._reranker_loaded = True
+        import os
+        if os.getenv("RERANKER_ENABLED", "false").lower() != "true":
+            logger.info("Cross-encoder reranker disabled (RERANKER_ENABLED != true)")
+            return
+        try:
+            from sentence_transformers import CrossEncoder
+            model = os.getenv("RERANKER_MODEL", "BAAI/bge-reranker-v2-base")
+            logger.info(f"Loading cross-encoder reranker: {model}")
+            self._reranker = CrossEncoder(model)
+            logger.info("Cross-encoder reranker loaded successfully")
+        except Exception as e:
+            logger.warning(f"Failed to load cross-encoder reranker: {e}")
+
+    def _rerank_cross_encoder(
+        self,
+        results: List[Dict[str, Any]],
+        query: str
+    ) -> List[Dict[str, Any]]:
+        """Rerank using cross-encoder (neural scoring)."""
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+
+            # Get text content for each result
+            pairs = []
+            for r in results:
+                text = r.get("title", "")
+                content = r.get("content", r.get("snippet", ""))
+                if content and content != text:
+                    text = f"{text} {content}"
+                pairs.append((query, text[:500]))  # Truncate to 500 chars
+
+            # run_in_executor returns a Future — but this is called from
+            # an async context, so we need to handle it synchronously here.
+            # Use the loop's run_until_complete on a separate thread to avoid
+            # "thread already running" errors.
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(self._reranker.predict, pairs)
+                scores = future.result(timeout=30)
+
+            for result, score in zip(results, scores):
+                result["reranker_score"] = float(score)
+                result["rerank_method"] = "cross_encoder"
+
+            results.sort(key=lambda x: x.get("reranker_score", 0), reverse=True)
+            logger.info(f"Cross-encoder reranked {len(results)} results")
+            return results
+
+        except Exception as e:
+            logger.warning(f"Cross-encoder reranking failed: {e}, falling back to heuristic")
+            return results
+
     def _rerank_results(
         self,
         results: List[Dict[str, Any]],
         query: str
     ) -> List[Dict[str, Any]]:
         """
-        Re-rank results based on multiple factors.
+        Re-rank results using RRF-inspired weighted scoring.
 
-        Ranking factors:
-        1. Source priority (RAG > web for local knowledge)
-        2. Text similarity to query
-        3. Freshness (for web results)
-        4. Quality score (if available)
+        If cross-encoder reranker is available, uses neural reranking.
+        Falls back to heuristic text-matching scoring.
+
+        Ranking factors (heuristic fallback):
+        1. Original semantic/search score (normalized) — 50%
+        2. Source priority (RAG > web) — 20%
+        3. Text relevance to query — 20%
+        4. Freshness (web results) — 10%
 
         Returns:
             Re-ranked results list
         """
+        # Try cross-encoder reranker first
+        self._load_reranker()
+        if self._reranker is not None and len(results) > 1:
+            return self._rerank_cross_encoder(results, query)
+
+        # Fallback: heuristic scoring
         query_lower = query.lower()
+
+        # Normalize scores across all results so we can compare RAG vs web
+        # Use dense_score (cosine similarity) for RAG results if available,
+        # otherwise fall back to the RRF score
+        all_scores = []
+        for r in results:
+            ds = r.get("dense_score")
+            if ds and ds > 0:
+                all_scores.append(ds)
+            else:
+                s = r.get("score", 0)
+                if s > 0:
+                    all_scores.append(s)
+        max_score = max(all_scores) if all_scores else 1.0
 
         def calculate_score(result: Dict[str, Any]) -> float:
             score = 0.0
 
-            # 1. Source priority (40% of score)
+            # 1. Original semantic/search score (50%) — normalized to [0, 1]
+            # Use dense_score (cosine sim) for RAG, score for web
+            if result.get("source") == "rag" and result.get("dense_score"):
+                original = result["dense_score"]
+            else:
+                original = result.get("score", 0)
+            if original > 0 and max_score > 0:
+                score += (original / max_score) * 0.5
+
+            # 2. Source priority (20%) — RAG gets higher base
             source = result.get("source", "")
             if source == "rag":
-                score += 0.4  # Prioritize local knowledge
-            else:  # web
                 score += 0.2
+            else:
+                score += 0.1
 
-            # 2. Text similarity (40% of score)
+            # 3. Text relevance (20%)
             title = result.get("title", "").lower()
             content = result.get("content", result.get("snippet", "")).lower()
 
-            # Exact phrase match in title
+            # Exact phrase match
             if query_lower in title:
-                score += 0.3
-            # Word matches in title
+                score += 0.15
             elif any(word in title for word in query_lower.split() if len(word) > 3):
-                score += 0.2
+                score += 0.10
 
-            # Content matches
             if query_lower in content:
-                score += 0.1
+                score += 0.05
 
-            # 3. Freshness for web results (10% of score)
+            # 4. Freshness for web results (10%)
             if source == "web":
                 current_year = datetime.now().year
                 text = f"{title} {content}"
@@ -272,21 +447,13 @@ class HybridSearchEngine:
                         score += 0.1
                         break
 
-            # 4. Existing quality score (10% of score)
-            if "quality_score" in result:
-                score += result["quality_score"] * 0.1
-            elif "score" in result:
-                score += result["score"] * 0.1
-
             return score
 
         # Calculate scores and sort
         for result in results:
             result["rerank_score"] = calculate_score(result)
 
-        # Sort by re-rank score
         ranked = sorted(results, key=lambda x: x.get("rerank_score", 0), reverse=True)
-
         return ranked
 
     async def search_with_progressive_refinement(

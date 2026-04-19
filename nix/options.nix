@@ -719,8 +719,14 @@ in
 
       embeddingModel = mkOption {
         type = types.str;
-        default = "sentence-transformers/all-MiniLM-L6-v2";
-        description = "Embedding model for document chunking";
+        default = "BAAI/bge-m3";
+        description = "Embedding model for document chunking (BGE-M3: 1024d, multilingual, 8192 ctx)";
+      };
+
+      embeddingDevice = mkOption {
+        type = types.enum [ "cpu" "cuda" ];
+        default = "cpu";
+        description = "Device for embedding inference (cpu recommended when GPU is mining)";
       };
 
       chunkSize = mkOption {

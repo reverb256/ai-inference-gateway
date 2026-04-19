@@ -122,6 +122,7 @@ class HybridSearchService:
                     {
                         "content": r.content,
                         "score": float(r.score),
+                        "dense_score": float(r.dense_score) if r.dense_score else None,
                         "metadata": r.metadata,
                     }
                     for r in results
