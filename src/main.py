@@ -1499,6 +1499,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 or "gemma" in model_lower
                 or "glm" in model_lower
             )
+            logger.warning(f"[THINK-DBG] model={route_decision.model}, is_thinking_model={is_thinking_model}")
 
             if is_thinking_model:
                 # Check if caller explicitly wants thinking ON
