@@ -138,6 +138,23 @@ class SecurityFilterMiddleware(Middleware):
             # If we can't serialize, estimate
             return len(str(request_body))
 
+    # Trusted internal IPs - skip injection detection for local traffic
+    TRUSTED_IPS = [
+        "10.1.1.",       # Internal cluster network
+        "127.0.0.",      # Loopback
+        "::1",           # IPv6 loopback
+        "10.244.",       # K8s pod network
+        "172.16.",       # Docker networks
+    ]
+
+    def _is_trusted_source(self, context: dict) -> bool:
+        """Check if the request comes from a trusted internal IP."""
+        client_ip = context.get("client_ip", "")
+        for trusted in self.TRUSTED_IPS:
+            if client_ip.startswith(trusted):
+                return True
+        return False
+
     def _detect_injection(self, text: str) -> bool:
         """
         Detect prompt injection attempts in text.
@@ -208,15 +225,16 @@ class SecurityFilterMiddleware(Middleware):
             )
             return False, error
 
-        # Check for prompt injection in messages
-        messages = request_body.get("messages", [])
-        for message in messages:
-            content = message.get("content", "")
-            if isinstance(content, str) and self._detect_injection(content):
-                error = HTTPException(
-                    status_code=400, detail="Request blocked: prompt injection detected"
-                )
-                return False, error
+        # Check for prompt injection in messages (skip for trusted internal sources)
+        if not (context and self._is_trusted_source(context)):
+            messages = request_body.get("messages", [])
+            for message in messages:
+                content = message.get("content", "")
+                if isinstance(content, str) and self._detect_injection(content):
+                    error = HTTPException(
+                        status_code=400, detail="Request blocked: prompt injection detected"
+                    )
+                    return False, error
 
         # Redact PII if enabled
         if self.config.pii_redaction:

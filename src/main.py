@@ -1562,6 +1562,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             "start_time": _request_start,  # Track request start for observability
             "request_body": body,
             "request_headers": dict(request.headers),
+            "client_ip": request.client.host if request.client else "unknown",
             "model": route_decision.model,  # Use routed model for concurrency limiter
             "route_decision": route_decision,  # Store routing decision
             "metrics_tracker": metrics_tracker,  # Metrics tracker
