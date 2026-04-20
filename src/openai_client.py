@@ -122,6 +122,13 @@ class OpenAIClientWrapper:
             extra_body["chat_template_kwargs"] = kwargs.pop("chat_template_kwargs")
             kwargs["extra_body"] = extra_body
 
+        # Move enable_thinking into extra_body for OpenAI SDK compatibility
+        # ZAI's API accepts this as a JSON field but the Python SDK rejects it as a typed kwarg
+        if "enable_thinking" in kwargs:
+            extra_body = kwargs.get("extra_body", {})
+            extra_body["enable_thinking"] = kwargs.pop("enable_thinking")
+            kwargs["extra_body"] = extra_body
+
         # Filter out parameters not supported by OpenAI SDK
         # These are used by llama.cpp/Qwen models but not supported by OpenAI Python SDK
         unsupported_params = [
