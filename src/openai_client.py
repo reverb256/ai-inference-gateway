@@ -95,7 +95,7 @@ class OpenAIClientWrapper:
         stream: bool = False,
         backend: Optional[str] = None,
         **kwargs,
-    ) -> ChatCompletion | AsyncStream[ChatCompletionChunk]:
+    ):
         """
         Create chat completion with automatic failover.
 
@@ -105,13 +105,13 @@ class OpenAIClientWrapper:
             stream: Whether to stream response
             backend: Backend to use ("llama-cpp", "zai", or None for auto-detection)
             **kwargs: Additional OpenAI parameters
-
         Returns:
             ChatCompletion or AsyncStream of ChatCompletionChunk
 
         Raises:
             OpenAIBackendError: If all backends fail
         """
+        logger.info(f"chat_completion called: model={model}, backend={backend}, stream={stream}")
         # Remove 'stream' from kwargs to avoid duplicate parameter error
         kwargs.pop("stream", None)
 
