@@ -1336,6 +1336,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
     # Add chat completions endpoint
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request):
+        logger.info(">>> chat_completions HANDLER INVOKED")
         """
         Chat completions endpoint with middleware processing and intelligent routing.
 
