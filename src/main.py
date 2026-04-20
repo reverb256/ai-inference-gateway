@@ -4158,7 +4158,7 @@ async def stream_backend_response(
         extra_params = {
             k: v
             for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend"]
+            if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         # Get backend from route decision if available
@@ -4737,7 +4737,7 @@ async def handle_non_streaming_request(
         extra_params = {
             k: v
             for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend"]
+            if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         # Get backend from route decision if available
@@ -4895,7 +4895,7 @@ async def stream_anthropic_response(
         extra_params = {
             k: v
             for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend"]
+            if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         route_decision = context.get("route_decision")
@@ -5027,7 +5027,7 @@ async def handle_anthropic_non_streaming(
         extra_params = {
             k: v
             for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend"]
+            if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         route_decision = context.get("route_decision")
