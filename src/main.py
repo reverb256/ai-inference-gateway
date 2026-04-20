@@ -3421,6 +3421,55 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         return {"embedding": embedding}
 
+    @app.post("/v1/embeddings")
+    async def openai_embeddings(request: Request):
+        """
+        Generate embeddings (OpenAI-compatible).
+
+        Compatible with: POST /v1/embeddings
+        Supports both single string and array input.
+        Uses RAG embedding service if available.
+        """
+        state: GatewayState = app.state.gateway
+
+        if not state.rag_search or not state.rag_search.embedder:
+            raise HTTPException(
+                status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true"
+            )
+
+        body = await request.json()
+        model = body.get("model", "BAAI/bge-m3")
+        input_data = body.get("input", "")
+
+        # OpenAI API supports both string and array of strings
+        if isinstance(input_data, str):
+            texts = [input_data]
+        elif isinstance(input_data, list):
+            texts = input_data
+        else:
+            raise HTTPException(
+                status_code=400, detail="input must be a string or array of strings"
+            )
+
+        # Generate embeddings
+        vectors = await state.rag_search.embedder.embed_dense(texts)
+
+        # Format as OpenAI response
+        data = [
+            {"object": "embedding", "index": i, "embedding": emb}
+            for i, emb in enumerate(vectors)
+        ]
+
+        return {
+            "object": "list",
+            "data": data,
+            "model": model,
+            "usage": {
+                "prompt_tokens": sum(len(t.split()) for t in texts),
+                "total_tokens": sum(len(t.split()) for t in texts),
+            },
+        }
+
     @app.post("/embed")
     async def knowledge_fabric_embed(request: Request):
         """
