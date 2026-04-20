@@ -4763,6 +4763,9 @@ async def handle_non_streaming_request(
             content = choice.get("message", {}).get("content")
             if content:
                 choice["message"]["content"] = strip_markdown_json_fences(content)
+                # TEMP: Debug log content for Vane source extraction diagnosis
+                logger.info(f"GATEWAY RESPONSE content preview: {repr(choice['message']['content'][:200])}")
+                logger.info(f"GATEWAY RESPONSE reasoning: {'YES' if choice['message'].get('reasoning_content') else 'none'}")
 
         # Calculate actual processing time
         processing_time_ms = (time.time() - start_time) * 1000
