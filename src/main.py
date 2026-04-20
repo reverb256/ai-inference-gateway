@@ -1480,46 +1480,65 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 logger.warning(f"Failed to apply Qwen optimal params: {qwen_error}")
                 # Continue without Qwen params - not critical
 
-        # Qwen/Gemma thinking control — disable thinking for simple tasks
-        # Thinking is useful for code/debug/reasoning, wasteful for summarization/QA
-        # Supported by llama-server when started with --jinja --reasoning-format deepseek
-        model_lower = route_decision.model.lower()
-        if "gemma" in model_lower or "qwen" in model_lower:
-            try:
-                # Determine if thinking should be enabled based on task
-                messages_text = " ".join([m.get("content", "") for m in messages])
-                thinking_keywords = [
-                    "code", "debug", "fix", "implement", "refactor",
-                    "architecture", "algorithm", "logic", "reason",
-                    "diagnose", "troubleshoot", "analyze", "solve",
-                ]
-                no_thinking_keywords = [
-                    "summarize", "summary", "list", "what is", "status",
-                    "how many", "show me", "tell me about", "simple",
-                    "format", "extract", "paraphrase",
-                ]
-                text_lower = messages_text.lower()
-                has_thinking = any(kw in text_lower for kw in thinking_keywords)
-                has_no_thinking = any(kw in text_lower for kw in no_thinking_keywords)
+        # Thinking mode control — OFF by default, ON only when explicitly requested.
+        # This prevents reasoning tokens from eating output budget for simple tasks
+        # (structured output, JSON parsing, Vane search, etc).
+        #
+        # Per-model API:
+        #   llama.cpp (Qwen3.5, Gemma 4): chat_template_kwargs: {"enable_thinking": bool}
+        #   ZAI GLM-5.1:                   enable_thinking: bool  (top-level)
+        #
+        # Enable thinking by passing in the request body:
+        #   {"chat_template_kwargs": {"enable_thinking": true}, ...}   (for llama.cpp)
+        #   {"enable_thinking": true, ...}                              (for ZAI/GLM)
+        #   {"thinking": {"type": "enabled"}, ...}                      (OpenAI reasoning style)
+        try:
+            model_lower = route_decision.model.lower()
+            is_thinking_model = (
+                "qwen" in model_lower
+                or "gemma" in model_lower
+                or "glm" in model_lower
+            )
 
-                # Default: thinking ON for code/debug, OFF for simple tasks
-                enable_thinking = has_thinking and not has_no_thinking
+            if is_thinking_model:
+                # Check if caller explicitly wants thinking ON
+                explicit_thinking = False
 
-                # Respect explicit user setting
-                if "chat_template_kwargs" not in body:
-                    body["chat_template_kwargs"] = {}
-                if "enable_thinking" not in body["chat_template_kwargs"]:
-                    body["chat_template_kwargs"]["enable_thinking"] = enable_thinking
-                    logger.debug(
-                        f"Thinking control: enable_thinking={enable_thinking} "
-                        f"(model={route_decision.model})"
-                    )
-            except Exception as gemma_error:
-                logger.warning(f"Failed to apply thinking control: {gemma_error}")
+                # Check chat_template_kwargs.enable_thinking (llama.cpp standard)
+                ctk = body.get("chat_template_kwargs", {})
+                if isinstance(ctk, dict) and "enable_thinking" in ctk:
+                    explicit_thinking = bool(ctk["enable_thinking"])
 
-        # llama-server supports chat_template_kwargs when started with --jinja
-        # Keep it for thinking control (enable_thinking: true/false)
-        # Only strip if the backend is a legacy llama-server without --jinja support
+                # Check top-level enable_thinking (ZAI/Alibaba Cloud standard)
+                if "enable_thinking" in body:
+                    explicit_thinking = explicit_thinking or bool(body["enable_thinking"])
+
+                # Check OpenAI reasoning style: {"thinking": {"type": "enabled"}}
+                thinking_cfg = body.get("thinking")
+                if isinstance(thinking_cfg, dict):
+                    if thinking_cfg.get("type") == "enabled" or thinking_cfg.get("enable_thinking"):
+                        explicit_thinking = True
+                elif isinstance(thinking_cfg, bool):
+                    explicit_thinking = explicit_thinking or thinking_cfg
+
+                # Apply thinking OFF for llama.cpp backends (Qwen, Gemma)
+                if "qwen" in model_lower or "gemma" in model_lower:
+                    if "chat_template_kwargs" not in body:
+                        body["chat_template_kwargs"] = {}
+                    if "enable_thinking" not in body["chat_template_kwargs"]:
+                        body["chat_template_kwargs"]["enable_thinking"] = explicit_thinking
+
+                # Apply thinking OFF for ZAI GLM backends
+                # Only inject if not already set by caller
+                if "glm" in model_lower and "enable_thinking" not in body:
+                    body["enable_thinking"] = explicit_thinking
+
+                logger.info(
+                    f"Thinking control: enable_thinking={explicit_thinking} "
+                    f"(model={route_decision.model}, backend={route_decision.backend})"
+                )
+        except Exception as think_err:
+            logger.warning(f"Failed to apply thinking control: {think_err}")
 
         # Track request start for smart load balancing
         import uuid
@@ -4533,7 +4552,7 @@ async def try_backends_with_failover(
             )
 
             async with httpx.AsyncClient(timeout=timeout) as client:
-                # For ZAI, convert OpenAI-style endpoints to ZAI format
+                # For ZAI, convert OpenAI-style endpoints and clean request body
                 if backend_api_type == "zai":
                     # ZAI uses /chat/completions instead of /v1/chat/completions
                     zai_endpoint = (
@@ -4542,6 +4561,14 @@ async def try_backends_with_failover(
                         else endpoint
                     )
                     url = f"{backend_url}{zai_endpoint}"
+
+                    # ZAI doesn't understand chat_template_kwargs — strip it
+                    # and ensure enable_thinking is set as top-level param
+                    if isinstance(content, dict):
+                        content.pop("chat_template_kwargs", None)
+                        # If enable_thinking not already set, default to false
+                        if "enable_thinking" not in content:
+                            content["enable_thinking"] = False
                 else:
                     url = f"{backend_url}{endpoint}"
 
