@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-inference-gateway"
-version = "2.0.0"
+version = "2.0.1"
 description = "OpenAI-compatible API gateway with intelligent routing, circuit breaker failover, security proxy, RAG, and MCP brokerage"
 readme = "README.md"
 license = "MIT"
