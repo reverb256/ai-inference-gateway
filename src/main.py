@@ -1336,7 +1336,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
     # Add chat completions endpoint
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request):
-        logger.info(">>> chat_completions HANDLER INVOKED")
+        print(">>> chat_completions HANDLER INVOKED", flush=True)
         """
         Chat completions endpoint with middleware processing and intelligent routing.
 
@@ -4730,7 +4730,7 @@ async def handle_non_streaming_request(
     import time
 
     start_time = time.time()
-    logger.info(f">>> handle_non_streaming_request ENTERED, model={body.get('model')}")
+    print(f">>> handle_non_streaming_request ENTERED, model={body.get('model')}", flush=True)
 
     try:
         # Extract parameters from request body
@@ -4766,8 +4766,8 @@ async def handle_non_streaming_request(
             if content:
                 choice["message"]["content"] = strip_markdown_json_fences(content)
                 # TEMP: Debug log content for Vane source extraction diagnosis
-                logger.info(f"GATEWAY RESPONSE content preview: {repr(choice['message']['content'][:200])}")
-                logger.info(f"GATEWAY RESPONSE reasoning: {'YES' if choice['message'].get('reasoning_content') else 'none'}")
+                print(f"GATEWAY RESPONSE content preview: {repr(choice['message']['content'][:200])}", flush=True)
+                print(f"GATEWAY RESPONSE reasoning: {'YES' if choice['message'].get('reasoning_content') else 'none'}", flush=True)
 
         # Calculate actual processing time
         processing_time_ms = (time.time() - start_time) * 1000
