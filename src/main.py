@@ -4729,6 +4729,7 @@ async def handle_non_streaming_request(
     import time
 
     start_time = time.time()
+    logger.info(f">>> handle_non_streaming_request ENTERED, model={body.get('model')}")
 
     try:
         # Extract parameters from request body
