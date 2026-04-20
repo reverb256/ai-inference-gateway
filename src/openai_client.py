@@ -42,7 +42,7 @@ class OpenAIClientWrapper:
         primary_api_key: Optional[str],
         fallback_url: Optional[str] = None,
         fallback_api_key: Optional[str] = None,
-        timeout: float = 60.0,
+        timeout: float = 120.0,
         zai_models: Optional[list[str]] = None,
     ):
         """
