@@ -1319,6 +1319,16 @@ def create_default_router() -> Router:
             backend="zai",
         ),
         ModelInfo(
+            id="glm-5.1",
+            name="GLM-5.1",
+            context_length=200000,
+            priority=10,  # Highest priority — primary ZAI model
+            specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL, TaskSpecialization.CODING],
+            cost_tier=4,
+            estimated_tokens_per_second=40.0,
+            backend="zai",
+        ),
+        ModelInfo(
             id="glm-4.7",
             name="GLM-4.7",
             context_length=200000,

@@ -145,7 +145,6 @@ class OpenAIClientWrapper:
         # If backend is specified, use it directly
         if backend == "zai" and self.fallback_client:
             logger.info(f"Using ZAI backend directly for model: {model}")
-            logger.debug(f"ZAI kwargs keys: {list(kwargs.keys())}, extra_body: {kwargs.get('extra_body', {})}")
             try:
                 response = await self.fallback_client.chat.completions.create(
                     messages=messages,
