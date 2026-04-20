@@ -152,6 +152,18 @@ class OpenAIClientWrapper:
                     stream=stream,
                     **kwargs,
                 )
+                # Strip markdown fences from non-streaming ZAI responses
+                # Models like GLM wrap JSON in ```json fences, breaking consumers (Vane)
+                if not stream and hasattr(response, 'choices'):
+                    from ai_inference_gateway.utils import strip_markdown_json_fences
+                    for choice in response.choices:
+                        if choice.message and choice.message.content:
+                            raw = choice.message.content
+                            stripped = strip_markdown_json_fences(raw)
+                            logger.info(f"ZAI response content preview: {repr(raw[:200])}")
+                            if stripped != raw:
+                                logger.info(f"ZAI fence strip: removed markdown fences")
+                                choice.message.content = stripped
                 logger.info(f"ZAI backend succeeded with model: {model}")
                 return response
             except Exception as e:
