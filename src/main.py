@@ -1499,19 +1499,15 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 or "gemma" in model_lower
                 or "glm" in model_lower
             )
-            logger.warning(f"[THINK-DBG] model={route_decision.model}, is_thinking_model={is_thinking_model}")
 
             if is_thinking_model:
                 # Check if caller explicitly wants thinking ON
                 explicit_thinking = False
-                logger.warning(f"[THINK-DBG] entered is_thinking_model block, body keys={list(body.keys())}")
 
                 # Check chat_template_kwargs.enable_thinking (llama.cpp standard)
                 ctk = body.get("chat_template_kwargs", {})
-                logger.warning(f"[THINK-DBG] ctk={ctk}, type={type(ctk)}")
                 if isinstance(ctk, dict) and "enable_thinking" in ctk:
                     explicit_thinking = bool(ctk["enable_thinking"])
-                    logger.warning(f"[THINK-DBG] ctk.enable_thinking={explicit_thinking}")
 
                 # Check top-level enable_thinking (ZAI/Alibaba Cloud standard)
                 if "enable_thinking" in body:
