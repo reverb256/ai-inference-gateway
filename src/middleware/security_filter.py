@@ -225,9 +225,10 @@ class SecurityFilterMiddleware(Middleware):
             )
             return False, error
 
+        messages = request_body.get("messages", [])
+
         # Check for prompt injection in messages (skip for trusted internal sources)
         if not (context and self._is_trusted_source(context)):
-            messages = request_body.get("messages", [])
             for message in messages:
                 content = message.get("content", "")
                 if isinstance(content, str) and self._detect_injection(content):
