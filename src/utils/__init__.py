@@ -57,3 +57,23 @@ try:
     __all__.append("MetricsHelper")
 except ImportError:
     pass
+
+def strip_markdown_json_fences(text: str) -> str:
+    """Strip markdown code fences from LLM responses that should be raw JSON.
+    
+    Many models (Qwen, GLM, Gemma) wrap JSON in ```json ... ``` fences.
+    This strips those fences so tools like Vane/Perplexica can parse the response.
+    """
+    if not text or not isinstance(text, str):
+        return text
+    
+    import re
+    stripped = text.strip()
+    
+    # Match ```json ... ``` or ``` ... ``` wrapping
+    pattern = r'^```(?:json|JSON)?\s*\n?(.*?)\n?\s*```$'
+    match = re.match(pattern, stripped, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    
+    return text

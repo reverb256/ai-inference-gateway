@@ -4677,6 +4677,13 @@ async def handle_non_streaming_request(
 
         # Convert OpenAI response object to dict for JSON serialization
         response_data = response.model_dump()
+        # Sanitize markdown fences from JSON-structured responses
+        if body.get("response_format") or "response_format" in body:
+            from ai_inference_gateway.utils import strip_markdown_json_fences
+            for choice in response_data.get("choices", []):
+                content = choice.get("message", {}).get("content")
+                if content:
+                    choice["message"]["content"] = strip_markdown_json_fences(content)
 
         # Calculate actual processing time
         processing_time_ms = (time.time() - start_time) * 1000

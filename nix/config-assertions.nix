@@ -57,7 +57,7 @@ in
         '';
       }
       {
-        assertion = cfg.rag.enable -> cfg.rag.qdrant.enable;
+        assertion = cfg.rag.enable -> (cfg.rag.qdrant.enable || cfg.rag.qdrantUrl != "");
         message = ''
           RAG is enabled but Qdrant vector database is not enabled.
 
