@@ -4192,7 +4192,7 @@ async def stream_backend_response(
                     output_tokens = max(output_tokens, chunk.usage.completion_tokens)
 
             # Format as SSE
-            chunk_str = chunk.model_dump_json()
+            chunk_str = chunk.model_dump_json(exclude_none=True)
             yield f"data: {chunk_str}\n\n"
 
         # Record success metrics (streaming complete)
@@ -4341,7 +4341,7 @@ async def stream_backend_response_with_tools(
                             tool_calls_chunk = chunk
 
                 # Stream chunk to client immediately for low latency
-                chunk_str = chunk.model_dump_json()
+                chunk_str = chunk.model_dump_json(exclude_none=True)
                 yield f"data: {chunk_str}\n\n"
 
             # After streaming completes, check if we need to execute tools
