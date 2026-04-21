@@ -384,6 +384,7 @@ class Router:
         self._backend_health: Dict[str, bool] = {
             "llama-cpp": True,
             "zai": True,
+            "nvidia": True,
         }
         self._backend_health_check_time: Dict[str, float] = {}
         self._health_check_ttl: float = 10.0  # Check health every 10 seconds
@@ -556,6 +557,10 @@ class Router:
 
         # ZAI is assumed healthy (cloud service with own failover)
         if backend == "zai":
+            return True
+
+        # NVIDIA NIM is assumed healthy (cloud service)
+        if backend == "nvidia":
             return True
 
         # Determine port for this backend
@@ -1371,6 +1376,23 @@ def create_default_router() -> Router:
             cost_tier=1,
             estimated_tokens_per_second=80.0,
             backend="zai",
+        ),
+        # ========================================================================
+        # NVIDIA NIM models - Cloud-hosted via NVIDIA NIM API
+        # ========================================================================
+        ModelInfo(
+            id="nvidia/llama-3.3-nemotron-super-49b-v1",
+            name="Nemotron-Super-49B (NIM)",
+            context_length=32768,
+            priority=15,  # High priority for JSON/extraction tasks
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=60.0,
+            backend="nvidia",
         ),
     ]
 

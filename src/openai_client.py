@@ -5,6 +5,7 @@ This module provides OpenAI client instances configured for different backends:
 - llama.cpp (local OpenAI-compatible server)
 - ZAI (cloud OpenAI-compatible API)
 - Pollinations (free OpenAI-compatible API)
+- nvidia: NVIDIA NIM API for cloud-hosted models
 
 The OpenAI SDK handles:
 - Automatic header management (User-Agent, etc.)
@@ -44,6 +45,8 @@ class OpenAIClientWrapper:
         fallback_api_key: Optional[str] = None,
         timeout: float = 120.0,
         zai_models: Optional[list[str]] = None,
+        nvidia_url: Optional[str] = None,
+        nvidia_api_key: Optional[str] = None,
     ):
         """
         Initialize OpenAI client wrapper.
@@ -55,6 +58,8 @@ class OpenAIClientWrapper:
             fallback_api_key: API key for fallback backend
             timeout: Request timeout in seconds
             zai_models: List of ZAI models to try (in order)
+            nvidia_url: NVIDIA NIM API base URL
+            nvidia_api_key: NVIDIA NIM API key
         """
         self.primary_url = primary_url.rstrip("/")
         # For local servers (llama.cpp), use placeholder if no key provided
@@ -87,6 +92,17 @@ class OpenAIClientWrapper:
             )
             logger.info(f"Initialized ZAI fallback client: {self.fallback_url}")
             logger.info(f"ZAI model fallback order: {self.zai_models}")
+
+        # Initialize NVIDIA NIM client if configured
+        self.nvidia_client: Optional[AsyncOpenAI] = None
+        self.nvidia_url = nvidia_url
+        if nvidia_url and nvidia_api_key:
+            self.nvidia_client = AsyncOpenAI(
+                base_url=nvidia_url,
+                api_key=nvidia_api_key,
+                timeout=timeout,
+            )
+            logger.info(f"Initialized NVIDIA NIM client: {nvidia_url}")
 
     async def chat_completion(
         self,
@@ -181,6 +197,30 @@ class OpenAIClientWrapper:
             except Exception as e:
                 logger.error(f"llama.cpp backend failed: {str(e)}")
                 raise OpenAIBackendError(f"llama.cpp backend error: {str(e)}")
+        elif backend == "nvidia" and self.nvidia_client:
+            logger.info(f"Using NVIDIA NIM backend directly for model: {model}")
+            try:
+                response = await self.nvidia_client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **kwargs,
+                )
+                # Strip markdown fences from non-streaming NIM responses
+                if not stream and hasattr(response, 'choices'):
+                    from ai_inference_gateway.utils import strip_markdown_json_fences
+                    for choice in response.choices:
+                        if choice.message and choice.message.content:
+                            raw = choice.message.content
+                            stripped = strip_markdown_json_fences(raw)
+                            if stripped != raw:
+                                logger.info(f"NVIDIA fence strip: removed markdown fences from response")
+                                choice.message.content = stripped
+                logger.info(f"NVIDIA NIM backend succeeded with model: {model}")
+                return response
+            except Exception as e:
+                logger.error(f"NVIDIA NIM backend failed: {str(e)}")
+                raise OpenAIBackendError(f"NVIDIA NIM backend error: {str(e)}")
         elif backend == "pollinations":
             logger.info(f"Using Pollinations backend directly for model: {model}")
             try:
@@ -384,6 +424,8 @@ class OpenAIClientWrapper:
         await self.primary_client.close()
         if self.fallback_client:
             await self.fallback_client.close()
+        if self.nvidia_client:
+            await self.nvidia_client.close()
 
 
 def create_openai_client(config) -> OpenAIClientWrapper:
@@ -412,9 +454,15 @@ def create_openai_client(config) -> OpenAIClientWrapper:
         fallback_url = fallback_urls[0]
         fallback_api_key = config.get_zai_api_key()
 
+    # Get NVIDIA NIM credentials
+    nvidia_api_key = config.get_nvidia_nim_api_key()
+    nvidia_url = config.nvidia_nim_base_url if nvidia_api_key else None
+
     return OpenAIClientWrapper(
         primary_url=config.backend_url,
         primary_api_key=primary_api_key,
         fallback_url=fallback_url,
         fallback_api_key=fallback_api_key,
+        nvidia_url=nvidia_url,
+        nvidia_api_key=nvidia_api_key,
     )
