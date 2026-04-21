@@ -1264,6 +1264,22 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 # Add vision models to the response
                 if "data" in models_dict:
                     models_dict["data"].extend(vision_models)
+            # Add router-registered models (NIM, local, etc.) that aren't
+            # already in the upstream models list
+            router_model_ids = set()
+            if "data" in models_dict:
+                router_model_ids = {m["id"] for m in models_dict["data"]}
+            for model_id, model_info in state.router.models.items():
+                if model_id not in router_model_ids:
+                    models_dict.setdefault("data", []).append({
+                        "id": model_id,
+                        "object": "model",
+                        "created": int(datetime.now().timestamp()),
+                        "owned_by": model_info.backend,
+                        "permission": [],
+                        "root": model_id,
+                        "parent": None,
+                    })
 
             return JSONResponse(content=models_dict)
 
