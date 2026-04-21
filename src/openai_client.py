@@ -111,7 +111,6 @@ class OpenAIClientWrapper:
         Raises:
             OpenAIBackendError: If all backends fail
         """
-        logger.info(f"chat_completion called: model={model}, backend={backend}, stream={stream}")
         # Remove 'stream' from kwargs to avoid duplicate parameter error
         kwargs.pop("stream", None)
 
@@ -160,9 +159,8 @@ class OpenAIClientWrapper:
                         if choice.message and choice.message.content:
                             raw = choice.message.content
                             stripped = strip_markdown_json_fences(raw)
-                            logger.info(f"ZAI response content preview: {repr(raw[:200])}")
                             if stripped != raw:
-                                logger.info(f"ZAI fence strip: removed markdown fences")
+                                logger.info(f"ZAI fence strip: removed markdown fences from response")
                                 choice.message.content = stripped
                 logger.info(f"ZAI backend succeeded with model: {model}")
                 return response
