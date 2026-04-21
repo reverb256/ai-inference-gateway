@@ -1394,6 +1394,23 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=60.0,
             backend="nvidia",
         ),
+        # ========================================================================
+        # Local llama-cpp models - served by zephyr 3060Ti
+        # ========================================================================
+        ModelInfo(
+            id="supergemma4-Q5_K_M.gguf",
+            name="Supergemma4 E4B (Local 3060Ti)",
+            context_length=32768,
+            priority=20,  # Highest priority for local-first routing
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=0,  # Free (local)
+            estimated_tokens_per_second=80.0,
+            backend="llama-cpp",
+        ),
     ]
 
     return Router(models=models)
