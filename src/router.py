@@ -1380,11 +1380,12 @@ def create_default_router() -> Router:
         # ========================================================================
         # NVIDIA NIM models - Cloud-hosted via NVIDIA NIM API
         # ========================================================================
+        # Existing entry
         ModelInfo(
             id="nvidia/llama-3.3-nemotron-super-49b-v1",
             name="Nemotron-Super-49B (NIM)",
             context_length=32768,
-            priority=15,  # High priority for JSON/extraction tasks
+            priority=15,
             specializations=[
                 TaskSpecialization.CODING,
                 TaskSpecialization.AGENTIC,
@@ -1392,6 +1393,107 @@ def create_default_router() -> Router:
             ],
             cost_tier=2,
             estimated_tokens_per_second=60.0,
+            backend="nvidia",
+        ),
+        # Qwen3 Coder 480B - Largest coding model on NIM
+        ModelInfo(
+            id="qwen/qwen3-coder-480b-a35b-instruct",
+            name="Qwen3 Coder 480B (NIM)",
+            context_length=131072,
+            priority=14,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=50.0,
+            backend="nvidia",
+        ),
+        # DeepSeek V3.2 - General purpose reasoning
+        ModelInfo(
+            id="deepseek-ai/deepseek-v3.2",
+            name="DeepSeek V3.2 (NIM)",
+            context_length=131072,
+            priority=13,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="nvidia",
+        ),
+        # Kimi K2.5 - Moonshot reasoning model
+        ModelInfo(
+            id="moonshotai/kimi-k2.5",
+            name="Kimi K2.5 (NIM)",
+            context_length=131072,
+            priority=12,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="nvidia",
+        ),
+        # Llama 3.1 405B - Meta's flagship
+        ModelInfo(
+            id="meta/llama-3.1-405b-instruct",
+            name="Llama 3.1 405B (NIM)",
+            context_length=131072,
+            priority=12,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=50.0,
+            backend="nvidia",
+        ),
+        # Nemotron Ultra 253B - NVIDIA's largest
+        ModelInfo(
+            id="nvidia/llama-3.1-nemotron-ultra-253b-v1",
+            name="Nemotron Ultra 253B (NIM)",
+            context_length=32768,
+            priority=14,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=45.0,
+            backend="nvidia",
+        ),
+        # GLM 5.1 on NIM - Same as ZAI but via NVIDIA
+        ModelInfo(
+            id="z-ai/glm-5.1",
+            name="GLM-5.1 (NIM)",
+            context_length=131072,
+            priority=11,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="nvidia",
+        ),
+        # Gemma 4 31B - Google's latest
+        ModelInfo(
+            id="google/gemma-4-31b-it",
+            name="Gemma 4 31B (NIM)",
+            context_length=131072,
+            priority=11,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.FAST,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=70.0,
             backend="nvidia",
         ),
         # ========================================================================
