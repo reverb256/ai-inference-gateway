@@ -157,6 +157,16 @@ class OpenAIClientWrapper:
         for param in unsupported_params:
             kwargs.pop(param, None)
 
+        # Strip 'think' from extra_body — Hermes sends think=false
+        # when reasoning_effort=none, but NVIDIA NIM rejects it (HTTP 400)
+        extra_body = kwargs.get("extra_body", {})
+        if isinstance(extra_body, dict):
+            extra_body.pop("think", None)
+            if extra_body:
+                kwargs["extra_body"] = extra_body
+            else:
+                kwargs.pop("extra_body", None)
+
         # If backend is specified, use it directly
         if backend == "zai" and self.fallback_client:
             logger.info(f"Using ZAI backend directly for model: {model}")
