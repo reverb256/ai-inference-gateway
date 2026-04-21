@@ -185,6 +185,8 @@ in
         GATEWAY_PORT = toString cfg.gateway.port;
         LOCAL_BACKEND_URL = cfg.backend.local.url;
         LOCAL_BACKEND_MODEL = cfg.backend.local.model;
+        SECONDARY_BACKEND_URL = cfg.backend.secondary.url;
+        SECONDARY_BACKEND_MODEL = cfg.backend.secondary.model;
         # RAG service
         RAG_ENABLED = if cfg.rag.enable then "true" else "false";
         QDRANT_URL = cfg.rag.qdrantUrl;

@@ -47,6 +47,10 @@ class OpenAIClientWrapper:
         zai_models: Optional[list[str]] = None,
         nvidia_url: Optional[str] = None,
         nvidia_api_key: Optional[str] = None,
+        local_backend_url: Optional[str] = None,
+        local_backend_model: Optional[str] = None,
+        secondary_backend_url: Optional[str] = None,
+        secondary_backend_model: Optional[str] = None,
     ):
         """
         Initialize OpenAI client wrapper.
@@ -60,6 +64,10 @@ class OpenAIClientWrapper:
             zai_models: List of ZAI models to try (in order)
             nvidia_url: NVIDIA NIM API base URL
             nvidia_api_key: NVIDIA NIM API key
+            local_backend_url: Local backend URL (e.g., sentry ROCm)
+            local_backend_model: Model name on local backend
+            secondary_backend_url: Secondary backend URL (e.g., 3060Ti)
+            secondary_backend_model: Model name on secondary backend
         """
         self.primary_url = primary_url.rstrip("/")
         # For local servers (llama.cpp), use placeholder if no key provided
@@ -103,6 +111,44 @@ class OpenAIClientWrapper:
                 timeout=timeout,
             )
             logger.info(f"Initialized NVIDIA NIM client: {nvidia_url}")
+
+        # Initialize local backend client (e.g., sentry ROCm) if configured
+        self.local_client: Optional[AsyncOpenAI] = None
+        if local_backend_url and local_backend_url.strip():
+            local_url = local_backend_url.rstrip("/")
+            self.local_client = AsyncOpenAI(
+                base_url=f"{local_url}/v1",
+                api_key="not-needed",
+                timeout=timeout,
+            )
+            logger.info(f"Initialized local backend client: {local_url}")
+
+        # Initialize secondary backend client (e.g., 3060Ti) if configured
+        self.secondary_client: Optional[AsyncOpenAI] = None
+        if secondary_backend_url and secondary_backend_url.strip():
+            sec_url = secondary_backend_url.rstrip("/")
+            self.secondary_client = AsyncOpenAI(
+                base_url=f"{sec_url}/v1",
+                api_key="not-needed",
+                timeout=timeout,
+            )
+            logger.info(f"Initialized secondary backend client: {sec_url}")
+
+        # Build model -> client mapping for llama-cpp routing
+        # Maps lowercase model name substrings to the appropriate client
+        self.local_model_map: Dict[str, AsyncOpenAI] = {}
+        if self.secondary_client:
+            # Secondary backend (3060Ti) hosts SuperGemma
+            self.local_model_map["supergemma"] = self.secondary_client
+            if secondary_backend_model and secondary_backend_model.strip():
+                self.local_model_map[secondary_backend_model.lower()] = self.secondary_client
+        if self.local_client:
+            # Local backend (sentry ROCm) hosts Qwen3.5-4B
+            self.local_model_map["qwen3.5-4b"] = self.local_client
+            if local_backend_model and local_backend_model.strip():
+                self.local_model_map[local_backend_model.lower()] = self.local_client
+        if self.local_model_map:
+            logger.info(f"Local model routing map: {list(self.local_model_map.keys())} -> clients")
 
     async def chat_completion(
         self,
@@ -196,13 +242,15 @@ class OpenAIClientWrapper:
         elif backend == "llama-cpp":
             logger.info(f"Using llama.cpp backend directly for model: {model}")
             try:
-                response = await self.primary_client.chat.completions.create(
+                # Model-aware local routing: pick the right client based on model name
+                client = self._resolve_local_client(model)
+                response = await client.chat.completions.create(
                     messages=messages,
                     model=model,
                     stream=stream,
                     **kwargs,
                 )
-                logger.info(f"llama.cpp backend succeeded with model: {model}")
+                logger.info(f"llama.cpp backend succeeded with model: {model} via {client.base_url}")
                 return response
             except Exception as e:
                 logger.error(f"llama.cpp backend failed: {str(e)}")
@@ -429,6 +477,27 @@ class OpenAIClientWrapper:
         # Check retryable (these should try next model)
         return any(err in error_lower for err in retryable_errors)
 
+    def _resolve_local_client(self, model: str) -> AsyncOpenAI:
+        """
+        Resolve the correct local backend client based on model name.
+
+        Checks the local_model_map for substring matches against the model name.
+        Falls back to primary_client if no match found.
+
+        Args:
+            model: Model name from the request
+
+        Returns:
+            AsyncOpenAI client to use for this model
+        """
+        model_lower = model.lower()
+        for pattern, client in self.local_model_map.items():
+            if pattern in model_lower:
+                logger.info(f"Model '{model}' matched pattern '{pattern}' -> routed to {client.base_url}")
+                return client
+        # Default: use primary client (3090)
+        return self.primary_client
+
     async def close(self):
         """Close all client connections."""
         await self.primary_client.close()
@@ -436,6 +505,10 @@ class OpenAIClientWrapper:
             await self.fallback_client.close()
         if self.nvidia_client:
             await self.nvidia_client.close()
+        if self.local_client:
+            await self.local_client.close()
+        if self.secondary_client:
+            await self.secondary_client.close()
 
 
 def create_openai_client(config) -> OpenAIClientWrapper:
@@ -475,4 +548,8 @@ def create_openai_client(config) -> OpenAIClientWrapper:
         fallback_api_key=fallback_api_key,
         nvidia_url=nvidia_url,
         nvidia_api_key=nvidia_api_key,
+        local_backend_url=config.local_backend_url,
+        local_backend_model=config.local_backend_model,
+        secondary_backend_url=config.secondary_backend_url,
+        secondary_backend_model=config.secondary_backend_model,
     )

@@ -200,12 +200,25 @@ in
         url = mkOption {
           type = types.str;
           default = "http://127.0.0.1:1235";
-          description = "Local llama-cpp server URL";
+          description = "Local llama-cpp server URL (sentry)";
         };
         model = mkOption {
           type = types.str;
           default = "gemma-4-e2b-it";
           description = "Default model on local llama-cpp server";
+        };
+      };
+
+      secondary = {
+        url = mkOption {
+          type = types.str;
+          default = "";
+          description = "Secondary local llama-cpp server URL (e.g., 3060Ti)";
+        };
+        model = mkOption {
+          type = types.str;
+          default = "";
+          description = "Model name on secondary backend";
         };
       };
 

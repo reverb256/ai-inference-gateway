@@ -1133,202 +1133,71 @@ def create_default_router() -> Router:
     """Create router with default model configuration."""
     models = [
         # ========================================================================
-        # Local llama.cpp models - Primary backends
+        # Local llama.cpp models - routed by model name to correct GPU
         # ========================================================================
-        # Gemma 4 E2B - Always-on fallback on 3060 Ti (port 1235)
+        # Qwen3.6 35B A3B Abliterated - Primary (3090, zephyr:1237)
         ModelInfo(
-            id="gemma-4-e2b-it",
-            name="Gemma 4 E2B Instruct",
-            context_length=65536,  # 65K with Q4_0 KV
-            priority=11,  # Highest priority — always available
-            specializations=[
-                TaskSpecialization.FAST,
-                TaskSpecialization.GENERAL,
-            ],
-            cost_tier=0,  # Free, local
-            estimated_tokens_per_second=60.0,
-            backend="llama-cpp",
-        ),
-        # Qwen 3.5 35B A3B - Largest local model, best for complex tasks
-        ModelInfo(
-            id="qwen3.5-35b-a3b",
-            name="Qwen 3.5 35B A3B",
+            id="qwen3.6-35b",
+            name="Qwen 3.6 35B A3B Abliterated",
             context_length=262144,  # 256K
-            priority=10,  # Highest priority local model
+            priority=12,  # Highest priority local model
             specializations=[
                 TaskSpecialization.LARGE_CONTEXT,
                 TaskSpecialization.AGENTIC,
                 TaskSpecialization.GENERAL,
-                TaskSpecialization.VISION,  # All Qwen 3.5 support vision
             ],
             cost_tier=3,
             estimated_tokens_per_second=35.0,
             backend="llama-cpp",
         ),
-        # Qwen 3.5 27B - Large context, general purpose
+        # SuperGemma4 Q5_K_M - Secondary (3060Ti, zephyr:1236)
         ModelInfo(
-            id="qwen3.5-27b",
-            name="Qwen 3.5 27B",
-            context_length=262144,  # 256K
-            priority=9,
-            specializations=[
-                TaskSpecialization.GENERAL,
-                TaskSpecialization.LARGE_CONTEXT,
-                TaskSpecialization.VISION,  # All Qwen 3.5 support vision
-            ],
-            cost_tier=2,
-            estimated_tokens_per_second=45.0,
-            backend="llama-cpp",
-        ),
-        # CROW 9B Opus 4.6 Distill - Claude Opus distilled for reasoning
-        ModelInfo(
-            id="crow-9b-opus-4.6-distill-heretic_qwen3.5-i1",
-            name="CROW 9B Opus 4.6 Distill Heretic",
-            context_length=32768,  # 32K
-            priority=8,
-            specializations=[
-                TaskSpecialization.CODING,
-                TaskSpecialization.AGENTIC,
-                TaskSpecialization.GENERAL,
-            ],
-            cost_tier=2,
-            estimated_tokens_per_second=55.0,
-            backend="llama-cpp",
-        ),
-        # Qwen 3.5 9B Claude 4.6 Opus Reasoning Distilled
-        ModelInfo(
-            id="qwen3.5-9b-claude-4.6-opus-reasoning-distilled",
-            name="Qwen 3.5 9B Claude Opus Reasoning",
-            context_length=32768,  # 32K
-            priority=8,
-            specializations=[
-                TaskSpecialization.CODING,
-                TaskSpecialization.AGENTIC,
-                TaskSpecialization.GENERAL,
-                TaskSpecialization.VISION,  # All Qwen 3.5 support vision
-            ],
-            cost_tier=2,
-            estimated_tokens_per_second=58.0,
-            backend="llama-cpp",
-        ),
-        # Qwen 3.5 9B - Standard base model
-        ModelInfo(
-            id="qwen3.5-9b",
-            name="Qwen 3.5 9B",
-            context_length=262144,  # 256K
-            priority=7,
-            specializations=[
-                TaskSpecialization.GENERAL,
-                TaskSpecialization.FAST,
-                TaskSpecialization.VISION,  # All Qwen 3.5 support vision
-            ],
-            cost_tier=1,
-            estimated_tokens_per_second=65.0,
-            backend="llama-cpp",
-        ),
-        # Qwen 3.5 4B Claude 4.6 Opus Distilled (q8_0 - higher quality)
-        ModelInfo(
-            id="qwen3.5-4b-claude-4.6-opus-distilled-32k@q8_0",
-            name="Qwen 3.5 4B Claude Opus Distilled (q8)",
-            context_length=32768,  # 32K
-            priority=7,
-            specializations=[
-                TaskSpecialization.CODING,
-                TaskSpecialization.GENERAL,
-                TaskSpecialization.VISION,  # All Qwen 3.5 support vision
-            ],
-            cost_tier=1,
-            estimated_tokens_per_second=70.0,
-            backend="llama-cpp",
-        ),
-        # CROW 4B Opus 4.6 Distill - Small but capable
-        ModelInfo(
-            id="crow-4b-opus-4.6-distill-heretic_qwen3.5-i1",
-            name="CROW 4B Opus 4.6 Distill Heretic",
-            context_length=32768,  # 32K
-            priority=6,
-            specializations=[
-                TaskSpecialization.FAST,
-                TaskSpecialization.CODING,
-            ],
-            cost_tier=1,
-            estimated_tokens_per_second=75.0,
-            backend="llama-cpp",
-        ),
-        # Qwen 3.5 4B - Fast general purpose
-        ModelInfo(
-            id="qwen3.5-4b",
-            name="Qwen 3.5 4B",
-            context_length=32768,  # 32K
-            priority=6,
+            id="supergemma4-Q5_K_M.gguf",
+            name="Supergemma4 E4B (Local 3060Ti)",
+            context_length=32768,
+            priority=11,  # High priority for local-fast routing
             specializations=[
                 TaskSpecialization.FAST,
                 TaskSpecialization.GENERAL,
-                TaskSpecialization.VISION,  # All Qwen 3.5 support vision
+                TaskSpecialization.CODING,
             ],
-            cost_tier=1,
+            cost_tier=0,  # Free (local)
             estimated_tokens_per_second=80.0,
             backend="llama-cpp",
         ),
-        # Qwen 3.5 2B - Very fast
+        # Qwen 3.5 4B - Local ROCm (sentry:1235)
         ModelInfo(
-            id="qwen3.5-2b-claude-4.6-opus-reasoning-distilled",
-            name="Qwen 3.5 2B Claude Reasoning",
+            id="qwen3.5-4b",
+            name="Qwen 3.5 4B (Local ROCm)",
             context_length=32768,  # 32K
-            priority=5,
-            specializations=[TaskSpecialization.FAST, TaskSpecialization.VISION],  # All Qwen 3.5 support vision
-            cost_tier=1,
-            estimated_tokens_per_second=90.0,
+            priority=10,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,  # Free (local)
+            estimated_tokens_per_second=80.0,
             backend="llama-cpp",
         ),
+        # ========================================================================
+        # ZAI models - Cloud fallback
+        # ========================================================================
         ModelInfo(
-            id="qwen3.5-2b",
-            name="Qwen 3.5 2B",
-            context_length=32768,  # 32K
-            priority=5,
-            specializations=[TaskSpecialization.FAST, TaskSpecialization.VISION],  # All Qwen 3.5 support vision
-            cost_tier=1,
-            estimated_tokens_per_second=95.0,
-            backend="llama-cpp",
-        ),
-        # Qwen 3.5 0.8B - Tiny, fastest
-        ModelInfo(
-            id="qwen3.5-0.8b-claude-4.6-opus-reasoning-distilled",
-            name="Qwen 3.5 0.8B Claude Reasoning",
-            context_length=32768,  # 32K
-            priority=4,
-            specializations=[TaskSpecialization.FAST, TaskSpecialization.VISION],  # All Qwen 3.5 support vision
-            cost_tier=1,
-            estimated_tokens_per_second=100.0,
-            backend="llama-cpp",
-        ),
-        ModelInfo(
-            id="qwen3.5-0.8b",
-            name="Qwen 3.5 0.8B",
-            context_length=32768,  # 32K
-            priority=4,
-            specializations=[TaskSpecialization.FAST, TaskSpecialization.VISION],  # All Qwen 3.5 support vision
-            cost_tier=1,
-            estimated_tokens_per_second=110.0,
-            backend="llama-cpp",
-        ),
-        # ZAI models - Fallback priority order: glm-5 → glm-4.7 → glm-4.5-air
-        ModelInfo(
-            id="glm-5",
-            name="GLM-5",
+            id="glm-5.1",
+            name="GLM-5.1",
             context_length=200000,
-            priority=9,  # Highest ZAI priority (Opus tier fallback)
-            specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL],
+            priority=7,  # Highest priority ZAI model
+            specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL, TaskSpecialization.CODING],
             cost_tier=4,
             estimated_tokens_per_second=40.0,
             backend="zai",
         ),
         ModelInfo(
-            id="glm-5.1",
-            name="GLM-5.1",
+            id="glm-5",
+            name="GLM-5",
             context_length=200000,
-            priority=10,  # Highest priority — primary ZAI model
-            specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL, TaskSpecialization.CODING],
+            priority=6,
+            specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL],
             cost_tier=4,
             estimated_tokens_per_second=40.0,
             backend="zai",
@@ -1337,27 +1206,17 @@ def create_default_router() -> Router:
             id="glm-4.7",
             name="GLM-4.7",
             context_length=200000,
-            priority=8,  # Second ZAI priority (Sonnet tier fallback)
+            priority=5,
             specializations=[TaskSpecialization.CODING, TaskSpecialization.GENERAL],
             cost_tier=3,
             estimated_tokens_per_second=50.0,
             backend="zai",
         ),
         ModelInfo(
-            id="glm-4.5-air",
-            name="GLM-4.5 Air",
-            context_length=132000,
-            priority=7,  # Third ZAI priority (Haiku tier fallback)
-            specializations=[TaskSpecialization.FAST],
-            cost_tier=1,
-            estimated_tokens_per_second=80.0,
-            backend="zai",
-        ),
-        ModelInfo(
             id="glm-4.6v",
             name="GLM-4.6v",
             context_length=200000,
-            priority=6,  # Lower priority (vision specialist)
+            priority=5,
             specializations=[
                 TaskSpecialization.CODING,
                 TaskSpecialization.FAST,
@@ -1368,24 +1227,33 @@ def create_default_router() -> Router:
             backend="zai",
         ),
         ModelInfo(
+            id="glm-4.5-air",
+            name="GLM-4.5 Air",
+            context_length=132000,
+            priority=5,
+            specializations=[TaskSpecialization.FAST],
+            cost_tier=1,
+            estimated_tokens_per_second=80.0,
+            backend="zai",
+        ),
+        ModelInfo(
             id="glm-4-flash",
             name="GLM-4 Flash",
             context_length=128000,
-            priority=5,  # Lowest ZAI priority
+            priority=5,
             specializations=[TaskSpecialization.FAST],
             cost_tier=1,
             estimated_tokens_per_second=80.0,
             backend="zai",
         ),
         # ========================================================================
-        # NVIDIA NIM models - Cloud-hosted via NVIDIA NIM API
+        # NVIDIA NIM models - Cloud-hosted via NVIDIA NIM API (priority 8)
         # ========================================================================
-        # Existing entry
         ModelInfo(
             id="nvidia/llama-3.3-nemotron-super-49b-v1",
             name="Nemotron-Super-49B (NIM)",
             context_length=32768,
-            priority=15,
+            priority=8,
             specializations=[
                 TaskSpecialization.CODING,
                 TaskSpecialization.AGENTIC,
@@ -1395,12 +1263,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=60.0,
             backend="nvidia",
         ),
-        # Qwen3 Coder 480B - Largest coding model on NIM
         ModelInfo(
             id="qwen/qwen3-coder-480b-a35b-instruct",
             name="Qwen3 Coder 480B (NIM)",
             context_length=131072,
-            priority=14,
+            priority=8,
             specializations=[
                 TaskSpecialization.CODING,
                 TaskSpecialization.AGENTIC,
@@ -1409,12 +1276,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=50.0,
             backend="nvidia",
         ),
-        # DeepSeek V3.2 - General purpose reasoning
         ModelInfo(
             id="deepseek-ai/deepseek-v3.2",
             name="DeepSeek V3.2 (NIM)",
             context_length=131072,
-            priority=13,
+            priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
                 TaskSpecialization.CODING,
@@ -1424,12 +1290,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=55.0,
             backend="nvidia",
         ),
-        # Kimi K2.5 - Moonshot reasoning model
         ModelInfo(
             id="moonshotai/kimi-k2.5",
             name="Kimi K2.5 (NIM)",
             context_length=131072,
-            priority=12,
+            priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
                 TaskSpecialization.AGENTIC,
@@ -1438,12 +1303,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=55.0,
             backend="nvidia",
         ),
-        # Llama 3.1 405B - Meta's flagship
         ModelInfo(
             id="meta/llama-3.1-405b-instruct",
             name="Llama 3.1 405B (NIM)",
             context_length=131072,
-            priority=12,
+            priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
                 TaskSpecialization.CODING,
@@ -1452,12 +1316,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=50.0,
             backend="nvidia",
         ),
-        # Nemotron Ultra 253B - NVIDIA's largest
         ModelInfo(
             id="nvidia/llama-3.1-nemotron-ultra-253b-v1",
             name="Nemotron Ultra 253B (NIM)",
             context_length=32768,
-            priority=14,
+            priority=8,
             specializations=[
                 TaskSpecialization.CODING,
                 TaskSpecialization.AGENTIC,
@@ -1467,12 +1330,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=45.0,
             backend="nvidia",
         ),
-        # GLM 5.1 on NIM - Same as ZAI but via NVIDIA
         ModelInfo(
             id="z-ai/glm-5.1",
             name="GLM-5.1 (NIM)",
             context_length=131072,
-            priority=11,
+            priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
                 TaskSpecialization.CODING,
@@ -1482,12 +1344,11 @@ def create_default_router() -> Router:
             estimated_tokens_per_second=55.0,
             backend="nvidia",
         ),
-        # Gemma 4 31B - Google's latest
         ModelInfo(
             id="google/gemma-4-31b-it",
             name="Gemma 4 31B (NIM)",
             context_length=131072,
-            priority=11,
+            priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
                 TaskSpecialization.FAST,
@@ -1495,23 +1356,6 @@ def create_default_router() -> Router:
             cost_tier=1,
             estimated_tokens_per_second=70.0,
             backend="nvidia",
-        ),
-        # ========================================================================
-        # Local llama-cpp models - served by zephyr 3060Ti
-        # ========================================================================
-        ModelInfo(
-            id="supergemma4-Q5_K_M.gguf",
-            name="Supergemma4 E4B (Local 3060Ti)",
-            context_length=32768,
-            priority=20,  # Highest priority for local-first routing
-            specializations=[
-                TaskSpecialization.FAST,
-                TaskSpecialization.GENERAL,
-                TaskSpecialization.CODING,
-            ],
-            cost_tier=0,  # Free (local)
-            estimated_tokens_per_second=80.0,
-            backend="llama-cpp",
         ),
     ]
 

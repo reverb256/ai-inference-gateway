@@ -576,6 +576,16 @@ class GatewayConfig(BaseSettings):
         description="Default model on local backend"
     )
 
+    # Secondary local backend (3060Ti)
+    secondary_backend_url: str = Field(
+        default="",
+        description="Secondary local backend URL (e.g., 3060Ti)"
+    )
+    secondary_backend_model: str = Field(
+        default="",
+        description="Model name on secondary backend"
+    )
+
     # NVIDIA NIM backend
     nvidia_nim_base_url: str = Field(
         default="https://integrate.api.nvidia.com/v1",
