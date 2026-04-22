@@ -72,6 +72,14 @@ CLOUD_MODEL_CONTEXT = {
     "openai/gpt-oss-120b":   131072,   # 128K
 }
 
+# ── Qwen family groupings ────────────────────────────────────────────────────
+# Used by router for family-based routing decisions.
+
+QWEN_FAMILY_CONTEXT = {
+    "qwen3.5": 262144,
+    "qwen3.6": 262144,
+}
+
 
 # ── Max output tokens per model ──────────────────────────────────────────────
 # Conservative caps. Cloud models often accept higher but these are safe.
