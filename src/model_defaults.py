@@ -12,13 +12,8 @@ Based on:
 
 # =========================================================================
 # Model Native Context Windows — SINGLE SOURCE OF TRUTH
-# Never set below these values. These are the MODEL's native capabilities.
-# =========================================================================
-CONTEXT_WINDOW = {
-    "qwen3.5": 262144,   # 256K — all Qwen3.5 variants
-    "qwen3.6": 262144,   # 256K — all Qwen3.6 variants
-    "gemma4": 131072,    # 128K — Gemma 4 family
-}
+# Context windows live in contexts.py — single source of truth.
+from .contexts import get_context_length as _get_ctx
 
 from typing import Dict, Any, Optional
 import logging
@@ -84,7 +79,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 1.5,  # Thinking mode default (0.0-2.0 range)
         "max_tokens": 32768,  # Adequate output length
-        "context_length": CONTEXT_WINDOW["qwen3.5"],  # 256K native max
+        "context_length": _get_ctx("qwen3.5"),  # 256K native max
         "thinking_enabled_default": True,
         "supports_thinking_toggle": True,
         "description": "Hybrid reasoning MoE, optimal for long-context tasks",
@@ -98,7 +93,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 1.5,
         "max_tokens": 32768,
-        "context_length": CONTEXT_WINDOW["qwen3.5"],  # 256K native max with KV cache
+        "context_length": _get_ctx("qwen3.5"),  # 256K native max with KV cache
         "thinking_enabled_default": True,
         "supports_thinking_toggle": True,
         "description": "Dense quality priority, more accurate than 35B",
@@ -113,7 +108,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 0.0,  # Non-thinking default
         "max_tokens": 16384,  # Adequate for 9B
-        "context_length": CONTEXT_WINDOW["qwen3.5"],  # 256K native max context
+        "context_length": _get_ctx("qwen3.5"),  # 256K native max context
         "thinking_enabled_default": False,  # Small models: disabled by default
         "supports_thinking_toggle": True,
         "description": "General reasoning, enable_thinking for reasoning mode",
@@ -127,7 +122,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 1.5,
         "max_tokens": 16384,
-        "context_length": 262144,
+        "context_length": _get_ctx("qwen3.5"),
         "thinking_enabled_default": True,  # Reasoning-distilled, enabled by default
         "supports_thinking_toggle": True,
         "description": "Claude-distilled reasoning, thinking enabled by default",
@@ -142,7 +137,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 1.5,
         "max_tokens": 16384,
-        "context_length": 262144,
+        "context_length": _get_ctx("qwen3.5"),
         "thinking_enabled_default": True,
         "supports_thinking_toggle": True,
         "description": "Jackrong's CROW distill, CoT with <think> tags",
@@ -157,7 +152,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 0.0,
         "max_tokens": 8192,
-        "context_length": CONTEXT_WINDOW["qwen3.5"],  # 256K native max context
+        "context_length": _get_ctx("qwen3.5"),  # 256K native max context
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "description": "Multimodal agents, 8GB GPUs, enable_thinking for reasoning",
@@ -171,7 +166,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 0.0,
         "max_tokens": 4096,
-        "context_length": CONTEXT_WINDOW["qwen3.5"],  # 256K native max context
+        "context_length": _get_ctx("qwen3.5"),  # 256K native max context
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "description": "Edge devices, basic tasks",
@@ -185,7 +180,7 @@ MODEL_DEFAULTS = {
         "top_k": 20,
         "presence_penalty": 0.0,
         "max_tokens": 2048,
-        "context_length": CONTEXT_WINDOW["qwen3.5"],  # 256K native max context
+        "context_length": _get_ctx("qwen3.5"),  # 256K native max context
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "description": "Edge devices, simple tasks, enable_thinking for reasoning",

@@ -327,8 +327,8 @@ class ModelMetricsTracker:
         self.request_counted = True
 
         # Update context utilization if we know max context
-        # Assuming 256K context for Qwen3.5 models
-        max_context = 262144
+        from .contexts import get_context_length
+        max_context = get_context_length(model)
         utilization = (total_tokens / max_context) * 100
         context_utilization_percent.labels(model=model).set(utilization)
 

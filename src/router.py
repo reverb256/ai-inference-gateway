@@ -10,6 +10,7 @@ Routes requests to appropriate models based on:
 - Category-based routing (inspired by oh-my-opencode)
 """
 
+from .contexts import LLAMA_SERVER_CONTEXT, CLOUD_MODEL_CONTEXT, QWEN_FAMILY_CONTEXT, MAX_OUTPUT_TOKENS, get_context_length, get_max_tokens
 import logging
 import re
 import asyncio
@@ -62,7 +63,7 @@ QWEN_MODEL_CONFIG = {
     # Fastest models, suitable for simple tasks and quick responses
     "qwen3.5-0.8b-claude-4.6-opus-reasoning-distilled": {
         "max_tokens": 8192,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "speed_tier": "ultra_fast",
@@ -70,7 +71,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-0.8b": {
         "max_tokens": 8192,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "ultra_fast",
@@ -78,7 +79,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-2b": {
         "max_tokens": 8192,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "ultra_fast",
@@ -86,7 +87,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-2b-claude-4.6-opus-reasoning-distilled": {
         "max_tokens": 8192,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "speed_tier": "fast",
@@ -97,7 +98,7 @@ QWEN_MODEL_CONFIG = {
     # Good balance of speed and quality
     "qwen3.5-4b": {
         "max_tokens": 8192,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "fast",
@@ -105,7 +106,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-4b-claude-4.6-opus-reasoning-distilled": {
         "max_tokens": 16384,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "speed_tier": "fast",
@@ -113,7 +114,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-4b-claude-4.6-opus-distilled-32k@q8_0": {
         "max_tokens": 16384,
-        "context_length": 32768,
+        "context_length": LLAMA_SERVER_CONTEXT["qwen3.5-0.8b"],
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "fast",
@@ -121,7 +122,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-9b": {
         "max_tokens": 16384,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "balanced",
@@ -129,7 +130,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-9b-claude-4.6-opus-reasoning-distilled": {
         "max_tokens": 16384,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "speed_tier": "balanced",
@@ -137,7 +138,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-9b-claude-4.6-opus-distilled-32k": {
         "max_tokens": 16384,
-        "context_length": 32768,
+        "context_length": LLAMA_SERVER_CONTEXT["qwen3.5-0.8b"],
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "balanced",
@@ -148,7 +149,7 @@ QWEN_MODEL_CONFIG = {
     # Highest quality, slower but more capable
     "qwen3.5-27b": {
         "max_tokens": 32768,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
         "speed_tier": "slow",
@@ -156,7 +157,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-27b-claude-4.6-opus-reasoning-distilled": {
         "max_tokens": 32768,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "speed_tier": "slow",
@@ -164,7 +165,7 @@ QWEN_MODEL_CONFIG = {
     },
     "qwen3.5-35b-a3b": {
         "max_tokens": 32768,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": True,
         "speed_tier": "slow",
@@ -243,7 +244,7 @@ def get_qwen_model_config(model_id: str) -> Dict:
     model_key = model_id.split("/")[-1] if "/" in model_id else model_id
     return QWEN_MODEL_CONFIG.get(model_key, {
         "max_tokens": 4096,
-        "context_length": 262144,
+        "context_length": QWEN_FAMILY_CONTEXT,
         "thinking_enabled_default": False,
         "supports_thinking_toggle": False,
     })
@@ -269,39 +270,8 @@ def get_optimal_qwen_params(
     valid_tasks = {"general", "coding", "agentic", "fast", "reasoning"}
     task = task_type if task_type in valid_tasks else "general"
     return QWEN_OPTIMAL_PARAMS.get(mode, {}).get(task, {})
-# =========================================================================
-# Model Context Window Limits — SINGLE SOURCE OF TRUTH
-# These MUST match the actual llama.cpp -c / vllm --max-model-len values.
-# Rule: NEVER set below the model's native maximum context window.
-# llama.cpp will offload KV cache to system RAM if GPU VRAM is exhausted.
-# =========================================================================
-MODEL_CONTEXT_LIMITS = {
-    # Local llama.cpp backends
-    "qwen3.6-35b": 262144,            # 256K — Qwen3.6-35B native max (3090:1237)
-    "supergemma4-Q5_K_M.gguf": 131072, # 128K — Gemma 4 native max (3060Ti:1236)
-    "qwen3.5-4b": 262144,             # 256K — Qwen3.5-4B native max (sentry:1235)
-
-    # Z.AI cloud models
-    "glm-5.1": 200000,
-    "glm-5": 200000,
-    "glm-4.7": 200000,
-    "glm-4.6v": 200000,
-    "glm-4.5-air": 132000,
-    "glm-4-flash": 128000,
-
-    # NVIDIA NIM models
-    "nvidia/llama-3.3-nemotron-super-49b-v1": 131072,
-    "qwen/qwen3-coder-480b-a35b-instruct": 131072,
-    "deepseek-ai/deepseek-v3.2": 131072,
-    "moonshotai/kimi-k2.5": 131072,
-    "meta/llama-3.1-405b-instruct": 131072,
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1": 131072,
-    "z-ai/glm-5.1": 131072,
-    "google/gemma-4-31b-it": 131072,
-}
-
-# Shorthand
-CTX = MODEL_CONTEXT_LIMITS
+# Context windows live in contexts.py — single source of truth.
+# from .contexts import LLAMA_SERVER_CONTEXT, CLOUD_MODEL_CONTEXT
 
 
 
@@ -324,7 +294,7 @@ class ModelInfo:
 
     id: str
     name: str
-    context_length: int = 262144  # Qwen3.5 supports 256K!
+    context_length: int = 131072  # Safe default; use get_context_length() for actual
     priority: int = 0
     specializations: List[TaskSpecialization] = field(default_factory=list)
     cost_tier: int = 1
@@ -1175,7 +1145,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="qwen3.6-35b",
             name="Qwen 3.6 35B A3B Abliterated",
-            context_length=CTX["qwen3.6-35b"],
+            context_length=LLAMA_SERVER_CONTEXT["qwen3.6-35b"],
             priority=12,  # Highest priority local model
             specializations=[
                 TaskSpecialization.LARGE_CONTEXT,
@@ -1190,7 +1160,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="supergemma4-Q5_K_M.gguf",
             name="Supergemma4 E4B (Local 3060Ti)",
-            context_length=CTX["supergemma4-Q5_K_M.gguf"],
+            context_length=LLAMA_SERVER_CONTEXT["supergemma4"],
             priority=11,  # High priority for local-fast routing
             specializations=[
                 TaskSpecialization.FAST,
@@ -1205,7 +1175,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="qwen3.5-4b",
             name="Qwen 3.5 4B (Local ROCm)",
-            context_length=CTX["qwen3.5-4b"],
+            context_length=LLAMA_SERVER_CONTEXT["qwen3.5-4b"],
             priority=10,
             specializations=[
                 TaskSpecialization.FAST,
@@ -1221,7 +1191,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="glm-5.1",
             name="GLM-5.1",
-            context_length=CTX["glm-5.1"],
+            context_length=CLOUD_MODEL_CONTEXT["glm-5.1"],
             priority=7,  # Highest priority ZAI model
             specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL, TaskSpecialization.CODING],
             cost_tier=4,
@@ -1231,7 +1201,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="glm-5",
             name="GLM-5",
-            context_length=CTX["glm-5"],
+            context_length=CLOUD_MODEL_CONTEXT["glm-5"],
             priority=6,
             specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL],
             cost_tier=4,
@@ -1241,7 +1211,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="glm-4.7",
             name="GLM-4.7",
-            context_length=CTX["glm-4.7"],
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.7"],
             priority=5,
             specializations=[TaskSpecialization.CODING, TaskSpecialization.GENERAL],
             cost_tier=3,
@@ -1251,7 +1221,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="glm-4.6v",
             name="GLM-4.6v",
-            context_length=CTX["glm-4.6v"],
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.6v"],
             priority=5,
             specializations=[
                 TaskSpecialization.CODING,
@@ -1265,7 +1235,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="glm-4.5-air",
             name="GLM-4.5 Air",
-            context_length=CTX["glm-4.5-air"],
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.5-air"],
             priority=5,
             specializations=[TaskSpecialization.FAST],
             cost_tier=1,
@@ -1275,7 +1245,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="glm-4-flash",
             name="GLM-4 Flash",
-            context_length=CTX["glm-4-flash"],
+            context_length=CLOUD_MODEL_CONTEXT["glm-4-flash"],
             priority=5,
             specializations=[TaskSpecialization.FAST],
             cost_tier=1,
@@ -1288,7 +1258,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="nvidia/llama-3.3-nemotron-super-49b-v1",
             name="Nemotron-Super-49B (NIM)",
-            context_length=CTX["nvidia/llama-3.3-nemotron-super-49b-v1"],
+            context_length=CLOUD_MODEL_CONTEXT["nvidia/llama-3.3-nemotron-super-49b-v1"],
             priority=8,
             specializations=[
                 TaskSpecialization.CODING,
@@ -1302,7 +1272,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="qwen/qwen3-coder-480b-a35b-instruct",
             name="Qwen3 Coder 480B (NIM)",
-            context_length=CTX["qwen/qwen3-coder-480b-a35b-instruct"],
+            context_length=CLOUD_MODEL_CONTEXT["qwen/qwen3-coder-480b-a35b-instruct"],
             priority=8,
             specializations=[
                 TaskSpecialization.CODING,
@@ -1315,7 +1285,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="deepseek-ai/deepseek-v3.2",
             name="DeepSeek V3.2 (NIM)",
-            context_length=CTX["deepseek-ai/deepseek-v3.2"],
+            context_length=CLOUD_MODEL_CONTEXT["deepseek-ai/deepseek-v3.2"],
             priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
@@ -1329,7 +1299,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="moonshotai/kimi-k2.5",
             name="Kimi K2.5 (NIM)",
-            context_length=CTX["moonshotai/kimi-k2.5"],
+            context_length=CLOUD_MODEL_CONTEXT["moonshotai/kimi-k2.5"],
             priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
@@ -1342,7 +1312,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="meta/llama-3.1-405b-instruct",
             name="Llama 3.1 405B (NIM)",
-            context_length=CTX["meta/llama-3.1-405b-instruct"],
+            context_length=CLOUD_MODEL_CONTEXT["meta/llama-3.1-405b-instruct"],
             priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
@@ -1355,7 +1325,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="nvidia/llama-3.1-nemotron-ultra-253b-v1",
             name="Nemotron Ultra 253B (NIM)",
-            context_length=CTX["nvidia/llama-3.1-nemotron-ultra-253b-v1"],
+            context_length=CLOUD_MODEL_CONTEXT["nvidia/llama-3.1-nemotron-ultra-253b-v1"],
             priority=8,
             specializations=[
                 TaskSpecialization.CODING,
@@ -1369,7 +1339,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="z-ai/glm-5.1",
             name="GLM-5.1 (NIM)",
-            context_length=CTX["z-ai/glm-5.1"],
+            context_length=CLOUD_MODEL_CONTEXT["z-ai/glm-5.1"],
             priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,
@@ -1383,7 +1353,7 @@ def create_default_router() -> Router:
         ModelInfo(
             id="google/gemma-4-31b-it",
             name="Gemma 4 31B (NIM)",
-            context_length=CTX["google/gemma-4-31b-it"],
+            context_length=CLOUD_MODEL_CONTEXT["google/gemma-4-31b-it"],
             priority=8,
             specializations=[
                 TaskSpecialization.GENERAL,

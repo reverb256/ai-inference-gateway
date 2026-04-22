@@ -1405,6 +1405,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             logger.warning(f"Error fetching models, returning empty list: {e}")
             return JSONResponse(content={"object": "list", "data": []})
 
+
+    @app.get("/v1/models/context")
+    async def get_context_map():
+        """Return all model context windows - single source of truth."""
+        from .contexts import get_all_models_info
+        return get_all_models_info()
+
     # Add system prompts endpoint
     @app.get("/system-prompts")
     async def get_system_prompts(request: Request):
