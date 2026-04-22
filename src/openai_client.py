@@ -203,11 +203,15 @@ class OpenAIClientWrapper:
         for param in unsupported_params:
             kwargs.pop(param, None)
 
-        # Strip 'think' from extra_body — Hermes sends think=false
-        # when reasoning_effort=none, but NVIDIA NIM rejects it (HTTP 400)
+        # Strip params from extra_body that NVIDIA NIM rejects (HTTP 400)
+        # - 'think': Hermes sends think=false when reasoning_effort=none
+        # - 'enable_thinking': injected for Qwen/GLM thinking control (llama.cpp/ZAI only)
+        # - 'chat_template_kwargs': llama.cpp-specific Jina template params
+        # These are only valid for llama.cpp and ZAI backends — NIM rejects them.
         extra_body = kwargs.get("extra_body", {})
         if isinstance(extra_body, dict):
-            extra_body.pop("think", None)
+            for _k in ("think", "enable_thinking", "chat_template_kwargs"):
+                extra_body.pop(_k, None)
             if extra_body:
                 kwargs["extra_body"] = extra_body
             else:
