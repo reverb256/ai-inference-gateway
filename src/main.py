@@ -970,6 +970,121 @@ def translate_openai_to_anthropic(openai_response: dict, original_model: str) ->
     }
 
 
+async def _dispatch_chat_completions(state: GatewayState, body: dict, request: Request):
+    """
+    Internal dispatcher used by /v1/chat/smol, /v1/chat/slow, /v1/chat/plan.
+
+    Mirrors the core of the chat_completions endpoint but accepts a pre-built
+    body dict (with model already injected) and an original Request for headers.
+    """
+    import time
+    import uuid
+
+    gpu_scheduler.notify_ai_starting()
+
+    _request_start = time.time()
+    stream = body.get("stream", False)
+    messages = body.get("messages", [])
+    headers = dict(request.headers)
+    query_params = dict(request.query_params)
+
+    # Route with the pre-injected model
+    requested_model = body.get("model")
+    route_decision: RouteDecision = await state.router.route(
+        messages=messages,
+        requested_model=requested_model,
+        urgency="normal",
+        headers=headers,
+        query_params=query_params,
+    )
+    body["model"] = route_decision.model
+
+    request_id = str(uuid.uuid4())
+    state.router.track_request_start(
+        request_id=request_id,
+        model=route_decision.model,
+        backend=route_decision.backend,
+        stream=stream,
+    )
+
+    logger.info(
+        f"[role-route] Routed to model: {route_decision.model} "
+        f"(backend: {route_decision.backend})"
+    )
+
+    metrics_tracker = ModelMetricsTracker(
+        model=route_decision.model,
+        backend=route_decision.backend,
+        requested_model=requested_model,
+    )
+
+    context = {
+        "request_id": request_id,
+        "start_time": _request_start,
+        "request_body": body,
+        "request_headers": headers,
+        "client_ip": request.client.host if request.client else "unknown",
+        "model": route_decision.model,
+        "route_decision": route_decision,
+        "metrics_tracker": metrics_tracker,
+        "cost_tracker": getattr(request.app.state, "cost_tracker", None),
+    }
+
+    # Process through middleware pipeline
+    should_continue, error = await state.pipeline.process_request(request, context)
+    if not should_continue:
+        if error:
+            raise error
+        raise HTTPException(status_code=403, detail="Request blocked by middleware")
+
+    if "rag_enhanced_body" in context:
+        body = context["rag_enhanced_body"]
+
+    try:
+        if stream:
+            has_tools = "tools" in body and body.get("tools")
+            stream_func = (
+                stream_backend_response_with_tools
+                if has_tools and state.mcp_broker
+                else stream_backend_response
+            )
+            stream_kwargs = {
+                "openai_client": state.openai_client,
+                "body": body,
+                "pipeline": state.pipeline,
+                "context": context,
+                "config": state.config,
+                "router": state.router,
+                "request_id": request_id,
+                "metrics_tracker": metrics_tracker,
+            }
+            if has_tools and state.mcp_broker:
+                stream_kwargs["mcp_broker"] = state.mcp_broker
+
+            return StreamingResponse(
+                stream_func(**stream_kwargs),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+            )
+        else:
+            try:
+                return await handle_non_streaming_request(
+                    state.openai_client,
+                    body,
+                    state.pipeline,
+                    context,
+                    state.config,
+                    metrics_tracker,
+                )
+            finally:
+                state.router.track_request_end(request_id)
+                gpu_scheduler.notify_ai_stopping()
+    except Exception:
+        state.router.track_request_end(request_id)
+        gpu_scheduler.notify_ai_stopping()
+        raise
+
+
 def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
     """
     Create and configure the FastAPI application.
@@ -2970,6 +3085,457 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             )
 
             return result
+
+    # ============================================================================
+    # V1 SOVEREIGN SEARCH ENDPOINT
+    # ============================================================================
+    @app.post("/v1/search")
+    async def unified_search(request: Request):
+        """
+        Single sovereign search endpoint. Auto-classifies query, routes to best
+        pipeline, returns structured result.
+
+        Body: {
+            "query": str (required),
+            "mode": "auto" | "web" | "local" | "hybrid" (default: "auto"),
+            "summarize": bool (default: true),
+            "collection": str (default: "brain-wiki"),
+            "max_results": int (default: 10),
+        }
+
+        Response: {
+            "answer": str or null,
+            "sources": [{"title", "url", "snippet", "score", "source_type"}],
+            "intent": str,
+            "mode_used": str,
+            "confidence": "high"|"medium"|"low",
+            "query": str,
+            "total_results": int,
+        }
+        """
+        state: GatewayState = app.state.gateway
+        body = await request.json()
+        query = body.get("query", "").strip()
+        if not query:
+            raise HTTPException(status_code=400, detail="Query is required")
+
+        mode = body.get("mode", "auto")
+        summarize = body.get("summarize", True)
+        collection = body.get("collection", "brain-wiki")
+        max_results = min(body.get("max_results", 10), 50)
+
+        # ------------------------------------------------------------------
+        # Intent classification (only for auto mode)
+        # ------------------------------------------------------------------
+        detected_intent = "unknown"
+        if mode == "auto":
+            try:
+                if ROUTER_AVAILABLE:
+                    from ai_inference_gateway.middleware.knowledge_fabric.routing import (
+                        SemanticRouter,
+                        QueryIntent,
+                    )
+                    # Build a minimal router just for classification
+                    _router = SemanticRouter([])
+                    decision = _router.classify(query)
+                    detected_intent = decision.intent.value
+                    intent = decision.intent
+                else:
+                    intent = None
+            except Exception:
+                intent = None
+                detected_intent = "unknown"
+        else:
+            intent = None
+
+        # ------------------------------------------------------------------
+        # Route to appropriate pipeline based on mode / intent
+        # ------------------------------------------------------------------
+        sources = []
+        mode_used = mode
+
+        if mode == "web" or (mode == "auto" and intent == QueryIntent.REALTIME if intent else False):
+            # --- Web only (SearXNG) ---
+            mode_used = "web"
+            if state.searxng:
+                try:
+                    web_result = await state.searxng.search(
+                        query=query, max_results=max_results
+                    )
+                    for r in web_result.get("results", web_result if isinstance(web_result, list) else []):
+                        if isinstance(r, dict):
+                            sources.append({
+                                "title": r.get("title", ""),
+                                "url": r.get("url", ""),
+                                "snippet": r.get("snippet", r.get("content", "")),
+                                "score": r.get("score", 0.5),
+                                "source_type": "web",
+                            })
+                except Exception as e:
+                    logger.warning(f"Web search failed in unified_search: {e}")
+            else:
+                raise HTTPException(status_code=501, detail="SearXNG not available")
+
+        elif mode == "local" or (
+            mode == "auto"
+            and intent
+            and intent in (QueryIntent.CODE, QueryIntent.FACTUAL, QueryIntent.PROCEDURAL)
+            if intent
+            else False
+        ):
+            # --- Local first (RAG), fall back to hybrid if weak results ---
+            mode_used = "local"
+            if state.rag_search:
+                try:
+                    rag_result = await state.rag_search.search(
+                        query=query, collection=collection, top_k=max_results, rerank=True
+                    )
+                    for r in rag_result.get("results", []):
+                        sources.append({
+                            "title": r.get("metadata", {}).get("title", r.get("content", "")[:80]),
+                            "url": r.get("metadata", {}).get("url", ""),
+                            "snippet": r.get("content", ""),
+                            "score": r.get("score", 0.0),
+                            "source_type": "rag",
+                        })
+                except Exception as e:
+                    logger.warning(f"RAG search failed in unified_search: {e}")
+
+            # If local results are weak and web is available, add web results
+            if len(sources) < 3 and state.searxng:
+                mode_used = "hybrid_local_fallback"
+                try:
+                    web_result = await state.searxng.search(
+                        query=query, max_results=max_results
+                    )
+                    for r in web_result.get("results", web_result if isinstance(web_result, list) else []):
+                        if isinstance(r, dict):
+                            sources.append({
+                                "title": r.get("title", ""),
+                                "url": r.get("url", ""),
+                                "snippet": r.get("snippet", r.get("content", "")),
+                                "score": r.get("score", 0.4),
+                                "source_type": "web",
+                            })
+                except Exception:
+                    pass
+
+        else:
+            # --- Full hybrid (default for COMPARATIVE/CONTEXTUAL/UNKNOWN/auto fallback) ---
+            mode_used = "hybrid"
+            if HYBRID_SEARCH_AVAILABLE and state.searxng:
+                try:
+                    rag_search = state.rag_search if RAG_AVAILABLE else None
+                    hybrid_engine = get_hybrid_search(state.searxng, rag_search)
+                    result = await hybrid_engine.search(
+                        query=query,
+                        max_results=max_results,
+                        use_rag=rag_search is not None,
+                        use_web=True,
+                        collection=collection,
+                        rerank=True,
+                    )
+                    # Parse hybrid results — they may come in different formats
+                    for r in result.get("results", result.get("sources", [])):
+                        if isinstance(r, dict):
+                            sources.append({
+                                "title": r.get("title", r.get("metadata", {}).get("title", "")),
+                                "url": r.get("url", r.get("metadata", {}).get("url", "")),
+                                "snippet": r.get("snippet", r.get("content", "")),
+                                "score": r.get("score", 0.5),
+                                "source_type": r.get("source_type", r.get("source", "web")),
+                            })
+                except Exception as e:
+                    logger.warning(f"Hybrid search failed in unified_search: {e}")
+            else:
+                # Fallback: try RAG only, then web only
+                if state.rag_search:
+                    try:
+                        rag_result = await state.rag_search.search(
+                            query=query, collection=collection, top_k=max_results, rerank=True
+                        )
+                        for r in rag_result.get("results", []):
+                            sources.append({
+                                "title": r.get("metadata", {}).get("title", r.get("content", "")[:80]),
+                                "url": r.get("metadata", {}).get("url", ""),
+                                "snippet": r.get("content", ""),
+                                "score": r.get("score", 0.0),
+                                "source_type": "rag",
+                            })
+                    except Exception:
+                        pass
+                if state.searxng:
+                    try:
+                        web_result = await state.searxng.search(
+                            query=query, max_results=max_results
+                        )
+                        for r in web_result.get("results", web_result if isinstance(web_result, list) else []):
+                            if isinstance(r, dict):
+                                sources.append({
+                                    "title": r.get("title", ""),
+                                    "url": r.get("url", ""),
+                                    "snippet": r.get("snippet", r.get("content", "")),
+                                    "score": r.get("score", 0.5),
+                                    "source_type": "web",
+                                })
+                    except Exception:
+                        pass
+
+        # ------------------------------------------------------------------
+        # Determine confidence
+        # ------------------------------------------------------------------
+        top_score = max((s["score"] for s in sources), default=0.0)
+        if top_score > 0.8:
+            confidence = "high"
+        elif top_score > 0.5:
+            confidence = "medium"
+        else:
+            confidence = "low"
+
+        # ------------------------------------------------------------------
+        # Summarize using internal model routing (if requested)
+        # ------------------------------------------------------------------
+        answer = None
+        if summarize and sources:
+            try:
+                # Build a context from the top sources
+                context_parts = []
+                for s in sources[:5]:
+                    context_parts.append(f"- [{s['title']}]({s['url']}): {s['snippet']}")
+                context_text = "\n".join(context_parts)
+
+                summarization_messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a concise search summarizer. Given the search results below, "
+                            "produce a 3-5 sentence answer that directly addresses the user's query. "
+                            "Cite sources inline where possible."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Query: {query}\n\nSources:\n{context_text}",
+                    },
+                ]
+
+                # Use the gateway's internal model routing
+                if state.router and state.openai_client:
+                    route_decision = await state.router.route(
+                        messages=summarization_messages,
+                        requested_model=None,
+                        urgency="fast",
+                        headers={},
+                        query_params={},
+                    )
+                    response = await state.openai_client.chat_completion(
+                        messages=summarization_messages,
+                        model=route_decision.model,
+                        stream=False,
+                        max_tokens=300,
+                    )
+                    resp_data = response.model_dump()
+                    choices = resp_data.get("choices", [])
+                    if choices:
+                        answer = choices[0].get("message", {}).get("content", "")
+            except Exception as e:
+                logger.warning(f"Summarization failed in unified_search: {e}")
+                answer = None
+
+        return {
+            "answer": answer,
+            "sources": sources,
+            "intent": detected_intent,
+            "mode_used": mode_used,
+            "confidence": confidence,
+            "query": query,
+            "total_results": len(sources),
+        }
+
+    # ============================================================================
+    # V1 KNOWLEDGE ENDPOINTS
+    # ============================================================================
+    @app.post("/v1/knowledge/query")
+    async def knowledge_query(request: Request):
+        """
+        Query the knowledge base (Qdrant).
+
+        Body: {
+            "query": str (required),
+            "collection": str (default: "brain-wiki"),
+            "top_k": int (default: 5),
+            "rerank": bool (default: true),
+        }
+
+        Response: {
+            "results": [{"content", "score", "metadata", "id"}],
+            "query": str,
+            "collection": str,
+            "total": int,
+        }
+        """
+        state: GatewayState = app.state.gateway
+
+        if not RAG_AVAILABLE or not state.rag_search:
+            raise HTTPException(
+                status_code=501, detail="RAG service not enabled. Set RAG_ENABLED=true."
+            )
+
+        body = await request.json()
+        query = body.get("query", "").strip()
+        if not query:
+            raise HTTPException(status_code=400, detail="Query is required")
+
+        collection = body.get("collection", "brain-wiki")
+        top_k = min(body.get("top_k", 5), 50)
+        rerank = body.get("rerank", True)
+
+        # Delegate to existing HybridSearchService
+        raw_result = await state.rag_search.search(
+            query=query, collection=collection, top_k=top_k, rerank=rerank
+        )
+
+        # Normalize into a consistent response shape
+        results = []
+        for r in raw_result.get("results", []):
+            results.append({
+                "content": r.get("content", ""),
+                "score": r.get("score", 0.0),
+                "metadata": r.get("metadata", {}),
+                "id": r.get("id", r.get("chunk_id", "")),
+            })
+
+        return {
+            "results": results,
+            "query": query,
+            "collection": collection,
+            "total": len(results),
+        }
+
+    @app.post("/v1/knowledge/commit")
+    async def knowledge_commit(request: Request):
+        """
+        Commit knowledge to the brain (Qdrant).
+
+        Body: {
+            "content": str (required),
+            "source": str (default: "manual"),
+            "metadata": {} (optional),
+            "collection": str (default: "brain-wiki"),
+            "chunk_size": int (default: 512),
+        }
+
+        Response: {
+            "status": "ok",
+            "chunks_created": int,
+            "collection": str,
+            "ids": [str],
+        }
+        """
+        state: GatewayState = app.state.gateway
+
+        if not RAG_AVAILABLE or not state.rag_search:
+            raise HTTPException(
+                status_code=501, detail="RAG service not enabled. Set RAG_ENABLED=true."
+            )
+
+        body = await request.json()
+        content = body.get("content", "").strip()
+        if not content:
+            raise HTTPException(status_code=400, detail="Content is required")
+
+        source = body.get("source", "manual")
+        user_metadata = body.get("metadata", {})
+        collection = body.get("collection", "brain-wiki")
+
+        # Build enriched metadata
+        metadata = {
+            **user_metadata,
+            "source": source,
+            "timestamp": datetime.utcnow().isoformat(),
+            "original_content_length": len(content),
+        }
+
+        # Delegate to the existing ingest_document on HybridSearchService,
+        # which handles chunking, embedding, and Qdrant upsert.
+        result = await state.rag_search.ingest_document(
+            collection=collection,
+            content=content,
+            metadata=metadata,
+        )
+
+        if not result.get("success", False):
+            raise HTTPException(
+                status_code=500,
+                detail=result.get("error", "Ingestion failed"),
+            )
+
+        return {
+            "status": "ok",
+            "chunks_created": result.get("chunks_created", 0),
+            "collection": collection,
+            "ids": [result.get("document_id", "")],
+        }
+
+    # ============================================================================
+    # V1 CHAT ROLE ROUTES (thin wrappers over /v1/chat/completions)
+    # ============================================================================
+    @app.post("/v1/chat/smol")
+    async def chat_smol(request: Request):
+        """
+        Fast model chat route. Auto-injects the fast model override
+        (supergemma4-Q5_K_M.gguf) and delegates to the main chat handler.
+        """
+        state: GatewayState = app.state.gateway
+        body = await request.json()
+        body["model"] = "supergemma4-Q5_K_M.gguf"
+
+        # Build a synthetic request object that carries the modified body
+        return await _dispatch_chat_completions(state, body, request)
+
+    @app.post("/v1/chat/slow")
+    async def chat_slow(request: Request):
+        """
+        Slow/capable model chat route. Auto-injects the large model override
+        (qwen3.6-35b) with increased max_tokens and delegates to the main
+        chat handler.
+        """
+        state: GatewayState = app.state.gateway
+        body = await request.json()
+        body["model"] = "qwen3.6-35b"
+        if "max_tokens" not in body:
+            body["max_tokens"] = 8192
+
+        return await _dispatch_chat_completions(state, body, request)
+
+    @app.post("/v1/chat/plan")
+    async def chat_plan(request: Request):
+        """
+        Planning model chat route. Uses the large model (qwen3.6-35b) with a
+        planning-focused system prompt prepended.
+        """
+        state: GatewayState = app.state.gateway
+        body = await request.json()
+        body["model"] = "qwen3.6-35b"
+        if "max_tokens" not in body:
+            body["max_tokens"] = 8192
+
+        # Inject planning system prompt
+        plan_system = (
+            "You are a meticulous planning assistant. Break down the user's request "
+            "into clear, actionable steps. Consider edge cases, dependencies, and "
+            "potential failure modes. Present the plan in a structured format with "
+            "numbered steps and expected outcomes."
+        )
+        messages = body.get("messages", [])
+        # Prepend or merge with existing system message
+        if messages and messages[0].get("role") == "system":
+            messages[0]["content"] = plan_system + "\n\n" + messages[0]["content"]
+        else:
+            messages.insert(0, {"role": "system", "content": plan_system})
+        body["messages"] = messages
+
+        return await _dispatch_chat_completions(state, body, request)
 
     # Ollama-compatible API endpoints for Spacebot integration
     @app.get("/api/tags")
