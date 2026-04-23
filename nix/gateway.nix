@@ -236,6 +236,7 @@ in
         MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_ENABLED =
           if cfg.gateway.middleware.knowledgeFabric.searxng_enabled then "true" else "false";
         MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_URL = cfg.gateway.middleware.knowledgeFabric.searxng_url;
+        SEARXNG_URL = cfg.gateway.middleware.knowledgeFabric.searxng_url; # searxng_integration.py reads this directly
         MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_SEARCH_ENABLED =
           if cfg.gateway.middleware.knowledgeFabric.code_search_enabled then "true" else "false";
         MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_SEARCH_PATHS = builtins.toJSON cfg.gateway.middleware.knowledgeFabric.code_search_paths;
