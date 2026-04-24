@@ -94,7 +94,7 @@ let
   );
 
   modularGatewayPkg = pkgs.symlinkJoin {
-    name = "ai-inference-gateway-modular-pkg-v15";
+    name = "ai-inference-gateway-modular-pkg-v16";
     paths = [
       modularGatewayPkgBase
       gatewayPython
