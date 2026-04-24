@@ -65,6 +65,7 @@ let
       ps.psutil
       ps.qdrant-client
       ps.sentence-transformers
+      ps.torchvision
       ps.rank-bm25
       ps.numpy
       ps.beautifulsoup4
