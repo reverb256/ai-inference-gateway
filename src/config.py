@@ -289,6 +289,19 @@ class ObservabilityConfig(BaseModel):
         return v_upper
 
 
+class PrivacyFilterConfig(BaseModel):
+    """Privacy Filter ML service configuration."""
+
+    enabled: bool = Field(default=False, description="Enable Privacy Filter ML service")
+    url: str = Field(default="http://localhost:8081", description="Privacy Filter service URL")
+    timeout: float = Field(default=5.0, ge=0.1, le=30.0, description="Request timeout in seconds")
+    mode: str = Field(default="redact", description="Filter mode: redact, detect, or hash")
+    sanitize_tool_calls: bool = Field(default=True, description="Sanitize tool call arguments")
+    sanitize_reasoning: bool = Field(default=True, description="Sanitize reasoning traces")
+    sanitize_chat: bool = Field(default=True, description="Sanitize chat response content")
+    input_sanitization: bool = Field(default=True, description="Sanitize user input before LLM")
+
+
 class MiddlewareConfig(BaseSettings):
     """Complete middleware configuration - inherits BaseSettings for env var support"""
 
@@ -320,6 +333,10 @@ class MiddlewareConfig(BaseSettings):
     observability: ObservabilityConfig = Field(
         default_factory=ObservabilityConfig, description="Observability configuration"
     )
+    privacy_filter: PrivacyFilterConfig = Field(
+        default_factory=PrivacyFilterConfig, description="Privacy Filter ML service configuration"
+    )
+
     mcp: MCPConfig = Field(default_factory=MCPConfig, description="MCP broker configuration")
 
     knowledge_fabric: KnowledgeFabricConfig = Field(
