@@ -427,6 +427,7 @@ class MiddlewareConfig(BaseSettings):
     RAG_ENABLED: bool = Field(default=False, description="Enable RAG functionality")
     QDRANT_URL: str = Field(default="http://127.0.0.1:6333", description="Qdrant URL")
     EMBEDDING_MODEL: str = Field(default="BAAI/bge-m3", description="Embedding model")
+    EMBEDDING_TRUST_REMOTE_CODE: bool = Field(default=False, description="Trust remote code for embedding model (required for BidirLM-Omni)")
     CHUNK_SIZE: int = Field(default=512, description="Chunk size")
     CHUNK_OVERLAP: int = Field(default=50, description="Chunk overlap")
     RAG_TOP_K: int = Field(default=5, description="Default top-K results")

@@ -776,6 +776,18 @@ in
         description = "Device for embedding inference (cpu recommended when GPU is mining)";
       };
 
+      embeddingTrustRemoteCode = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Trust remote code for embedding model (required for BidirLM-Omni)";
+      };
+
+      embeddingDimensions = mkOption {
+        type = types.int;
+        default = 0;
+        description = "Embedding dimensions override (0 = auto-detect from model). BidirLM-Omni: 2048, BGE-M3: 1024";
+      };
+
       chunkSize = mkOption {
         type = types.int;
         default = 512;

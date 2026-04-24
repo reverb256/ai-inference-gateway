@@ -192,6 +192,8 @@ in
         QDRANT_URL = cfg.rag.qdrantUrl;
         EMBEDDING_MODEL = cfg.rag.embeddingModel;
         EMBEDDING_DEVICE = cfg.rag.embeddingDevice;
+        EMBEDDING_TRUST_REMOTE_CODE = if cfg.rag.embeddingTrustRemoteCode then "true" else "false";
+        EMBEDDING_DIMENSIONS = toString cfg.rag.embeddingDimensions;
         RERANKER_ENABLED = if cfg.rag.reranker.enable then "true" else "false";
         RERANKER_MODEL = cfg.rag.reranker.model;
         # Query expansion

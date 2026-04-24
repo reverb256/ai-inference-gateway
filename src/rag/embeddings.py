@@ -65,7 +65,11 @@ class EmbeddingService:
                 loop = asyncio.get_event_loop()
                 self._model = await loop.run_in_executor(
                     None,
-                    lambda: SentenceTransformer(self.config.model, device=self._device),
+                    lambda: SentenceTransformer(
+                        self.config.model,
+                        device=self._device,
+                        trust_remote_code=self.config.trust_remote_code,
+                    ),
                 )
 
                 # Verify dimensions

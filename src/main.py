@@ -511,6 +511,8 @@ async def lifespan(app: FastAPI):
             # Get environment variables
             qdrant_url = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
             embedding_model = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
+            embedding_trust_remote_code = os.getenv("EMBEDDING_TRUST_REMOTE_CODE", "false").lower() in ("true", "1", "yes")
+            embedding_dims = int(os.getenv("EMBEDDING_DIMENSIONS", "0")) or None
             chunk_size = int(os.getenv("CHUNK_SIZE", "512"))
             chunk_overlap = int(os.getenv("CHUNK_OVERLAP", "50"))
             top_k = int(os.getenv("RAG_TOP_K", "5"))
@@ -524,6 +526,8 @@ async def lifespan(app: FastAPI):
                 embedding=EmbeddingConfig(
                     model=embedding_model,
                     device=os.getenv("EMBEDDING_DEVICE", "cpu"),  # CPU by default (GPU often mining)
+                    trust_remote_code=embedding_trust_remote_code,
+                    **({"dimensions": embedding_dims} if embedding_dims else {}),
                 ),
                 chunking=ChunkingConfig(chunk_size=chunk_size, chunk_overlap=chunk_overlap),
                 search=SearchConfig(default_top_k=top_k, hybrid_search=hybrid_search),

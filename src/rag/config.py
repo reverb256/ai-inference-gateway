@@ -23,7 +23,10 @@ class EmbeddingConfig(BaseModel):
         default=32, ge=1, le=128, description="Batch size for embedding generation"
     )
     dimensions: int = Field(
-        default=1024, description="Embedding dimensions (BGE-M3: 1024)"
+        default=2048, description="Embedding dimensions (BGE-M3: 1024, BidirLM-Omni: 2048)"
+    )
+    trust_remote_code: bool = Field(
+        default=False, description="Trust remote code for custom models (e.g. BidirLM-Omni)"
     )
 
 
