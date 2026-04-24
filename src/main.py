@@ -1241,169 +1241,166 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
     # Add models endpoint
     @app.get("/v1/models")
     async def list_models(request: Request):
-        """List available models from backend with automatic failover."""
+        """List available models from all backends (router + upstream)."""
         state: GatewayState = app.state.gateway
 
-        try:
-            # Use OpenAI SDK to list models with automatic failover
-            models = await state.openai_client.primary_client.models.list()
+        # Start with router-registered models (always available, hardcoded)
+        model_list = []
+        if state.router:
+            for model_id, model_info in state.router.models.items():
+                model_list.append({
+                    "id": model_id,
+                    "object": "model",
+                    "created": int(datetime.now().timestamp()),
+                    "owned_by": model_info.backend,
+                    "permission": [],
+                    "root": model_id,
+                    "parent": None,
+                    "context_length": model_info.context_length,
+                    "backend": model_info.backend,
+                })
 
-            # Update model availability metrics
+        # Try to add upstream models from primary backend
+        try:
+            models = await state.openai_client.primary_client.models.list()
             try:
                 from ai_inference_gateway.metrics import update_model_availability
-
                 model_ids = [m.id for m in models.data]
                 update_model_availability(model_ids)
             except Exception as metrics_error:
                 logger.warning(
                     f"Failed to update model availability metrics: {metrics_error}"
                 )
+            # Merge upstream models into list (skip duplicates)
+            existing_ids = {m["id"] for m in model_list}
+            for m in models.data:
+                if m.id not in existing_ids:
+                    model_list.append(m.model_dump())
+                    existing_ids.add(m.id)
+        except Exception as e:
+            logger.debug(f"Primary backend models unavailable, using router models only: {e}")
 
-            # Convert to dict for JSON response
-            models_dict = models.model_dump()
+        models_dict = {"object": "list", "data": model_list}
 
-            # Add TTS models if TTS is available
-            if TTS_AVAILABLE and QWEN3_TTS_MODELS:
-                tts_models = []
-                for model_key, config in QWEN3_TTS_MODELS.items():
-                    backend = config.get("backend", "local")
-                    if backend == "pollinations":
-                        model_id = model_key  # Use clean model names for Pollinations
-                        owned_by = "pollinations"
-                    else:
-                        model_id = f"qwen3-tts-{model_key}"
-                        owned_by = "qwen"
+        # Add TTS models if TTS is available
+        if TTS_AVAILABLE and QWEN3_TTS_MODELS:
+            tts_models = []
+            for model_key, config in QWEN3_TTS_MODELS.items():
+                backend = config.get("backend", "local")
+                if backend == "pollinations":
+                    model_id = model_key  # Use clean model names for Pollinations
+                    owned_by = "pollinations"
+                else:
+                    model_id = f"qwen3-tts-{model_key}"
+                    owned_by = "qwen"
 
-                    tts_models.append(
-                        {
-                            "id": model_id,
-                            "object": "model",
-                            "created": int(datetime.now().timestamp()),
-                            "owned_by": owned_by,
-                            "permission": [
-                                {
-                                    "id": "model",
-                                    "object": "model_permission",
-                                    "created": int(datetime.now().timestamp()),
-                                }
-                            ],
-                            "root": model_id,
-                            "parent": None,
-                            # TTS-specific metadata
-                            "capabilities": {
-                                "type": "tts",
-                                "audio_formats": ["mp3", "wav", "opus", "aac", "flac"],
-                                "sample_rate": config["sample_rate"],
-                                "languages": config.get("language", "en"),
-                                "quality": config["quality"],
-                                "description": config["description"],
-                                "backend": backend,
-                            },
-                        }
-                    )
-
-                # Add TTS models to the response
-                if "data" in models_dict:
-                    models_dict["data"].extend(tts_models)
-
-            # Add Qwen3-Audio (STT) models if available
-            if AUDIO_AVAILABLE and QWEN3_AUDIO_MODELS:
-                stt_models = []
-                for model_key, config in QWEN3_AUDIO_MODELS.items():
-                    stt_models.append(
-                        {
-                            "id": model_key,
-                            "object": "model",
-                            "created": int(datetime.now().timestamp()),
-                            "owned_by": "qwen",
-                            "permission": [
-                                {
-                                    "id": "model",
-                                    "object": "model_permission",
-                                    "created": int(datetime.now().timestamp()),
-                                }
-                            ],
-                            "root": model_key,
-                            "parent": None,
-                            # STT-specific metadata
-                            "capabilities": {
-                                "type": "stt",
-                                "sample_rate": config["sample_rate"],
-                                "max_duration": config["max_duration"],
-                                "languages": config.get("languages", ["en"]),
-                                "supports_translation": config.get(
-                                    "supports_translation", False
-                                ),
-                                "supports_timestamps": config.get(
-                                    "supports_timestamps", False
-                                ),
-                                "description": config["description"],
-                            },
-                        }
-                    )
-
-                # Add STT models to the response
-                if "data" in models_dict:
-                    models_dict["data"].extend(stt_models)
-
-            # Add Qwen3-Vision models if available
-            if VISION_AVAILABLE and QWEN3_VISION_MODELS:
-                vision_models = []
-                for model_key, config in QWEN3_VISION_MODELS.items():
-                    vision_models.append(
-                        {
-                            "id": model_key,
-                            "object": "model",
-                            "created": int(datetime.now().timestamp()),
-                            "owned_by": "qwen",
-                            "permission": [
-                                {
-                                    "id": "model",
-                                    "object": "model_permission",
-                                    "created": int(datetime.now().timestamp()),
-                                }
-                            ],
-                            "root": model_key,
-                            "parent": None,
-                            # Vision-specific metadata
-                            "capabilities": {
-                                "type": "vision",
-                                "max_tokens": config["max_tokens"],
-                                "max_images": config.get("max_images", 1),
-                                "supports_video": config.get("supports_video", False),
-                                "description": config["description"],
-                            },
-                        }
-                    )
-
-                # Add vision models to the response
-                if "data" in models_dict:
-                    models_dict["data"].extend(vision_models)
-            # Add router-registered models (NIM, local, etc.) that aren't
-            # already in the upstream models list
-            router_model_ids = set()
-            if "data" in models_dict:
-                router_model_ids = {m["id"] for m in models_dict["data"]}
-            for model_id, model_info in state.router.models.items():
-                if model_id not in router_model_ids:
-                    models_dict.setdefault("data", []).append({
+                tts_models.append(
+                    {
                         "id": model_id,
                         "object": "model",
                         "created": int(datetime.now().timestamp()),
-                        "owned_by": model_info.backend,
-                        "permission": [],
+                        "owned_by": owned_by,
+                        "permission": [
+                            {
+                                "id": "model",
+                                "object": "model_permission",
+                                "created": int(datetime.now().timestamp()),
+                            }
+                        ],
                         "root": model_id,
                         "parent": None,
-                    })
+                        # TTS-specific metadata
+                        "capabilities": {
+                            "type": "tts",
+                            "audio_formats": ["mp3", "wav", "opus", "aac", "flac"],
+                            "sample_rate": config["sample_rate"],
+                            "languages": config.get("language", "en"),
+                            "quality": config["quality"],
+                            "description": config["description"],
+                            "backend": backend,
+                        },
+                    }
+                )
 
-            return JSONResponse(content=models_dict)
+            # Add TTS models to the response
+            if "data" in models_dict:
+                models_dict["data"].extend(tts_models)
 
-        except OpenAIBackendError as e:
-            logger.warning(f"Backend unavailable for model listing: {e}")
-            return JSONResponse(content={"object": "list", "data": []})
-        except Exception as e:
-            logger.warning(f"Error fetching models, returning empty list: {e}")
-            return JSONResponse(content={"object": "list", "data": []})
+        # Add Qwen3-Audio (STT) models if available
+        if AUDIO_AVAILABLE and QWEN3_AUDIO_MODELS:
+            stt_models = []
+            for model_key, config in QWEN3_AUDIO_MODELS.items():
+                stt_models.append(
+                    {
+                        "id": model_key,
+                        "object": "model",
+                        "created": int(datetime.now().timestamp()),
+                        "owned_by": "qwen",
+                        "permission": [
+                            {
+                                "id": "model",
+                                "object": "model_permission",
+                                "created": int(datetime.now().timestamp()),
+                            }
+                        ],
+                        "root": model_key,
+                        "parent": None,
+                        # STT-specific metadata
+                        "capabilities": {
+                            "type": "stt",
+                            "sample_rate": config["sample_rate"],
+                            "max_duration": config["max_duration"],
+                            "languages": config.get("languages", ["en"]),
+                            "supports_translation": config.get(
+                                "supports_translation", False
+                            ),
+                            "supports_timestamps": config.get(
+                                "supports_timestamps", False
+                            ),
+                            "description": config["description"],
+                        },
+                    }
+                )
+
+            # Add STT models to the response
+            if "data" in models_dict:
+                models_dict["data"].extend(stt_models)
+
+        # Add Qwen3-Vision models if available
+        if VISION_AVAILABLE and QWEN3_VISION_MODELS:
+            vision_models = []
+            for model_key, config in QWEN3_VISION_MODELS.items():
+                vision_models.append(
+                    {
+                        "id": model_key,
+                        "object": "model",
+                        "created": int(datetime.now().timestamp()),
+                        "owned_by": "qwen",
+                        "permission": [
+                            {
+                                "id": "model",
+                                "object": "model_permission",
+                                "created": int(datetime.now().timestamp()),
+                            }
+                        ],
+                        "root": model_key,
+                        "parent": None,
+                        # Vision-specific metadata
+                        "capabilities": {
+                            "type": "vision",
+                            "max_tokens": config["max_tokens"],
+                            "max_images": config.get("max_images", 1),
+                            "supports_video": config.get("supports_video", False),
+                            "description": config["description"],
+                        },
+                    }
+                )
+
+            # Add vision models to the response
+            if "data" in models_dict:
+                models_dict["data"].extend(vision_models)
+
+        return JSONResponse(content=models_dict)
 
 
     @app.get("/v1/models/context")
