@@ -22,18 +22,10 @@ class RateLimitingConfig(BaseModel):
     """Rate limiting configuration with validation"""
 
     enabled: bool = Field(default=False, description="Enable rate limiting")
-    backend: str = Field(
-        default="memory", pattern="^(memory|redis)$", description="Rate limit backend"
-    )
-    tokens_per_minute: int = Field(
-        default=10000, ge=0, description="Tokens per minute limit"
-    )
-    tokens_per_hour: int = Field(
-        default=50000, ge=0, description="Tokens per hour limit"
-    )
-    tokens_per_day: int = Field(
-        default=500000, ge=0, description="Tokens per day limit"
-    )
+    backend: str = Field(default="memory", pattern="^(memory|redis)$", description="Rate limit backend")
+    tokens_per_minute: int = Field(default=10000, ge=0, description="Tokens per minute limit")
+    tokens_per_hour: int = Field(default=50000, ge=0, description="Tokens per hour limit")
+    tokens_per_day: int = Field(default=500000, ge=0, description="Tokens per day limit")
     rpm: int = Field(default=60, ge=1, le=10000, description="Requests per minute")
 
     @field_validator("backend")
@@ -70,9 +62,7 @@ class CacheConfig(BaseModel):
     """Cache configuration with validation"""
 
     enabled: bool = Field(default=False, description="Enable caching")
-    backend: str = Field(
-        default="memory", pattern="^(memory|redis)$", description="Cache backend"
-    )
+    backend: str = Field(default="memory", pattern="^(memory|redis)$", description="Cache backend")
     default_ttl: int = Field(
         default=3600,  # 1 hour
         ge=1,
@@ -85,30 +75,22 @@ class CircuitBreakerConfig(BaseModel):
     """Circuit breaker configuration with validation"""
 
     enabled: bool = Field(default=True, description="Enable circuit breaker")
-    failure_threshold: int = Field(
-        default=5, ge=1, le=100, description="Number of failures before opening circuit"
-    )
-    success_threshold: int = Field(
-        default=2, ge=1, le=10, description="Number of successes before closing circuit"
-    )
+    failure_threshold: int = Field(default=5, ge=1, le=100, description="Number of failures before opening circuit")
+    success_threshold: int = Field(default=2, ge=1, le=10, description="Number of successes before closing circuit")
     timeout_seconds: int = Field(
         default=60,
         ge=10,
         le=600,
         description="Seconds to wait before trying half-open state",
     )
-    health_check_interval: int = Field(
-        default=10, ge=5, le=60, description="Seconds between health checks"
-    )
+    health_check_interval: int = Field(default=10, ge=5, le=60, description="Seconds between health checks")
 
 
 class RequestQueueConfig(BaseModel):
     """Request queue configuration with validation"""
 
     enabled: bool = Field(default=False, description="Enable request queuing")
-    max_concurrent: int = Field(
-        default=10, ge=1, le=1000, description="Maximum concurrent requests"
-    )
+    max_concurrent: int = Field(default=10, ge=1, le=1000, description="Maximum concurrent requests")
 
 
 class LoadBalancerConfig(BaseModel):
@@ -122,9 +104,7 @@ class ConcurrencyLimiterConfig(BaseModel):
     """Concurrency limiter configuration"""
 
     enabled: bool = Field(default=False, description="Enable concurrency limiting")
-    max_concurrency: int = Field(
-        default=1, ge=1, le=100, description="Maximum concurrent requests per model"
-    )
+    max_concurrency: int = Field(default=1, ge=1, le=100, description="Maximum concurrent requests per model")
 
 
 class KnowledgeFabricConfig(BaseSettings):
@@ -136,47 +116,29 @@ class KnowledgeFabricConfig(BaseSettings):
         extra="ignore",
     )
 
-    enabled: bool = Field(
-        default=False, description="Enable Knowledge Fabric middleware"
-    )
+    enabled: bool = Field(default=False, description="Enable Knowledge Fabric middleware")
     rrf_k: int = Field(default=60, ge=1, le=100, description="RRF constant for fusion")
     rag_enabled: bool = Field(default=False, description="Enable RAG source")
-    code_search_enabled: bool = Field(
-        default=True, description="Enable code search source"
-    )
+    code_search_enabled: bool = Field(default=True, description="Enable code search source")
     searxng_enabled: bool = Field(default=False, description="Enable SearXNG source")
-    web_search_enabled: bool = Field(
-        default=False, description="Enable MCP web search source"
-    )
-    code_search_paths: List[str] = Field(
-        default_factory=lambda: ["/etc/nixos"], description="Paths to search for code"
-    )
+    web_search_enabled: bool = Field(default=False, description="Enable MCP web search source")
+    code_search_paths: List[str] = Field(default_factory=lambda: ["/etc/nixos"], description="Paths to search for code")
     rag_top_k: int = Field(default=5, ge=1, le=20, description="RAG top-K results")
     searxng_url: str = Field(default="http://10.4.98.141:7777", description="SearXNG URL")
-    mcp_url: str = Field(
-        default="http://127.0.0.1:8080/mcp/call", description="MCP broker URL"
-    )
-    web_max_results: int = Field(
-        default=5, ge=1, le=20, description="Web search max results"
-    )
-    searxng_max_results: int = Field(
-        default=5, ge=1, le=20, description="SearXNG max results"
-    )
-    code_max_results: int = Field(
-        default=5, ge=1, le=20, description="Code search max results"
-    )
-    brain_wiki_enabled: bool = Field(
-        default=True, description="Enable brain wiki source"
-    )
+    mcp_url: str = Field(default="http://127.0.0.1:8080/mcp/call", description="MCP broker URL")
+    web_max_results: int = Field(default=5, ge=1, le=20, description="Web search max results")
+    searxng_max_results: int = Field(default=5, ge=1, le=20, description="SearXNG max results")
+    code_max_results: int = Field(default=5, ge=1, le=20, description="Code search max results")
+    brain_wiki_enabled: bool = Field(default=True, description="Enable brain wiki source")
     brain_wiki_path: str = Field(
         default=str(Path.home() / "brain" / "wiki"),
         description="Path to brain wiki directory",
     )
-    brain_wiki_max_results: int = Field(
-        default=5, ge=1, le=20, description="Brain wiki max results"
-    )
+    brain_wiki_max_results: int = Field(default=5, ge=1, le=20, description="Brain wiki max results")
     brain_wiki_max_chunk_chars: int = Field(
-        default=2000, ge=100, le=10000,
+        default=2000,
+        ge=100,
+        le=10000,
         description="Max chars per brain wiki chunk",
     )
 
@@ -190,25 +152,17 @@ class MCPServerConfig(BaseModel):
         pattern="^(local|remote)$",
         description="Server type (local or remote)",
     )
-    command: Optional[List[str]] = Field(
-        default=None, description="Command for local servers"
-    )
+    command: Optional[List[str]] = Field(default=None, description="Command for local servers")
     url: Optional[str] = Field(default=None, description="URL for remote servers")
-    headers: Dict[str, str] = Field(
-        default_factory=dict, description="HTTP headers for remote servers"
-    )
-    environment: Dict[str, str] = Field(
-        default_factory=dict, description="Environment variables for local servers"
-    )
+    headers: Dict[str, str] = Field(default_factory=dict, description="HTTP headers for remote servers")
+    environment: Dict[str, str] = Field(default_factory=dict, description="Environment variables for local servers")
 
 
 class MCPConfig(BaseModel):
     """MCP broker configuration."""
 
     enabled: bool = Field(default=False, description="Enable MCP broker")
-    servers: List[MCPServerConfig] = Field(
-        default_factory=list, description="Configured MCP servers"
-    )
+    servers: List[MCPServerConfig] = Field(default_factory=list, description="Configured MCP servers")
     # Exclude servers from env var parsing - we handle it manually in the validator
     model_config = SettingsConfigDict(extra="ignore")
 
@@ -217,9 +171,7 @@ class SystemPromptsConfig(BaseModel):
     """System prompts configuration for different request types."""
 
     enabled: bool = Field(default=False, description="Enable custom system prompts")
-    default: str = Field(
-        default="", description="Default system prompt for all requests"
-    )
+    default: str = Field(default="", description="Default system prompt for all requests")
     coding: str = Field(
         default="You are an expert coding assistant. Write clean, efficient, and well-documented code.",
         description="System prompt for coding-related requests",
@@ -240,9 +192,7 @@ class SystemPromptsConfig(BaseModel):
         default="You are a fast and efficient assistant. Provide concise, direct answers.",
         description="System prompt for fast response requests",
     )
-    custom: Dict[str, str] = Field(
-        default_factory=dict, description="Custom system prompts by name"
-    )
+    custom: Dict[str, str] = Field(default_factory=dict, description="Custom system prompts by name")
 
     def get_prompt(self, category: str) -> Optional[str]:
         """
@@ -278,20 +228,14 @@ class SentryConfig(BaseModel):
     """Sentry error tracking configuration."""
 
     enabled: bool = Field(default=False, description="Enable Sentry error tracking")
-    dsn: Optional[str] = Field(
-        default=None, repr=False, exclude=True, description="Sentry DSN"
-    )
-    dsn_file: Optional[str] = Field(
-        default=None, description="Path to file containing Sentry DSN"
-    )
+    dsn: Optional[str] = Field(default=None, repr=False, exclude=True, description="Sentry DSN")
+    dsn_file: Optional[str] = Field(default=None, description="Path to file containing Sentry DSN")
     environment: str = Field(
         default="production",
         pattern="^(development|staging|production)$",
         description="Sentry environment",
     )
-    traces_sample_rate: float = Field(
-        default=0.1, ge=0.0, le=1.0, description="Sample rate for performance tracing"
-    )
+    traces_sample_rate: float = Field(default=0.1, ge=0.0, le=1.0, description="Sample rate for performance tracing")
 
     def get_dsn(self) -> Optional[str]:
         """
@@ -320,9 +264,7 @@ class ObservabilityConfig(BaseModel):
     """Observability and logging configuration with validation"""
 
     enabled: bool = Field(default=True, description="Enable observability")
-    structured_logging: bool = Field(
-        default=True, description="Use structured JSON logging"
-    )
+    structured_logging: bool = Field(default=True, description="Use structured JSON logging")
     request_id_header: str = Field(
         default="X-Request-ID",
         min_length=1,
@@ -334,9 +276,7 @@ class ObservabilityConfig(BaseModel):
         pattern="^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$",
         description="Logging level",
     )
-    log_format: str = Field(
-        default="json", pattern="^(json|text)$", description="Log output format"
-    )
+    log_format: str = Field(default="json", pattern="^(json|text)$", description="Log output format")
 
     @field_validator("log_level")
     @classmethod
@@ -361,12 +301,8 @@ class MiddlewareConfig(BaseSettings):
     rate_limiting: RateLimitingConfig = Field(
         default_factory=RateLimitingConfig, description="Rate limiting configuration"
     )
-    security: SecurityConfig = Field(
-        default_factory=SecurityConfig, description="Security filter configuration"
-    )
-    cache: CacheConfig = Field(
-        default_factory=CacheConfig, description="Cache configuration"
-    )
+    security: SecurityConfig = Field(default_factory=SecurityConfig, description="Security filter configuration")
+    cache: CacheConfig = Field(default_factory=CacheConfig, description="Cache configuration")
     circuit_breaker: CircuitBreakerConfig = Field(
         default_factory=CircuitBreakerConfig,
         description="Circuit breaker configuration",
@@ -384,9 +320,7 @@ class MiddlewareConfig(BaseSettings):
     observability: ObservabilityConfig = Field(
         default_factory=ObservabilityConfig, description="Observability configuration"
     )
-    mcp: MCPConfig = Field(
-        default_factory=MCPConfig, description="MCP broker configuration"
-    )
+    mcp: MCPConfig = Field(default_factory=MCPConfig, description="MCP broker configuration")
 
     knowledge_fabric: KnowledgeFabricConfig = Field(
         default_factory=KnowledgeFabricConfig,
@@ -403,34 +337,16 @@ class MiddlewareConfig(BaseSettings):
         # Read env vars with MIDDLEWARE__KNOWLEDGE_FABRIC__ prefix
         enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__ENABLED", "").lower()
         rrf_k = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__RRF_K", "")
-        rag_enabled = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__RAG_ENABLED", ""
-        ).lower()
-        searxng_enabled = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_ENABLED", ""
-        ).lower()
-        searxng_url = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_URL", "http://10.4.98.141:7777"
-        )
-        code_search_enabled = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_SEARCH_ENABLED", ""
-        ).lower()
-        web_search_enabled = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__WEB_SEARCH_ENABLED", ""
-        ).lower()
-        code_search_paths_raw = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_SEARCH_PATHS", '["/etc/nixos"]'
-        )
+        rag_enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__RAG_ENABLED", "").lower()
+        searxng_enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_ENABLED", "").lower()
+        searxng_url = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_URL", "http://10.4.98.141:7777")
+        code_search_enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_SEARCH_ENABLED", "").lower()
+        web_search_enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__WEB_SEARCH_ENABLED", "").lower()
+        code_search_paths_raw = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_SEARCH_PATHS", '["/etc/nixos"]')
         rag_top_k = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__RAG_TOP_K", "5")
-        searxng_max_results = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_MAX_RESULTS", "5"
-        )
-        code_max_results = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_MAX_RESULTS", "5"
-        )
-        web_max_results = os.environ.get(
-            "MIDDLEWARE__KNOWLEDGE_FABRIC__WEB_MAX_RESULTS", "5"
-        )
+        searxng_max_results = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__SEARXNG_MAX_RESULTS", "5")
+        code_max_results = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__CODE_MAX_RESULTS", "5")
+        web_max_results = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__WEB_MAX_RESULTS", "5")
 
         # Parse JSON paths
         try:
@@ -448,15 +364,9 @@ class MiddlewareConfig(BaseSettings):
         self.knowledge_fabric.web_search_enabled = web_search_enabled == "true"
         self.knowledge_fabric.code_search_paths = code_search_paths
         self.knowledge_fabric.rag_top_k = int(rag_top_k) if rag_top_k else 5
-        self.knowledge_fabric.searxng_max_results = (
-            int(searxng_max_results) if searxng_max_results else 5
-        )
-        self.knowledge_fabric.code_max_results = (
-            int(code_max_results) if code_max_results else 5
-        )
-        self.knowledge_fabric.web_max_results = (
-            int(web_max_results) if web_max_results else 5
-        )
+        self.knowledge_fabric.searxng_max_results = int(searxng_max_results) if searxng_max_results else 5
+        self.knowledge_fabric.code_max_results = int(code_max_results) if code_max_results else 5
+        self.knowledge_fabric.web_max_results = int(web_max_results) if web_max_results else 5
 
         return self
 
@@ -507,6 +417,7 @@ class MiddlewareConfig(BaseSettings):
                 self.mcp.servers = servers
             except Exception as e:
                 import logging
+
                 logging.warning(f"Failed to parse MCP_SERVERS JSON: {e}")
 
         return self
@@ -519,9 +430,7 @@ class MiddlewareConfig(BaseSettings):
     CHUNK_SIZE: int = Field(default=512, description="Chunk size")
     CHUNK_OVERLAP: int = Field(default=50, description="Chunk overlap")
     RAG_TOP_K: int = Field(default=5, description="Default top-K results")
-    HYBRID_SEARCH_ENABLED: bool = Field(
-        default=True, description="Enable hybrid search"
-    )
+    HYBRID_SEARCH_ENABLED: bool = Field(default=True, description="Enable hybrid search")
     RERANKER_ENABLED: bool = Field(default=True, description="Enable reranking")
 
 
@@ -549,17 +458,11 @@ class GatewayConfig(BaseSettings):
 
     # Core settings with validation
     gateway_host: str = Field(default="127.0.0.1", description="Gateway listen host")
-    gateway_port: int = Field(
-        default=8080, ge=1, le=65535, description="Gateway listen port"
-    )
+    gateway_port: int = Field(default=8080, ge=1, le=65535, description="Gateway listen port")
 
     # Backend settings with validation
-    backend_url: str = Field(
-        default="http://127.0.0.1:1234", description="Primary backend service URL"
-    )
-    backend_fallback_urls: str = Field(
-        default="", description="Fallback backend URLs (comma-separated)"
-    )
+    backend_url: str = Field(default="http://127.0.0.1:1234", description="Primary backend service URL")
+    backend_fallback_urls: str = Field(default="", description="Fallback backend URLs (comma-separated)")
     backend_type: str = Field(
         default="llama-cpp",
         pattern="^(llama-cpp|vllm|sglang|zai|pollinations|nvidia-nim)$",
@@ -567,29 +470,16 @@ class GatewayConfig(BaseSettings):
     )
 
     # Local backend (always-on llama-cpp)
-    local_backend_url: str = Field(
-        default="http://127.0.0.1:1235",
-        description="Local llama-cpp backend URL"
-    )
-    local_backend_model: str = Field(
-        default="gemma-4-e2b-it",
-        description="Default model on local backend"
-    )
+    local_backend_url: str = Field(default="http://127.0.0.1:1235", description="Local llama-cpp backend URL")
+    local_backend_model: str = Field(default="gemma-4-e2b-it", description="Default model on local backend")
 
     # Secondary local backend (3060Ti)
-    secondary_backend_url: str = Field(
-        default="",
-        description="Secondary local backend URL (e.g., 3060Ti)"
-    )
-    secondary_backend_model: str = Field(
-        default="",
-        description="Model name on secondary backend"
-    )
+    secondary_backend_url: str = Field(default="", description="Secondary local backend URL (e.g., 3060Ti)")
+    secondary_backend_model: str = Field(default="", description="Model name on secondary backend")
 
     # NVIDIA NIM backend
     nvidia_nim_base_url: str = Field(
-        default="https://integrate.api.nvidia.com/v1",
-        description="NVIDIA NIM API base URL"
+        default="https://integrate.api.nvidia.com/v1", description="NVIDIA NIM API base URL"
     )
     nvidia_nim_api_key: Optional[SecretStr] = Field(
         default=None, repr=False, exclude=True, description="NVIDIA NIM API key"
@@ -602,9 +492,28 @@ class GatewayConfig(BaseSettings):
         """Get backend fallback URLs as a list."""
         if not self.backend_fallback_urls:
             return []
-        return [
-            url.strip() for url in self.backend_fallback_urls.split(",") if url.strip()
-        ]
+        return [url.strip() for url in self.backend_fallback_urls.split(",") if url.strip()]
+
+    def get_backend_fallback_types(self) -> list[str]:
+        """Get backend fallback types inferred from URLs."""
+        fallback_urls = self.get_backend_fallback_urls()
+        fallback_types = []
+        for url in fallback_urls:
+            url_lower = url.lower()
+            if "api.z.ai" in url_lower or "zai" in url_lower:
+                fallback_types.append("zai")
+            elif "nvidia.com" in url_lower or "api.nvidia" in url_lower:
+                fallback_types.append("nvidia-nim")
+            elif "pollinations" in url_lower:
+                fallback_types.append("pollinations")
+            elif "vllm" in url_lower:
+                fallback_types.append("vllm")
+            elif "sglang" in url_lower:
+                fallback_types.append("sglang")
+            else:
+                # Default to llama-cpp for local URLs
+                fallback_types.append("llama-cpp")
+        return fallback_types
 
     def get_nvidia_nim_api_key(self) -> Optional[str]:
         """Get NVIDIA NIM API key from file or direct value."""
@@ -619,12 +528,8 @@ class GatewayConfig(BaseSettings):
         return None
 
     # API Keys (marked as secrets - won't appear in logs or repr)
-    zai_api_key: Optional[SecretStr] = Field(
-        default=None, repr=False, exclude=True, description="ZAI API key"
-    )
-    zai_api_key_file: Optional[str] = Field(
-        default=None, description="Path to file containing ZAI API key"
-    )
+    zai_api_key: Optional[SecretStr] = Field(default=None, repr=False, exclude=True, description="ZAI API key")
+    zai_api_key_file: Optional[str] = Field(default=None, description="Path to file containing ZAI API key")
 
     pollinations_api_key: Optional[SecretStr] = Field(
         default=None, repr=False, exclude=True, description="Pollinations API key"
@@ -634,14 +539,10 @@ class GatewayConfig(BaseSettings):
     )
 
     # Middleware configuration
-    middleware: MiddlewareConfig = Field(
-        default=MiddlewareConfig(), description="Middleware configuration"
-    )
+    middleware: MiddlewareConfig = Field(default=MiddlewareConfig(), description="Middleware configuration")
 
     # Sentry error tracking configuration
-    sentry: SentryConfig = Field(
-        default_factory=SentryConfig, description="Sentry error tracking configuration"
-    )
+    sentry: SentryConfig = Field(default_factory=SentryConfig, description="Sentry error tracking configuration")
 
     # System prompts configuration
     system_prompts: SystemPromptsConfig = Field(

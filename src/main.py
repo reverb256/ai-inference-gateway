@@ -388,9 +388,7 @@ def build_backend_headers(config: GatewayConfig, request_headers: dict) -> dict:
     }
 
     # Start with client headers (excluding problematic headers)
-    headers = {
-        k: v for k, v in request_headers.items() if k.lower() not in excluded_headers
-    }
+    headers = {k: v for k, v in request_headers.items() if k.lower() not in excluded_headers}
 
     # Only add backend authentication if client didn't provide one
     if "authorization" not in {k.lower() for k in headers.keys()}:
@@ -448,9 +446,7 @@ async def lifespan(app: FastAPI):
                     state.config.sentry.traces_sample_rate,
                 )
             except ImportError:
-                logger.warning(
-                    "sentry-sdk not available, skipping Sentry initialization"
-                )
+                logger.warning("sentry-sdk not available, skipping Sentry initialization")
             except Exception as e:
                 logger.warning(f"Sentry initialization failed: {e}")
         else:
@@ -468,9 +464,7 @@ async def lifespan(app: FastAPI):
 
     # Build middleware pipeline
     state.pipeline = build_middleware_pipeline(state.config, state.redis_client)
-    logger.info(
-        "Middleware pipeline initialized with %d middleware", state.pipeline.count
-    )
+    logger.info("Middleware pipeline initialized with %d middleware", state.pipeline.count)
 
     # Initialize router (no API key needed for llama-cpp)
     try:
@@ -531,9 +525,7 @@ async def lifespan(app: FastAPI):
                     model=embedding_model,
                     device=os.getenv("EMBEDDING_DEVICE", "cpu"),  # CPU by default (GPU often mining)
                 ),
-                chunking=ChunkingConfig(
-                    chunk_size=chunk_size, chunk_overlap=chunk_overlap
-                ),
+                chunking=ChunkingConfig(chunk_size=chunk_size, chunk_overlap=chunk_overlap),
                 search=SearchConfig(default_top_k=top_k, hybrid_search=hybrid_search),
                 reranker=RerankerConfig(enable=reranker_enabled, model=reranker_model),
             )
@@ -541,16 +533,12 @@ async def lifespan(app: FastAPI):
             # Initialize components
             embedder = await create_embedding_service(state.rag_config.embedding)
             qdrant = await get_qdrant_manager(state.rag_config)  # noqa: F823
-            state.rag_search = await create_search_service(
-                state.rag_config, embedder, qdrant
-            )
+            state.rag_search = await create_search_service(state.rag_config, embedder, qdrant)
 
             logger.info("RAG service initialized successfully")
 
             # Initialize RAG ingestion service if enabled
-            rag_ingestion_enabled = (
-                os.getenv("RAG_INGESTION_ENABLED", "false").lower() == "true"
-            )
+            rag_ingestion_enabled = os.getenv("RAG_INGESTION_ENABLED", "false").lower() == "true"
 
             if RAG_INGESTION_AVAILABLE and rag_ingestion_enabled:
                 try:
@@ -560,12 +548,8 @@ async def lifespan(app: FastAPI):
                     allowed_domains_str = os.getenv("RAG_ALLOWED_DOMAINS", "")
                     blocked_domains_str = os.getenv("RAG_BLOCKED_DOMAINS", "")
 
-                    allowed_domains = [
-                        d.strip() for d in allowed_domains_str.split(",") if d.strip()
-                    ]
-                    blocked_domains = [
-                        d.strip() for d in blocked_domains_str.split(",") if d.strip()
-                    ]
+                    allowed_domains = [d.strip() for d in allowed_domains_str.split(",") if d.strip()]
+                    blocked_domains = [d.strip() for d in blocked_domains_str.split(",") if d.strip()]
 
                     # Get RAG components
                     from ai_inference_gateway.rag.chunker import DocumentChunker
@@ -596,9 +580,7 @@ async def lifespan(app: FastAPI):
                     logger.warning(f"RAG ingestion service initialization failed: {e}")
                     state.rag_ingestion = None
             else:
-                logger.info(
-                    "RAG ingestion service disabled (set RAG_INGESTION_ENABLED=true to enable)"
-                )
+                logger.info("RAG ingestion service disabled (set RAG_INGESTION_ENABLED=true to enable)")
         except Exception as e:
             logger.error(f"RAG initialization failed: {e}")
             import traceback
@@ -610,9 +592,7 @@ async def lifespan(app: FastAPI):
     if SEMANTIC_CACHE_AVAILABLE:
         try:
             # Check if semantic cache is enabled via environment variable
-            semantic_cache_enabled = (
-                os.getenv("SEMANTIC_CACHE_ENABLED", "false").lower() == "true"
-            )
+            semantic_cache_enabled = os.getenv("SEMANTIC_CACHE_ENABLED", "false").lower() == "true"
 
             if semantic_cache_enabled:
                 logger.info("Initializing semantic cache...")
@@ -620,9 +600,7 @@ async def lifespan(app: FastAPI):
                 # Get environment variables
                 redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
                 qdrant_url = os.getenv("QDRANT_URL", "http://127.0.0.1:6333")
-                similarity_threshold = float(
-                    os.getenv("SEMANTIC_CACHE_SIMILARITY_THRESHOLD", "0.85")
-                )
+                similarity_threshold = float(os.getenv("SEMANTIC_CACHE_SIMILARITY_THRESHOLD", "0.85"))
                 exact_ttl = int(os.getenv("EXACT_CACHE_TTL_SECONDS", "3600"))
                 semantic_ttl = int(os.getenv("SEMANTIC_CACHE_TTL_SECONDS", "86400"))
 
@@ -639,9 +617,7 @@ async def lifespan(app: FastAPI):
                 state.semantic_cache = SemanticCache(config=cache_config)
                 logger.info("Semantic cache initialized (Redis + Qdrant)")
             else:
-                logger.info(
-                    "Semantic cache disabled (set SEMANTIC_CACHE_ENABLED=true to enable)"
-                )
+                logger.info("Semantic cache disabled (set SEMANTIC_CACHE_ENABLED=true to enable)")
         except Exception as e:
             logger.warning(f"Semantic cache initialization failed: {e}")
             state.semantic_cache = None
@@ -657,13 +633,9 @@ async def lifespan(app: FastAPI):
             if searxng_enabled:
                 logger.info("Initializing SearXNG integration...")
                 state.searxng = get_searxng(cache_ttl=cache_ttl)
-                logger.info(
-                    "SearXNG integration initialized (auto-improving features enabled)"
-                )
+                logger.info("SearXNG integration initialized (auto-improving features enabled)")
             else:
-                logger.info(
-                    "SearXNG integration disabled (set SEARXNG_ENABLED=true to enable)"
-                )
+                logger.info("SearXNG integration disabled (set SEARXNG_ENABLED=true to enable)")
         except Exception as e:
             logger.warning(f"SearXNG initialization failed: {e}")
             state.searxng = None
@@ -702,6 +674,7 @@ async def lifespan(app: FastAPI):
     # Initialize cost tracker (always available — SQLite, zero deps)
     try:
         from ai_inference_gateway.services.cost_tracker import CostTracker
+
         cost_tracker = CostTracker()
         app.state.cost_tracker = cost_tracker
         logger.info("Cost tracker initialized (SQLite)")
@@ -712,6 +685,7 @@ async def lifespan(app: FastAPI):
     # Initialize virtual key manager
     try:
         from ai_inference_gateway.services.virtual_keys import VirtualKeyManager
+
         app.state.virtual_key_manager = VirtualKeyManager()
         logger.info("Virtual key manager initialized")
     except Exception as e:
@@ -787,9 +761,7 @@ async def lifespan(app: FastAPI):
     logger.info("Gateway shutdown complete")
 
 
-def build_middleware_pipeline(
-    config: GatewayConfig, redis_client: Optional[RedisClient]
-) -> MiddlewarePipeline:
+def build_middleware_pipeline(config: GatewayConfig, redis_client: Optional[RedisClient]) -> MiddlewarePipeline:
     """
     Build the middleware pipeline from configuration.
 
@@ -865,17 +837,13 @@ def build_middleware_pipeline(
 
     # Add rate limiter
     if config.middleware.rate_limiting.enabled:
-        rate_limiter = RateLimiterMiddleware(
-            config=config.middleware.rate_limiting, redis_client=redis_client
-        )
+        rate_limiter = RateLimiterMiddleware(config=config.middleware.rate_limiting, redis_client=redis_client)
         pipeline.add(rate_limiter)
         logger.info("Added RateLimiterMiddleware")
 
     # Add concurrency limiter
     if config.middleware.concurrency_limiter.enabled:
-        concurrency_limiter = ConcurrencyLimiter(
-            max_concurrency=config.middleware.concurrency_limiter.max_concurrency
-        )
+        concurrency_limiter = ConcurrencyLimiter(max_concurrency=config.middleware.concurrency_limiter.max_concurrency)
         pipeline.add(concurrency_limiter)
         logger.info(
             f"Added ConcurrencyLimiter (max_concurrency={config.middleware.concurrency_limiter.max_concurrency})"
@@ -942,9 +910,7 @@ def translate_openai_to_anthropic(openai_response: dict, original_model: str) ->
     if not anthropic_content:
         usage = openai_response.get("usage", {})
         if usage.get("completion_tokens", 0) > 0:
-            logger.warning(
-                f"Model {original_model} generated tokens but no content returned"
-            )
+            logger.warning(f"Model {original_model} generated tokens but no content returned")
             anthropic_content.append({"type": "text", "text": ""})
 
     return {
@@ -957,15 +923,9 @@ def translate_openai_to_anthropic(openai_response: dict, original_model: str) ->
         "stop_sequence": None,
         "usage": {
             "input_tokens": openai_response.get("usage", {}).get("prompt_tokens", 0),
-            "output_tokens": openai_response.get("usage", {}).get(
-                "completion_tokens", 0
-            ),
-            "cache_creation_input_tokens": openai_response.get("usage", {}).get(
-                "cache_creation_tokens", 0
-            ),
-            "cache_read_input_tokens": openai_response.get("usage", {}).get(
-                "cache_read_tokens", 0
-            ),
+            "output_tokens": openai_response.get("usage", {}).get("completion_tokens", 0),
+            "cache_creation_input_tokens": openai_response.get("usage", {}).get("cache_creation_tokens", 0),
+            "cache_read_input_tokens": openai_response.get("usage", {}).get("cache_read_tokens", 0),
         },
     }
 
@@ -1007,10 +967,7 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
         stream=stream,
     )
 
-    logger.info(
-        f"[role-route] Routed to model: {route_decision.model} "
-        f"(backend: {route_decision.backend})"
-    )
+    logger.info(f"[role-route] Routed to model: {route_decision.model} (backend: {route_decision.backend})")
 
     metrics_tracker = ModelMetricsTracker(
         model=route_decision.model,
@@ -1044,9 +1001,7 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
         if stream:
             has_tools = "tools" in body and body.get("tools")
             stream_func = (
-                stream_backend_response_with_tools
-                if has_tools and state.mcp_broker
-                else stream_backend_response
+                stream_backend_response_with_tools if has_tools and state.mcp_broker else stream_backend_response
             )
             stream_kwargs = {
                 "openai_client": state.openai_client,
@@ -1116,12 +1071,14 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
     # Register modular route handlers
     try:
         from ai_inference_gateway.routes.admin import router as admin_router
+
         app.include_router(admin_router)
     except ImportError as e:
         logger.warning(f"Admin routes not available: {e}")
 
     try:
         from ai_inference_gateway.routes.virtual_keys import router as vk_router
+
         app.include_router(vk_router)
     except ImportError as e:
         logger.warning(f"Virtual keys routes not available: {e}")
@@ -1189,9 +1146,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 for middleware in state.pipeline.middleware:
                     if hasattr(middleware, "_state"):
                         state_name = (
-                            middleware._state.name
-                            if hasattr(middleware._state, "name")
-                            else str(middleware._state)
+                            middleware._state.name if hasattr(middleware._state, "name") else str(middleware._state)
                         )
                         health_response["circuit_breaker"] = {
                             "state": state_name,
@@ -1248,29 +1203,30 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         model_list = []
         if state.router:
             for model_id, model_info in state.router.models.items():
-                model_list.append({
-                    "id": model_id,
-                    "object": "model",
-                    "created": int(datetime.now().timestamp()),
-                    "owned_by": model_info.backend,
-                    "permission": [],
-                    "root": model_id,
-                    "parent": None,
-                    "context_length": model_info.context_length,
-                    "backend": model_info.backend,
-                })
+                model_list.append(
+                    {
+                        "id": model_id,
+                        "object": "model",
+                        "created": int(datetime.now().timestamp()),
+                        "owned_by": model_info.backend,
+                        "permission": [],
+                        "root": model_id,
+                        "parent": None,
+                        "context_length": model_info.context_length,
+                        "backend": model_info.backend,
+                    }
+                )
 
         # Try to add upstream models from primary backend
         try:
             models = await state.openai_client.primary_client.models.list()
             try:
                 from ai_inference_gateway.metrics import update_model_availability
+
                 model_ids = [m.id for m in models.data]
                 update_model_availability(model_ids)
             except Exception as metrics_error:
-                logger.warning(
-                    f"Failed to update model availability metrics: {metrics_error}"
-                )
+                logger.warning(f"Failed to update model availability metrics: {metrics_error}")
             # Merge upstream models into list (skip duplicates)
             existing_ids = {m["id"] for m in model_list}
             for m in models.data:
@@ -1351,12 +1307,8 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                             "sample_rate": config["sample_rate"],
                             "max_duration": config["max_duration"],
                             "languages": config.get("languages", ["en"]),
-                            "supports_translation": config.get(
-                                "supports_translation", False
-                            ),
-                            "supports_timestamps": config.get(
-                                "supports_timestamps", False
-                            ),
+                            "supports_translation": config.get("supports_translation", False),
+                            "supports_timestamps": config.get("supports_timestamps", False),
                             "description": config["description"],
                         },
                     }
@@ -1402,11 +1354,11 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         return JSONResponse(content=models_dict)
 
-
     @app.get("/v1/models/context")
     async def get_context_map():
         """Return all model context windows - single source of truth."""
         from .contexts import get_all_models_info
+
         return get_all_models_info()
 
     # Add system prompts endpoint
@@ -1493,9 +1445,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         # (OpenAI JSON mode -> system prompts)
         if "response_format" in body:
             body = await transform_request(body)
-            logger.debug(
-                f"Transformed response_format request for model: {body.get('model')}"
-            )
+            logger.debug(f"Transformed response_format request for model: {body.get('model')}")
 
         # Check if streaming is requested
         stream = body.get("stream", False)
@@ -1533,9 +1483,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                         model_routed=route_decision.model,
                         routing_reason=route_decision.reason,
                         token_count=route_decision.estimated_tokens,
-                        task_type=route_decision.specialization.value
-                        if route_decision.specialization
-                        else "general",
+                        task_type=route_decision.specialization.value if route_decision.specialization else "general",
                         latency_ms=0,  # Will be updated after request completes
                         backend_used=route_decision.backend,
                     )
@@ -1575,24 +1523,16 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 if "thinking" in body:
                     thinking = body.get("thinking", {})
                     if isinstance(thinking, dict):
-                        thinking_enabled = (
-                            thinking.get("type", "disabled") != "disabled"
-                        )
+                        thinking_enabled = thinking.get("type", "disabled") != "disabled"
                     elif isinstance(thinking, bool):
                         thinking_enabled = thinking
 
                 # Detect task type from messages for better param selection
                 task_type = "general"
                 messages_text = " ".join([m.get("content", "") for m in messages])
-                if any(
-                    keyword in messages_text.lower()
-                    for keyword in ["code", "function", "debug", "fix"]
-                ):
+                if any(keyword in messages_text.lower() for keyword in ["code", "function", "debug", "fix"]):
                     task_type = "coding"
-                elif any(
-                    keyword in messages_text.lower()
-                    for keyword in ["tool", "search", "call", "execute"]
-                ):
+                elif any(keyword in messages_text.lower() for keyword in ["tool", "search", "call", "execute"]):
                     task_type = "agentic"
                 elif len(messages_text) > 10000:  # Long conversation, prioritize speed
                     task_type = "fast"
@@ -1630,11 +1570,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         #   {"thinking": {"type": "enabled"}, ...}                      (OpenAI reasoning style)
         try:
             model_lower = route_decision.model.lower()
-            is_thinking_model = (
-                "qwen" in model_lower
-                or "gemma" in model_lower
-                or "glm" in model_lower
-            )
+            is_thinking_model = "qwen" in model_lower or "gemma" in model_lower or "glm" in model_lower
 
             if is_thinking_model:
                 # Check if caller explicitly wants thinking ON
@@ -1704,11 +1640,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         metrics_tracker.record_routing_decision(
             confidence=route_decision.confidence,
             reason=route_decision.reason,
-            specialization=(
-                route_decision.specialization.value
-                if route_decision.specialization
-                else None
-            ),
+            specialization=(route_decision.specialization.value if route_decision.specialization else None),
         )
 
         # Create context for middleware
@@ -1751,9 +1683,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             # Handle streaming response
             # Use tool-enabled streaming if tools are present
             stream_func = (
-                stream_backend_response_with_tools
-                if has_tools and state.mcp_broker
-                else stream_backend_response
+                stream_backend_response_with_tools if has_tools and state.mcp_broker else stream_backend_response
             )
 
             # Prepare kwargs for streaming function
@@ -1858,19 +1788,14 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             )
             # Check for reasoning patterns
             is_reasoning = any(
-                keyword in str(messages).lower()
-                for keyword in ["reason", "think", "step", "explain", "why", "how"]
+                keyword in str(messages).lower() for keyword in ["reason", "think", "step", "explain", "why", "how"]
             )
             # Check for agentic patterns
             is_agentic = any(
-                keyword in str(messages).lower()
-                for keyword in ["agent", "workflow", "multi-step", "plan", "execute"]
+                keyword in str(messages).lower() for keyword in ["agent", "workflow", "multi-step", "plan", "execute"]
             )
             # Check for fast response request
-            is_fast = any(
-                keyword in str(messages).lower()
-                for keyword in ["quickly", "asap", "fast", "brief", "short"]
-            )
+            is_fast = any(keyword in str(messages).lower() for keyword in ["quickly", "asap", "fast", "brief", "short"])
 
             if is_coding:
                 system = state.config.system_prompts.get_prompt("coding")
@@ -1913,9 +1838,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 "auto": None,  # Let backend decide
             }
             thinking_budget = effort_budget_map.get(thinking_intensity)
-            logger.info(
-                f"Thinking intensity '{thinking_intensity}' → budget_tokens={thinking_budget}"
-            )
+            logger.info(f"Thinking intensity '{thinking_intensity}' → budget_tokens={thinking_budget}")
 
         # Build/update thinking dict in body for backend compatibility
         # Format: {"type": "enabled"|"disabled"|"adaptive", "budget_tokens": int}
@@ -1949,10 +1872,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         body["messages"] = trimmed_messages
 
         if len(trimmed_messages) != len(messages):
-            logger.info(
-                f"Prefill optimization: {len(messages)} → {len(trimmed_messages)} messages "
-                f"for model {model}"
-            )
+            logger.info(f"Prefill optimization: {len(messages)} → {len(trimmed_messages)} messages for model {model}")
 
         # Update model in request
         body["model"] = route_decision.model
@@ -1982,11 +1902,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         metrics_tracker.record_routing_decision(
             confidence=route_decision.confidence,
             reason=route_decision.reason,
-            specialization=(
-                route_decision.specialization.value
-                if route_decision.specialization
-                else None
-            ),
+            specialization=(route_decision.specialization.value if route_decision.specialization else None),
         )
 
         # Build headers with authentication
@@ -2152,15 +2068,9 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             "models": all_metrics,
             "summary": {
                 "total_models_with_retries": len(all_metrics),
-                "total_retry_attempts": sum(
-                    m.get("total_retries", 0) for m in all_metrics.values()
-                ),
-                "total_success_after_retry": sum(
-                    m.get("total_success", 0) for m in all_metrics.values()
-                ),
-                "total_failures_after_retry": sum(
-                    m.get("total_failures", 0) for m in all_metrics.values()
-                ),
+                "total_retry_attempts": sum(m.get("total_retries", 0) for m in all_metrics.values()),
+                "total_success_after_retry": sum(m.get("total_success", 0) for m in all_metrics.values()),
+                "total_failures_after_retry": sum(m.get("total_failures", 0) for m in all_metrics.values()),
             },
         }
 
@@ -2255,9 +2165,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not hasattr(state, "rag_ingestion") or not state.rag_ingestion:
-            raise HTTPException(
-                status_code=501, detail="RAG ingestion service not enabled"
-            )
+            raise HTTPException(status_code=501, detail="RAG ingestion service not enabled")
 
         body = await request.json()
         url = body.get("url")
@@ -2269,11 +2177,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         # Parse source preference
         try:
-            source = (
-                IngestionSource(source_str)
-                if RAG_INGESTION_AVAILABLE
-                else IngestionSource.HTTP_DIRECT
-            )
+            source = IngestionSource(source_str) if RAG_INGESTION_AVAILABLE else IngestionSource.HTTP_DIRECT
         except ValueError:
             source = IngestionSource.HTTP_DIRECT
 
@@ -2307,9 +2211,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not hasattr(state, "rag_ingestion") or not state.rag_ingestion:
-            raise HTTPException(
-                status_code=501, detail="RAG ingestion service not enabled"
-            )
+            raise HTTPException(status_code=501, detail="RAG ingestion service not enabled")
 
         body = await request.json()
         urls = body.get("urls", [])
@@ -2321,11 +2223,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         # Parse source preference
         try:
-            source = (
-                IngestionSource(source_str)
-                if RAG_INGESTION_AVAILABLE
-                else IngestionSource.HTTP_DIRECT
-            )
+            source = IngestionSource(source_str) if RAG_INGESTION_AVAILABLE else IngestionSource.HTTP_DIRECT
         except ValueError:
             source = IngestionSource.HTTP_DIRECT
 
@@ -2453,9 +2351,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         Returns moderation results.
         """
         if not MODERATION_AVAILABLE:
-            raise HTTPException(
-                status_code=501, detail="Content moderation not available"
-            )
+            raise HTTPException(status_code=501, detail="Content moderation not available")
 
         body = await request.json()
         text = body.get("text", "")
@@ -2493,9 +2389,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         Returns filtered messages and moderation result.
         """
         if not MODERATION_AVAILABLE:
-            raise HTTPException(
-                status_code=501, detail="Content moderation not available"
-            )
+            raise HTTPException(status_code=501, detail="Content moderation not available")
 
         body = await request.json()
         messages = body.get("messages", [])
@@ -2522,9 +2416,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
     async def get_moderation_categories():
         """Get available moderation categories."""
         if not MODERATION_AVAILABLE:
-            raise HTTPException(
-                status_code=501, detail="Content moderation not available"
-            )
+            raise HTTPException(status_code=501, detail="Content moderation not available")
 
         moderator = get_default_moderator()
 
@@ -2547,13 +2439,9 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         arguments = body.get("arguments", {})
 
         if not server_name or not tool_name:
-            raise HTTPException(
-                status_code=400, detail="Missing required fields: server, tool"
-            )
+            raise HTTPException(status_code=400, detail="Missing required fields: server, tool")
 
-        result = await state.mcp_broker.call_tool(
-            server_name=server_name, tool_name=tool_name, arguments=arguments
-        )
+        result = await state.mcp_broker.call_tool(server_name=server_name, tool_name=tool_name, arguments=arguments)
         return result
 
     @app.get("/mcp/health/{server_name}")
@@ -2632,9 +2520,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             stats = await state.searxng.get_learning_stats()
             return stats
@@ -2645,9 +2531,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             state.searxng.clear_cache()
             return {"success": True, "message": "SearXNG cache cleared"}
@@ -2662,9 +2546,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
             try:
                 async with httpx.AsyncClient(timeout=5.0) as client:
-                    response = await client.get(
-                        f"{searxng_url}/search", params={"q": "test"}
-                    )
+                    response = await client.get(f"{searxng_url}/search", params={"q": "test"})
                     if response.status_code == 200:
                         return {
                             "status": "healthy",
@@ -2703,9 +2585,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             body = await request.json()
             query = body.get("query", "").strip()
@@ -2751,9 +2631,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             agent_engine = get_agent_search_engine(state.searxng)
             stats = agent_engine.get_learning_stats()
@@ -2765,9 +2643,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             body = await request.json()
             query = body.get("query", "").strip()
@@ -2799,9 +2675,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             refresh = request.query_params.get("refresh", "false").lower() == "true"
 
             bridge = get_http_mcp_bridge(state.mcp_broker)
-            tools = await bridge.list_tools(
-                server_name=server_name, refresh_cache=refresh
-            )
+            tools = await bridge.list_tools(server_name=server_name, refresh_cache=refresh)
 
             return {"tools": tools}
 
@@ -2900,9 +2774,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             body = await request.json()
             query = body.get("query", "").strip()
@@ -2954,9 +2826,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             state: GatewayState = app.state.gateway
 
             if not state.searxng:
-                raise HTTPException(
-                    status_code=501, detail="SearXNG integration not enabled"
-                )
+                raise HTTPException(status_code=501, detail="SearXNG integration not enabled")
 
             body = await request.json()
             query = body.get("query", "").strip()
@@ -3021,9 +2891,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 results.append(result)
 
             # Return summary
-            total_chunks = sum(
-                r.get("chunks_created", 0) for r in results if r.get("success")
-            )
+            total_chunks = sum(r.get("chunks_created", 0) for r in results if r.get("success"))
             return {
                 "success": True,
                 "documents_ingested": len(results),
@@ -3042,17 +2910,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
             query = request.query_params.get("query", "")
             if not query:
-                raise HTTPException(
-                    status_code=400, detail="Missing required parameter: query"
-                )
+                raise HTTPException(status_code=400, detail="Missing required parameter: query")
 
             collection = request.query_params.get("collection", "brain-wiki")
             top_k = int(request.query_params.get("top_k", 5))
             rerank = request.query_params.get("rerank", "true").lower() == "true"
 
-            result = await state.rag_search.search(
-                query=query, collection=collection, top_k=top_k, rerank=rerank
-            )
+            result = await state.rag_search.search(query=query, collection=collection, top_k=top_k, rerank=rerank)
 
             return result
 
@@ -3080,13 +2944,9 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             document_id = body.get("document_id")
 
             if not document_id:
-                raise HTTPException(
-                    status_code=400, detail="Missing required field: document_id"
-                )
+                raise HTTPException(status_code=400, detail="Missing required field: document_id")
 
-            result = await state.rag_search.delete_document(
-                collection=collection, document_id=document_id
-            )
+            result = await state.rag_search.delete_document(collection=collection, document_id=document_id)
 
             return result
 
@@ -3139,6 +2999,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                         SemanticRouter,
                         QueryIntent,
                     )
+
                     # Build a minimal router just for classification
                     _router = SemanticRouter([])
                     decision = _router.classify(query)
@@ -3163,27 +3024,25 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             mode_used = "web"
             if state.searxng:
                 try:
-                    web_result = await state.searxng.search(
-                        query=query, max_results=max_results
-                    )
+                    web_result = await state.searxng.search(query=query, max_results=max_results)
                     for r in web_result.get("results", web_result if isinstance(web_result, list) else []):
                         if isinstance(r, dict):
-                            sources.append({
-                                "title": r.get("title", ""),
-                                "url": r.get("url", ""),
-                                "snippet": r.get("snippet", r.get("content", "")),
-                                "score": r.get("score", 0.5),
-                                "source_type": "web",
-                            })
+                            sources.append(
+                                {
+                                    "title": r.get("title", ""),
+                                    "url": r.get("url", ""),
+                                    "snippet": r.get("snippet", r.get("content", "")),
+                                    "score": r.get("score", 0.5),
+                                    "source_type": "web",
+                                }
+                            )
                 except Exception as e:
                     logger.warning(f"Web search failed in unified_search: {e}")
             else:
                 raise HTTPException(status_code=501, detail="SearXNG not available")
 
         elif mode == "local" or (
-            mode == "auto"
-            and intent
-            and intent in (QueryIntent.CODE, QueryIntent.FACTUAL, QueryIntent.PROCEDURAL)
+            mode == "auto" and intent and intent in (QueryIntent.CODE, QueryIntent.FACTUAL, QueryIntent.PROCEDURAL)
             if intent
             else False
         ):
@@ -3195,13 +3054,15 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                         query=query, collection=collection, top_k=max_results, rerank=True
                     )
                     for r in rag_result.get("results", []):
-                        sources.append({
-                            "title": r.get("metadata", {}).get("title", r.get("content", "")[:80]),
-                            "url": r.get("metadata", {}).get("url", ""),
-                            "snippet": r.get("content", ""),
-                            "score": r.get("score", 0.0),
-                            "source_type": "rag",
-                        })
+                        sources.append(
+                            {
+                                "title": r.get("metadata", {}).get("title", r.get("content", "")[:80]),
+                                "url": r.get("metadata", {}).get("url", ""),
+                                "snippet": r.get("content", ""),
+                                "score": r.get("score", 0.0),
+                                "source_type": "rag",
+                            }
+                        )
                 except Exception as e:
                     logger.warning(f"RAG search failed in unified_search: {e}")
 
@@ -3209,18 +3070,18 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             if len(sources) < 3 and state.searxng:
                 mode_used = "hybrid_local_fallback"
                 try:
-                    web_result = await state.searxng.search(
-                        query=query, max_results=max_results
-                    )
+                    web_result = await state.searxng.search(query=query, max_results=max_results)
                     for r in web_result.get("results", web_result if isinstance(web_result, list) else []):
                         if isinstance(r, dict):
-                            sources.append({
-                                "title": r.get("title", ""),
-                                "url": r.get("url", ""),
-                                "snippet": r.get("snippet", r.get("content", "")),
-                                "score": r.get("score", 0.4),
-                                "source_type": "web",
-                            })
+                            sources.append(
+                                {
+                                    "title": r.get("title", ""),
+                                    "url": r.get("url", ""),
+                                    "snippet": r.get("snippet", r.get("content", "")),
+                                    "score": r.get("score", 0.4),
+                                    "source_type": "web",
+                                }
+                            )
                 except Exception:
                     pass
 
@@ -3242,13 +3103,15 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                     # Parse hybrid results — they may come in different formats
                     for r in result.get("results", result.get("sources", [])):
                         if isinstance(r, dict):
-                            sources.append({
-                                "title": r.get("title", r.get("metadata", {}).get("title", "")),
-                                "url": r.get("url", r.get("metadata", {}).get("url", "")),
-                                "snippet": r.get("snippet", r.get("content", "")),
-                                "score": r.get("score", 0.5),
-                                "source_type": r.get("source_type", r.get("source", "web")),
-                            })
+                            sources.append(
+                                {
+                                    "title": r.get("title", r.get("metadata", {}).get("title", "")),
+                                    "url": r.get("url", r.get("metadata", {}).get("url", "")),
+                                    "snippet": r.get("snippet", r.get("content", "")),
+                                    "score": r.get("score", 0.5),
+                                    "source_type": r.get("source_type", r.get("source", "web")),
+                                }
+                            )
                 except Exception as e:
                     logger.warning(f"Hybrid search failed in unified_search: {e}")
             else:
@@ -3259,29 +3122,31 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                             query=query, collection=collection, top_k=max_results, rerank=True
                         )
                         for r in rag_result.get("results", []):
-                            sources.append({
-                                "title": r.get("metadata", {}).get("title", r.get("content", "")[:80]),
-                                "url": r.get("metadata", {}).get("url", ""),
-                                "snippet": r.get("content", ""),
-                                "score": r.get("score", 0.0),
-                                "source_type": "rag",
-                            })
+                            sources.append(
+                                {
+                                    "title": r.get("metadata", {}).get("title", r.get("content", "")[:80]),
+                                    "url": r.get("metadata", {}).get("url", ""),
+                                    "snippet": r.get("content", ""),
+                                    "score": r.get("score", 0.0),
+                                    "source_type": "rag",
+                                }
+                            )
                     except Exception:
                         pass
                 if state.searxng:
                     try:
-                        web_result = await state.searxng.search(
-                            query=query, max_results=max_results
-                        )
+                        web_result = await state.searxng.search(query=query, max_results=max_results)
                         for r in web_result.get("results", web_result if isinstance(web_result, list) else []):
                             if isinstance(r, dict):
-                                sources.append({
-                                    "title": r.get("title", ""),
-                                    "url": r.get("url", ""),
-                                    "snippet": r.get("snippet", r.get("content", "")),
-                                    "score": r.get("score", 0.5),
-                                    "source_type": "web",
-                                })
+                                sources.append(
+                                    {
+                                        "title": r.get("title", ""),
+                                        "url": r.get("url", ""),
+                                        "snippet": r.get("snippet", r.get("content", "")),
+                                        "score": r.get("score", 0.5),
+                                        "source_type": "web",
+                                    }
+                                )
                     except Exception:
                         pass
 
@@ -3381,9 +3246,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not RAG_AVAILABLE or not state.rag_search:
-            raise HTTPException(
-                status_code=501, detail="RAG service not enabled. Set RAG_ENABLED=true."
-            )
+            raise HTTPException(status_code=501, detail="RAG service not enabled. Set RAG_ENABLED=true.")
 
         body = await request.json()
         query = body.get("query", "").strip()
@@ -3395,19 +3258,19 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         rerank = body.get("rerank", True)
 
         # Delegate to existing HybridSearchService
-        raw_result = await state.rag_search.search(
-            query=query, collection=collection, top_k=top_k, rerank=rerank
-        )
+        raw_result = await state.rag_search.search(query=query, collection=collection, top_k=top_k, rerank=rerank)
 
         # Normalize into a consistent response shape
         results = []
         for r in raw_result.get("results", []):
-            results.append({
-                "content": r.get("content", ""),
-                "score": r.get("score", 0.0),
-                "metadata": r.get("metadata", {}),
-                "id": r.get("id", r.get("chunk_id", "")),
-            })
+            results.append(
+                {
+                    "content": r.get("content", ""),
+                    "score": r.get("score", 0.0),
+                    "metadata": r.get("metadata", {}),
+                    "id": r.get("id", r.get("chunk_id", "")),
+                }
+            )
 
         return {
             "results": results,
@@ -3439,9 +3302,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not RAG_AVAILABLE or not state.rag_search:
-            raise HTTPException(
-                status_code=501, detail="RAG service not enabled. Set RAG_ENABLED=true."
-            )
+            raise HTTPException(status_code=501, detail="RAG service not enabled. Set RAG_ENABLED=true.")
 
         body = await request.json()
         content = body.get("content", "").strip()
@@ -3638,9 +3499,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 ):
                     # Transform SSE to Ollama format
                     try:
-                        chunk_str = (
-                            chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
-                        )
+                        chunk_str = chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
                         if '"content"' in chunk_str:
                             import json
 
@@ -3650,10 +3509,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                                 if line.startswith("data: ") and line != "data: [DONE]":
                                     try:
                                         data = json.loads(line[6:])
-                                        if (
-                                            "choices" in data
-                                            and len(data["choices"]) > 0
-                                        ):
+                                        if "choices" in data and len(data["choices"]) > 0:
                                             delta = data["choices"][0].get("delta", {})
                                             content = delta.get("content", "")
                                             if content:
@@ -3671,11 +3527,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                         if isinstance(chunk, bytes):
                             yield chunk
                         else:
-                            yield (
-                                chunk.encode("utf-8")
-                                if isinstance(chunk, str)
-                                else chunk
-                            )
+                            yield (chunk.encode("utf-8") if isinstance(chunk, str) else chunk)
 
                 # Send final done signal
                 done_chunk = {
@@ -3759,9 +3611,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 ):
                     # Transform SSE to Ollama format
                     try:
-                        chunk_str = (
-                            chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
-                        )
+                        chunk_str = chunk.decode("utf-8") if isinstance(chunk, bytes) else chunk
                         if '"content"' in chunk_str:
                             import json
 
@@ -3770,10 +3620,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                                 if line.startswith("data: ") and line != "data: [DONE]":
                                     try:
                                         data = json.loads(line[6:])
-                                        if (
-                                            "choices" in data
-                                            and len(data["choices"]) > 0
-                                        ):
+                                        if "choices" in data and len(data["choices"]) > 0:
                                             delta = data["choices"][0].get("delta", {})
                                             content = delta.get("content", "")
                                             if content:
@@ -3795,11 +3642,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                         if isinstance(chunk, bytes):
                             yield chunk
                         else:
-                            yield (
-                                chunk.encode("utf-8")
-                                if isinstance(chunk, str)
-                                else chunk
-                            )
+                            yield (chunk.encode("utf-8") if isinstance(chunk, str) else chunk)
 
                 # Send final done signal
                 done_chunk = {
@@ -3971,9 +3814,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 "backend": route_decision.backend,
                 "confidence": route_decision.confidence,
                 "reason": route_decision.reason,
-                "specialization": route_decision.specialization.value
-                if route_decision.specialization
-                else None,
+                "specialization": route_decision.specialization.value if route_decision.specialization else None,
                 "expected_latency_ms": route_decision.expected_latency_ms,
             },
             "input": {
@@ -3995,9 +3836,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not state.rag_search or not state.rag_search.embedder:
-            raise HTTPException(
-                status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true"
-            )
+            raise HTTPException(status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true")
 
         body = await request.json()
         _model = body.get("model", "BAAI/bge-m3")  # noqa: F841
@@ -4020,9 +3859,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not state.rag_search or not state.rag_search.embedder:
-            raise HTTPException(
-                status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true"
-            )
+            raise HTTPException(status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true")
 
         body = await request.json()
         model = body.get("model", "BAAI/bge-m3")
@@ -4034,18 +3871,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         elif isinstance(input_data, list):
             texts = input_data
         else:
-            raise HTTPException(
-                status_code=400, detail="input must be a string or array of strings"
-            )
+            raise HTTPException(status_code=400, detail="input must be a string or array of strings")
 
         # Generate embeddings
         vectors = await state.rag_search.embedder.embed_dense(texts)
 
         # Format as OpenAI response
-        data = [
-            {"object": "embedding", "index": i, "embedding": emb}
-            for i, emb in enumerate(vectors)
-        ]
+        data = [{"object": "embedding", "index": i, "embedding": emb} for i, emb in enumerate(vectors)]
 
         return {
             "object": "list",
@@ -4068,9 +3900,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         state: GatewayState = app.state.gateway
 
         if not state.rag_search or not state.rag_search.embedder:
-            raise HTTPException(
-                status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true"
-            )
+            raise HTTPException(status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true")
 
         body = await request.json()
         texts = body.get("texts", [])
@@ -4146,11 +3976,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 )
 
                 # Return audio file
-                ext = (
-                    get_audio_extension(tts_request.response_format)
-                    if get_audio_extension
-                    else ".mp3"
-                )
+                ext = get_audio_extension(tts_request.response_format) if get_audio_extension else ".mp3"
                 return Response(
                     content=audio_data,
                     media_type=content_type,
@@ -4164,9 +3990,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise
             except Exception as e:
                 logger.error(f"TTS generation failed: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"Speech generation failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Speech generation failed: {str(e)}")
 
     # STT (Speech-to-Text) API endpoints
     if AUDIO_AVAILABLE:
@@ -4231,18 +4055,14 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                     prompt=prompt,
                     temperature=temperature,
                     response_format=response_format,
-                    timestamp_granularities=[timestamp_granularities]
-                    if timestamp_granularities
-                    else None,
+                    timestamp_granularities=[timestamp_granularities] if timestamp_granularities else None,
                 )
 
                 # Return based on response format
                 if response_format == "text":
                     return Response(content=result["text"], media_type="text/plain")
                 elif response_format == "srt":
-                    return Response(
-                        content=_generate_srt(result), media_type="text/plain"
-                    )
+                    return Response(content=_generate_srt(result), media_type="text/plain")
                 elif response_format == "verbose_json":
                     return JSONResponse(content=result)
                 else:  # json
@@ -4252,9 +4072,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise
             except Exception as e:
                 logger.error(f"Audio transcription failed: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"Transcription failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
         @app.post("/v1/audio/translations")
         async def create_translation(request: Request):
@@ -4314,9 +4132,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise
             except Exception as e:
                 logger.error(f"Audio translation failed: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"Translation failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Translation failed: {str(e)}")
 
         def _generate_srt(transcription: dict) -> str:
             """Generate SRT subtitle format from transcription."""
@@ -4337,9 +4153,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 text = " ".join(w["word"] for w in chunk)
 
                 srt_lines.append(f"{i // chunk_size + 1}")
-                srt_lines.append(
-                    f"{_format_srt_time(start_time)} --> {_format_srt_time(end_time)}"
-                )
+                srt_lines.append(f"{_format_srt_time(start_time)} --> {_format_srt_time(end_time)}")
                 srt_lines.append(text)
                 srt_lines.append("")
 
@@ -4388,13 +4202,9 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             try:
                 vision_request = VisionRequest(**body)
             except Exception as e:
-                raise HTTPException(
-                    status_code=400, detail=f"Invalid vision request: {e}"
-                )
+                raise HTTPException(status_code=400, detail=f"Invalid vision request: {e}")
 
-            vision_handler = get_vision_handler(
-                state.config.backend_url or "https://api.openai.com"
-            )
+            vision_handler = get_vision_handler(state.config.backend_url or "https://api.openai.com")
 
             try:
                 # Process messages to extract images and text
@@ -4434,9 +4244,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                                         images.append((image_data, image_format))
 
                 if not images:
-                    raise HTTPException(
-                        status_code=400, detail="No images found in request"
-                    )
+                    raise HTTPException(status_code=400, detail="No images found in request")
 
                 # Use the first image for now (Qwen3-VL can handle multiple)
                 image_data, image_format = images[0]
@@ -4457,9 +4265,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise
             except Exception as e:
                 logger.error(f"Vision analysis failed: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"Vision analysis failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"Vision analysis failed: {str(e)}")
 
     # Files API endpoints (Garage S3 storage)
     if FILES_AVAILABLE:
@@ -4518,9 +4324,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                     },
                 )
 
-                logger.info(
-                    f"File uploaded: {file_id} ({len(content)} bytes, {filename})"
-                )
+                logger.info(f"File uploaded: {file_id} ({len(content)} bytes, {filename})")
 
                 return {
                     "id": result["id"],
@@ -4536,9 +4340,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise HTTPException(status_code=e.status_code or 500, detail=e.message)
             except Exception as e:
                 logger.error(f"Unexpected error during file upload: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"File upload failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
         @app.get("/v1/files/{file_id}")
         async def get_file(file_id: str):
@@ -4562,17 +4364,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
             try:
                 # Get file content and metadata from Garage S3
-                content, metadata = await state.garage_client.get_file(
-                    bucket="ai-gateway-files", key=file_id
-                )
+                content, metadata = await state.garage_client.get_file(bucket="ai-gateway-files", key=file_id)
 
                 # Extract filename and mime type from metadata
                 filename = metadata.get("filename", file_id)
                 mime_type = metadata.get("mime_type", "application/octet-stream")
 
-                logger.info(
-                    f"File retrieved: {file_id} ({len(content)} bytes, {filename})"
-                )
+                logger.info(f"File retrieved: {file_id} ({len(content)} bytes, {filename})")
 
                 # Return file with appropriate headers
                 return Response(
@@ -4585,17 +4383,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
             except FileNotFoundError:
                 logger.warning(f"File not found: {file_id}")
-                raise HTTPException(
-                    status_code=404, detail=f"File not found: {file_id}"
-                )
+                raise HTTPException(status_code=404, detail=f"File not found: {file_id}")
             except FileStorageError as e:
                 logger.error(f"File retrieval failed: {e.message}")
                 raise HTTPException(status_code=e.status_code or 500, detail=e.message)
             except Exception as e:
                 logger.error(f"Unexpected error during file retrieval: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"File retrieval failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"File retrieval failed: {str(e)}")
 
         @app.delete("/v1/files/{file_id}")
         async def delete_file(file_id: str):
@@ -4618,9 +4412,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
             try:
                 # Delete file from Garage S3
-                await state.garage_client.delete_file(
-                    bucket="ai-gateway-files", key=file_id
-                )
+                await state.garage_client.delete_file(bucket="ai-gateway-files", key=file_id)
 
                 logger.info(f"File deleted: {file_id}")
 
@@ -4643,9 +4435,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise HTTPException(status_code=e.status_code or 500, detail=e.message)
             except Exception as e:
                 logger.error(f"Unexpected error during file deletion: {e}")
-                raise HTTPException(
-                    status_code=500, detail=f"File deletion failed: {str(e)}"
-                )
+                raise HTTPException(status_code=500, detail=f"File deletion failed: {str(e)}")
 
     else:
 
@@ -4742,9 +4532,7 @@ async def stream_backend_response(
         messages = body.get("messages", [])
         model = body.get("model", "default")
         extra_params = {
-            k: v
-            for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend", "response_format"]
+            k: v for k, v in body.items() if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         # Get backend from route decision if available
@@ -4874,11 +4662,7 @@ async def stream_backend_response_with_tools(
         messages = body.get("messages", [])
         model = body.get("model", "default")
         tools = body.get("tools", [])
-        extra_params = {
-            k: v
-            for k, v in body.items()
-            if k not in ["messages", "model", "stream", "tools", "backend"]
-        }
+        extra_params = {k: v for k, v in body.items() if k not in ["messages", "model", "stream", "tools", "backend"]}
 
         # Get backend from route decision if available
         route_decision = context.get("route_decision")
@@ -4958,9 +4742,7 @@ async def stream_backend_response_with_tools(
                 logger.warning("Tool calls detected but extraction failed")
                 break
 
-            logger.info(
-                f"Executing {len(extracted_calls)} tool calls (iteration {iteration})"
-            )
+            logger.info(f"Executing {len(extracted_calls)} tool calls (iteration {iteration})")
 
             # Execute each tool call
             tool_results = []
@@ -4973,11 +4755,7 @@ async def stream_backend_response_with_tools(
                 try:
                     import json
 
-                    tool_args = (
-                        json.loads(tool_args_str)
-                        if isinstance(tool_args_str, str)
-                        else tool_args
-                    )
+                    tool_args = json.loads(tool_args_str) if isinstance(tool_args_str, str) else tool_args
                 except json.JSONDecodeError:
                     logger.error(f"Failed to parse tool arguments: {tool_args_str}")
                     tool_args = {}
@@ -4990,9 +4768,7 @@ async def stream_backend_response_with_tools(
                     error_msg = f"Tool '{tool_name}' not found in any MCP server"
                     logger.warning(error_msg)
                     tool_results.append(
-                        create_tool_result_openai(
-                            tool_call_id=tool_id, result=error_msg, tool_type="error"
-                        )
+                        create_tool_result_openai(tool_call_id=tool_id, result=error_msg, tool_type="error")
                     )
                     continue
 
@@ -5010,23 +4786,13 @@ async def stream_backend_response_with_tools(
                     else:
                         result_str = str(result)
 
-                    logger.info(
-                        f"Tool {tool_name} executed successfully, result length: {len(result_str)}"
-                    )
+                    logger.info(f"Tool {tool_name} executed successfully, result length: {len(result_str)}")
 
-                    tool_results.append(
-                        create_tool_result_openai(
-                            tool_call_id=tool_id, result=result_str
-                        )
-                    )
+                    tool_results.append(create_tool_result_openai(tool_call_id=tool_id, result=result_str))
 
                 except Exception as e:
                     logger.error(f"Tool execution failed for {tool_name}: {e}")
-                    tool_results.append(
-                        create_tool_result_openai(
-                            tool_call_id=tool_id, result=f"Error: {str(e)}"
-                        )
-                    )
+                    tool_results.append(create_tool_result_openai(tool_call_id=tool_id, result=f"Error: {str(e)}"))
 
             # Append tool results as a new user message
             if tool_results:
@@ -5131,12 +4897,16 @@ async def try_backends_with_failover(
     Raises:
         httpx.HTTPError: If all backends fail
     """
-    # Build list of backends to try
+    # Build list of backends to try with inferred types
     backends_to_try = [("primary", config.backend_url, config.backend_type)]
 
-    # Add fallback backends (assuming they're ZAI for now)
-    for i, fallback_url in enumerate(config.get_backend_fallback_urls()):
-        backends_to_try.append(("fallback", fallback_url, "zai"))
+    # Add fallback backends with inferred types
+    fallback_urls = config.get_backend_fallback_urls()
+    fallback_types = config.get_backend_fallback_types()
+    for i, fallback_url in enumerate(fallback_urls):
+        # Use inferred type or default to llama-cpp
+        backend_type = fallback_types[i] if i < len(fallback_types) else "llama-cpp"
+        backends_to_try.append(("fallback", fallback_url, backend_type))
 
     last_error = None
 
@@ -5162,26 +4932,25 @@ async def try_backends_with_failover(
                 ua_key = next(k for k in headers.keys() if k.lower() == "user-agent")
                 logger.debug(f"Forwarding User-Agent: {headers[ua_key][:100]}")
 
-            # Add authentication for this backend
+            # Add authentication for this backend based on type
             if "authorization" not in {k.lower() for k in headers.keys()}:
                 if backend_api_type == "zai":
                     api_key = config.get_zai_api_key()
                     if api_key:
                         headers["Authorization"] = f"Bearer {api_key}"
-                elif backend_api_type == "zai":
-                    api_key = config.get_zai_api_key()
-                    if api_key:
-                        headers["Authorization"] = f"Bearer {api_key}"
                     else:
-                        logger.warning("ZAI API key not found for fallback backend")
+                        logger.warning("ZAI API key not found")
                 elif backend_api_type == "pollinations":
                     api_key = config.get_pollinations_api_key()
                     if api_key:
                         headers["Authorization"] = f"Bearer {api_key}"
                     else:
-                        logger.warning(
-                            "Pollinations API key not found for fallback backend"
-                        )
+                        logger.warning("Pollinations API key not found")
+                elif backend_api_type == "nvidia-nim":
+                    api_key = config.get_nvidia_nim_api_key()
+                    if api_key:
+                        headers["Authorization"] = f"Bearer {api_key}"
+                # llama-cpp, vllm, sglang don't need auth
 
             logger.info(
                 f"Request headers for {backend_type_name} backend: Authorization={'Bearer ' + (headers.get('Authorization', 'NO-AUTH')[:20] + '...' if 'Authorization' in headers else 'NOT SET')}"
@@ -5191,11 +4960,7 @@ async def try_backends_with_failover(
                 # For ZAI, convert OpenAI-style endpoints and clean request body
                 if backend_api_type == "zai":
                     # ZAI uses /chat/completions instead of /v1/chat/completions
-                    zai_endpoint = (
-                        endpoint.replace("/v1/", "/")
-                        if endpoint.startswith("/v1/")
-                        else endpoint
-                    )
+                    zai_endpoint = endpoint.replace("/v1/", "/") if endpoint.startswith("/v1/") else endpoint
                     url = f"{backend_url}{zai_endpoint}"
 
                     # ZAI doesn't understand chat_template_kwargs — strip it
@@ -5211,22 +4976,16 @@ async def try_backends_with_failover(
                 # Debug logging for ZAI (only at DEBUG level)
                 if backend_api_type == "zai" and logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"ZAI URL: {url}")
-                    logger.debug(
-                        f"ZAI Headers: Authorization={headers.get('Authorization', 'MISSING')[:30]}..."
-                    )
+                    logger.debug(f"ZAI Headers: Authorization={headers.get('Authorization', 'MISSING')[:30]}...")
                     logger.debug(f"ZAI Body model: {content.get('model', 'NO_MODEL')}")
 
                 # Debug logging for Pollinations (only at DEBUG level)
-                if backend_api_type == "pollinations" and logger.isEnabledFor(
-                    logging.DEBUG
-                ):
+                if backend_api_type == "pollinations" and logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"Pollinations URL: {url}")
                     logger.debug(
                         f"Pollinations Headers: Authorization={headers.get('Authorization', 'MISSING')[:30]}..."
                     )
-                    logger.debug(
-                        f"Pollinations Body model: {content.get('model', 'NO_MODEL')}"
-                    )
+                    logger.debug(f"Pollinations Body model: {content.get('model', 'NO_MODEL')}")
 
                 if method.upper() == "POST":
                     response = await client.post(
@@ -5241,9 +5000,7 @@ async def try_backends_with_failover(
                     )
 
                 # Log response status
-                logger.info(
-                    f"{backend_type_name} backend response: HTTP {response.status_code}"
-                )
+                logger.info(f"{backend_type_name} backend response: HTTP {response.status_code}")
 
                 # Debug logging for ZAI responses (only at DEBUG level)
                 if backend_api_type == "zai" and logger.isEnabledFor(logging.DEBUG):
@@ -5255,33 +5012,32 @@ async def try_backends_with_failover(
                             pass
 
                 # Debug logging for Pollinations responses (only at DEBUG level)
-                if backend_api_type == "pollinations" and logger.isEnabledFor(
-                    logging.DEBUG
-                ):
-                    logger.debug(
-                        f"Pollinations Response status: {response.status_code}"
-                    )
+                if backend_api_type == "pollinations" and logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Pollinations Response status: {response.status_code}")
                     if response.status_code != 200:
                         try:
-                            logger.debug(
-                                f"Pollinations Response body: {response.text[:500]}"
-                            )
+                            logger.debug(f"Pollinations Response body: {response.text[:500]}")
                         except Exception:
                             pass
 
-                # If we got here, the request succeeded (connected, even if 4xx/5xx)
+                # Check for HTTP errors - these should trigger fallback, not succeed
+                if response.status_code >= 400:
+                    logger.warning(f"{backend_type_name} backend returned HTTP {response.status_code}")
+                    # Raise HTTPStatusError to trigger fallback chain
+                    raise httpx.HTTPStatusError(
+                        message=f"Backend returned HTTP {response.status_code}",
+                        request=response.request,
+                        response=response,
+                    )
+
                 return response, backend_url
 
         except (httpx.ConnectError, httpx.TimeoutException, httpx.ConnectTimeout) as e:
-            logger.warning(
-                f"{backend_type_name} backend {backend_url} failed: {str(e)}"
-            )
+            logger.warning(f"{backend_type_name} backend {backend_url} failed: {str(e)}")
             last_error = e
             continue
         except Exception as e:
-            logger.warning(
-                f"{backend_type_name} backend {backend_url} failed with unexpected error: {str(e)}"
-            )
+            logger.warning(f"{backend_type_name} backend {backend_url} failed with unexpected error: {str(e)}")
             last_error = e
             continue
 
@@ -5321,9 +5077,7 @@ async def handle_non_streaming_request(
         messages = body.get("messages", [])
         model = body.get("model", "default")
         extra_params = {
-            k: v
-            for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend", "response_format"]
+            k: v for k, v in body.items() if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         # Get backend from route decision if available
@@ -5345,6 +5099,7 @@ async def handle_non_streaming_request(
         # Models (Qwen, GLM, Gemma) frequently wrap JSON in ```json ... ``` fences
         # even without response_format, breaking consumers like Vane/Perplexica
         from ai_inference_gateway.utils import strip_markdown_json_fences
+
         for choice in response_data.get("choices", []):
             content = choice.get("message", {}).get("content")
             if content:
@@ -5372,14 +5127,17 @@ async def handle_non_streaming_request(
             cost_tracker = context.get("cost_tracker")
             if cost_tracker and total_tokens > 0:
                 import asyncio
+
                 route_decision_ctx = context.get("route_decision")
-                asyncio.create_task(cost_tracker.record(
-                    model=model,
-                    agent_key=context.get("request_headers", {}).get("x-api-key", ""),
-                    backend=route_decision_ctx.backend if route_decision_ctx else "",
-                    input_tokens=input_tokens,
-                    output_tokens=output_tokens,
-                ))
+                asyncio.create_task(
+                    cost_tracker.record(
+                        model=model,
+                        agent_key=context.get("request_headers", {}).get("x-api-key", ""),
+                        backend=route_decision_ctx.backend if route_decision_ctx else "",
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                    )
+                )
         except Exception as cost_err:
             logger.debug(f"Cost tracking failed: {cost_err}")
 
@@ -5392,11 +5150,7 @@ async def handle_non_streaming_request(
                     "model": route_decision.model,
                     "backend": route_decision.backend,
                     "reason": route_decision.reason,
-                    "specialization": (
-                        route_decision.specialization.value
-                        if route_decision.specialization
-                        else None
-                    ),
+                    "specialization": (route_decision.specialization.value if route_decision.specialization else None),
                     "estimated_tokens": route_decision.estimated_tokens,
                     "expected_latency_ms": route_decision.expected_latency_ms,
                 },
@@ -5479,9 +5233,7 @@ async def stream_anthropic_response(
         messages = body.get("messages", [])
         model = body.get("model", "default")
         extra_params = {
-            k: v
-            for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend", "response_format"]
+            k: v for k, v in body.items() if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         route_decision = context.get("route_decision")
@@ -5534,9 +5286,7 @@ async def stream_anthropic_response(
                                 "type": "tool_use",
                                 "id": tool_call.get("id", ""),
                                 "name": tool_call.get("function", {}).get("name", ""),
-                                "input": tool_call.get("function", {}).get(
-                                    "arguments", "{}"
-                                ),
+                                "input": tool_call.get("function", {}).get("arguments", "{}"),
                             },
                         }
                         yield f"event: content_block_delta\ndata: {json.dumps(tool_event)}\n\n"
@@ -5611,9 +5361,7 @@ async def handle_anthropic_non_streaming(
         messages = body.get("messages", [])
         model = body.get("model", "default")
         extra_params = {
-            k: v
-            for k, v in body.items()
-            if k not in ["messages", "model", "stream", "backend", "response_format"]
+            k: v for k, v in body.items() if k not in ["messages", "model", "stream", "backend", "response_format"]
         }
 
         route_decision = context.get("route_decision")
@@ -5681,9 +5429,7 @@ async def handle_anthropic_non_streaming(
         if reasoning_text:
             thinking_content = {
                 "thinking": reasoning_text,
-                "tokens": response_data.get(
-                    "reasoning_tokens", len(reasoning_text) // 4
-                ),  # Rough estimate
+                "tokens": response_data.get("reasoning_tokens", len(reasoning_text) // 4),  # Rough estimate
             }
 
         # Build Anthropic response
@@ -5704,20 +5450,14 @@ async def handle_anthropic_non_streaming(
                 "router": {
                     "model": route_decision.model if route_decision else model,
                     "backend": route_decision.backend if route_decision else "unknown",
-                    "reason": route_decision.reason
-                    if route_decision
-                    else "Anthropic API",
+                    "reason": route_decision.reason if route_decision else "Anthropic API",
                     "specialization": (
                         route_decision.specialization.value
                         if route_decision and route_decision.specialization
                         else None
                     ),
-                    "estimated_tokens": route_decision.estimated_tokens
-                    if route_decision
-                    else 0,
-                    "expected_latency_ms": route_decision.expected_latency_ms
-                    if route_decision
-                    else 0,
+                    "estimated_tokens": route_decision.estimated_tokens if route_decision else 0,
+                    "expected_latency_ms": route_decision.expected_latency_ms if route_decision else 0,
                 },
                 "thinking": {
                     "intensity": thinking_intensity,
@@ -5809,9 +5549,7 @@ def main():
     config = GatewayConfig()
     app = create_app(config)
 
-    uvicorn.run(
-        app, host=config.gateway_host, port=config.gateway_port, log_level="info"
-    )
+    uvicorn.run(app, host=config.gateway_host, port=config.gateway_port, log_level="info")
 
 
 if __name__ == "__main__":
