@@ -171,6 +171,22 @@ class EmbeddingService:
                     self._device = "cpu"
                     logger.info("Using CPU for embeddings")
 
+                # Neutralize suggest_extra_on_exception — it catches benign
+                # import warnings from Qwen3VLVideoProcessor and re-raises
+                # as a misleading "requires Torchvision" ImportError even
+                # though torchvision is installed and importable.
+                import contextlib
+                try:
+                    import sentence_transformers.util.environment as _env
+                    _env.suggest_extra_on_exception = contextlib.nullcontext
+                except Exception:
+                    pass
+                try:
+                    import sentence_transformers.base.modules.transformer as _tf
+                    _tf.suggest_extra_on_exception = contextlib.nullcontext
+                except Exception:
+                    pass
+
                 loop = asyncio.get_event_loop()
                 self._model = await loop.run_in_executor(
                     None,

@@ -116,8 +116,7 @@
             "PATH=${gatewayPython}/bin:/usr/bin:/bin"
             "HOME=/home/ai-gateway"
             "USER=ai-gateway"
-            "TRANSFORMERS_CACHE=/var/cache/ai-inference"
-            "HF_HOME=/var/cache/ai-inference"
+            "HF_HOME=/home/j_kro/.cache/huggingface"
           ];
           WorkingDir = "/app";
         };
