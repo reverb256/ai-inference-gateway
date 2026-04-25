@@ -3026,9 +3026,8 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 "results": results,
             }
 
-        @app.api_route("/rag/search", methods=["GET", "POST"])
-        async def search_knowledge_base(request: Request):
-            """Search RAG knowledge base."""
+        async def _search_knowledge_base(request: Request):
+            """Shared handler for RAG search (GET and POST)."""
             state: GatewayState = app.state.gateway
 
             if not state.rag_search:
@@ -3046,6 +3045,8 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             result = await state.rag_search.search(query=query, collection=collection, top_k=top_k, rerank=rerank)
 
             return result
+
+        app.add_api_route("/rag/search", _search_knowledge_base, methods=["GET", "POST"])
 
         @app.get("/rag/collections")
         async def list_collections(request: Request):
