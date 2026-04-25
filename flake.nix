@@ -64,7 +64,7 @@
       # Install the gateway source as a Python package
       gatewaySrcPkg = python3.pkgs.buildPythonPackage {
         pname = "ai-inference-gateway";
-        version = "2.0.0";
+        version = "2.3.2";
         src = ./.;
         pyproject = true;
         propagatedBuildInputs = gatewayDeps;
