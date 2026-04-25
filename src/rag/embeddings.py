@@ -151,6 +151,18 @@ class EmbeddingService:
 
                 if self.config.trust_remote_code:
                     _patch_tokenizer_config(self.config.model)
+                    # ST5 tries top-level import for custom modules — add model dir to sys.path
+                    try:
+                        from huggingface_hub import snapshot_download
+                        model_dir = snapshot_download(
+                            self.config.model,
+                            local_files_only=True,
+                        )
+                        if model_dir not in sys.path:
+                            sys.path.insert(0, model_dir)
+                            logger.info(f"Added model dir to sys.path: {model_dir}")
+                    except Exception as path_err:
+                        logger.warning(f"Could not add model dir to sys.path: {path_err}")
 
                 if self.config.device == "cuda" and torch.cuda.is_available():
                     self._device = "cuda"
