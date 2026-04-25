@@ -30,6 +30,10 @@ from ai_inference_gateway.utils.tool_utils import (
     extract_tool_calls_openai,
 )
 
+# MLSEC Phase 1: Output sanitization pipeline
+from ai_inference_gateway.output.response_sanitizer import ResponseSanitizer
+from ai_inference_gateway.observability.sanitizing_logger import PIISanitizingFilter
+
 # Import TTS handler
 try:
     from ai_inference_gateway.tts_handler import (
@@ -366,6 +370,8 @@ class GatewayState:
         self.rag_ingestion = None
         # SearXNG integration (initialized if enabled)
         self.searxng = None
+        # MLSEC: Response sanitizer (initialized in lifespan)
+        self.response_sanitizer = None
 
 
 def build_backend_headers(config: GatewayConfig, request_headers: dict) -> dict:
@@ -698,6 +704,44 @@ async def lifespan(app: FastAPI):
 
     # Startup complete
     logger.info("Gateway startup complete")
+
+    # --- MLSEC Phase 1: Initialize response sanitizer ---
+    try:
+        redactor = None
+        if PII_REDACTOR_AVAILABLE:
+            redactor = get_default_redactor()
+
+        if redactor:
+            # Try to init ML-based PrivacyFilterClient from config
+            privacy_client = None
+            if hasattr(state.config.middleware, "privacy_filter"):
+                pf_cfg = state.config.middleware.privacy_filter
+                if pf_cfg.enabled:
+                    from ai_inference_gateway.privacy_filter_client import PrivacyFilterClient
+                    privacy_client = PrivacyFilterClient(
+                        endpoint=pf_cfg.endpoint,
+                        timeout=pf_cfg.timeout,
+                    )
+
+            state.response_sanitizer = ResponseSanitizer(
+                pii_redactor=redactor,
+                privacy_filter_client=privacy_client,
+            )
+            logger.info("ResponseSanitizer initialized (regex=%s, ml=%s)", True, privacy_client is not None)
+        else:
+            logger.warning("ResponseSanitizer skipped: PIIRedactor unavailable")
+    except Exception as e:
+        logger.warning(f"ResponseSanitizer initialization failed: {e}")
+        state.response_sanitizer = None
+
+    # --- MLSEC Phase 1: Add PII sanitizing filter to root logger ---
+    try:
+        if PII_REDACTOR_AVAILABLE:
+            pii_filter = PIISanitizingFilter(redactor=get_default_redactor())
+            logging.getLogger().addFilter(pii_filter)
+            logger.info("PIISanitizingFilter added to root logger")
+    except Exception as e:
+        logger.warning(f"PIISanitizingFilter setup failed: {e}")
 
     yield
 
@@ -1658,6 +1702,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             "route_decision": route_decision,  # Store routing decision
             "metrics_tracker": metrics_tracker,  # Metrics tracker
             "cost_tracker": getattr(app.state, "cost_tracker", None),
+            "gateway_state": state,  # MLSEC: needed for response_sanitizer access
         }
 
         # Inject RAG search service if available (for RAGInjectorMiddleware)
@@ -3679,10 +3724,18 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             # Transform to Ollama format
             message = response.choices[0].message
 
+            # MLSEC: Sanitize Ollama response content
+            _content = message.content
+            if state.response_sanitizer and _content:
+                try:
+                    _content = await state.response_sanitizer._sanitize_text(_content)
+                except Exception:
+                    pass
+
             return {
                 "model": model,
                 "created_at": datetime.now().isoformat(),
-                "message": {"role": message.role, "content": message.content},
+                "message": {"role": message.role, "content": _content},
                 "done": True,
             }
 
@@ -4556,6 +4609,10 @@ async def stream_backend_response(
         input_tokens = 0
         output_tokens = 0
         first_chunk = True
+
+        # MLSEC: Get sanitizer for streaming PII redaction
+        _sanitizer = getattr(context.get("gateway_state", None), "response_sanitizer", None)
+
         async for chunk in stream:
             # Record first token time
             if first_chunk:
@@ -4568,6 +4625,23 @@ async def stream_backend_response(
                     input_tokens = max(input_tokens, chunk.usage.prompt_tokens)
                 if chunk.usage.completion_tokens:
                     output_tokens = max(output_tokens, chunk.usage.completion_tokens)
+
+            # MLSEC Phase 1: Sanitize streaming chunk delta content
+            if _sanitizer and hasattr(chunk, "choices") and chunk.choices:
+                for _ch in chunk.choices:
+                    if hasattr(_ch, "delta") and _ch.delta:
+                        # Sanitize text content
+                        if hasattr(_ch.delta, "content") and _ch.delta.content:
+                            try:
+                                _ch.delta.content = await _sanitizer._sanitize_text(_ch.delta.content)
+                            except Exception:
+                                pass
+                        # Sanitize reasoning content
+                        if hasattr(_ch.delta, "reasoning_content") and _ch.delta.reasoning_content:
+                            try:
+                                _ch.delta.reasoning_content = await _sanitizer.sanitize_reasoning(_ch.delta.reasoning_content)
+                            except Exception:
+                                pass
 
             # Format as SSE
             chunk_str = chunk.model_dump_json(exclude_none=True)
@@ -4695,6 +4769,9 @@ async def stream_backend_response_with_tools(
             tool_calls_chunk = None
             first_chunk = True
 
+            # MLSEC: Get sanitizer for streaming PII redaction
+            _sanitizer = getattr(context.get("gateway_state", None), "response_sanitizer", None)
+
             async for chunk in stream:
                 # Record first token time
                 if first_chunk:
@@ -4713,6 +4790,21 @@ async def stream_backend_response_with_tools(
                         if hasattr(delta, "tool_calls") and delta.tool_calls:
                             has_tool_calls = True
                             tool_calls_chunk = chunk
+
+                # MLSEC Phase 1: Sanitize streaming chunk before emitting
+                if _sanitizer and hasattr(chunk, "choices") and chunk.choices:
+                    for _ch in chunk.choices:
+                        if hasattr(_ch, "delta") and _ch.delta:
+                            if hasattr(_ch.delta, "content") and _ch.delta.content:
+                                try:
+                                    _ch.delta.content = await _sanitizer._sanitize_text(_ch.delta.content)
+                                except Exception:
+                                    pass
+                            if hasattr(_ch.delta, "reasoning_content") and _ch.delta.reasoning_content:
+                                try:
+                                    _ch.delta.reasoning_content = await _sanitizer.sanitize_reasoning(_ch.delta.reasoning_content)
+                                except Exception:
+                                    pass
 
                 # Stream chunk to client immediately for low latency
                 chunk_str = chunk.model_dump_json(exclude_none=True)
@@ -5109,6 +5201,14 @@ async def handle_non_streaming_request(
             if content:
                 choice["message"]["content"] = strip_markdown_json_fences(content)
 
+        # MLSEC Phase 1: Sanitize all output channels (content, tool_calls, reasoning)
+        sanitizer = getattr(context.get("gateway_state", None), "response_sanitizer", None)
+        if sanitizer:
+            try:
+                response_data = await sanitizer.sanitize_response(response_data)
+            except Exception as san_err:
+                logger.warning(f"Response sanitization failed (non-fatal): {san_err}")
+
         # Calculate actual processing time
         processing_time_ms = (time.time() - start_time) * 1000
 
@@ -5232,6 +5332,9 @@ async def stream_anthropic_response(
     start_time = time.time()
     first_chunk_sent = False
 
+    # MLSEC: Get sanitizer for streaming PII redaction
+    _sanitizer = getattr(context.get("gateway_state", None), "response_sanitizer", None)
+
     try:
         # Extract parameters
         messages = body.get("messages", [])
@@ -5270,6 +5373,18 @@ async def stream_anthropic_response(
             if chunk.get("choices"):
                 choice = chunk["choices"][0]
                 delta = choice.get("message", {})
+
+                # MLSEC Phase 1: Sanitize Anthropic streaming content
+                if "content" in delta and delta["content"] and _sanitizer:
+                    try:
+                        delta["content"] = await _sanitizer._sanitize_text(delta["content"])
+                    except Exception:
+                        pass
+                if "reasoning_content" in delta and delta["reasoning_content"] and _sanitizer:
+                    try:
+                        delta["reasoning_content"] = await _sanitizer.sanitize_reasoning(delta["reasoning_content"])
+                    except Exception:
+                        pass
 
                 # Content block
                 if "content" in delta and delta["content"]:
@@ -5382,6 +5497,14 @@ async def handle_anthropic_non_streaming(
 
         # Convert to dict for processing
         response_data = response.model_dump()
+
+        # MLSEC Phase 1: Sanitize all output channels before Anthropic translation
+        sanitizer = getattr(context.get("gateway_state", None), "response_sanitizer", None)
+        if sanitizer:
+            try:
+                response_data = await sanitizer.sanitize_response(response_data)
+            except Exception as san_err:
+                logger.warning(f"Anthropic response sanitization failed (non-fatal): {san_err}")
 
         # Process through middleware pipeline
         response_data = await pipeline.process_response(response_data, context)

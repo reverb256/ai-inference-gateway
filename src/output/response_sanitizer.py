@@ -338,9 +338,39 @@ class ResponseSanitizer:
                 if isinstance(text, str):
                     block_copy["text"] = await self.sanitize_chat_content(text)
 
+            elif block_type == "tool_use":
+                # Anthropic tool_use block — sanitize input dict
+                tool_input = block_copy.get("input")
+                if isinstance(tool_input, dict):
+                    sanitized_input = await self._sanitize_dict_values(tool_input)
+                    block_copy["input"] = sanitized_input
+                elif isinstance(tool_input, str):
+                    block_copy["input"] = await self._sanitize_text(tool_input)
+
             sanitized.append(block_copy)
 
         return sanitized
+
+    async def _sanitize_dict_values(self, d: dict, depth: int = 0) -> dict:
+        """Recursively sanitize string values in a dict."""
+        if depth > 10 or not isinstance(d, dict):
+            return d
+        result = {}
+        for k, v in d.items():
+            if isinstance(v, str):
+                result[k] = await self._sanitize_text(v)
+            elif isinstance(v, dict):
+                result[k] = await self._sanitize_dict_values(v, depth + 1)
+            elif isinstance(v, list):
+                result[k] = [
+                    await self._sanitize_dict_values(item, depth + 1) if isinstance(item, dict)
+                    else await self._sanitize_text(item) if isinstance(item, str)
+                    else item
+                    for item in v
+                ]
+            else:
+                result[k] = v
+        return result
 
     async def _sanitize_deepseek_thinking(self, content: str) -> str:
         """
