@@ -4026,6 +4026,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         Compatible with: POST /v1/embeddings
         Supports both single string and array input.
+        Multimodal: pass {"input": [{"text": "...", "image": "base64..."}]} for image+text.
         Uses RAG embedding service if available.
         """
         state: GatewayState = app.state.gateway
@@ -4046,17 +4047,32 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         model = body.get("model", "BAAI/bge-m3")
         input_data = body.get("input", "")
+        images = body.get("images")
 
-        # OpenAI API supports both string and array of strings
-        if isinstance(input_data, str):
+        # Multimodal: list of objects with text + image
+        if isinstance(input_data, list) and input_data and isinstance(input_data[0], dict):
+            texts = [item.get("text", "") for item in input_data]
+            img_list = [item.get("image") for item in input_data] if any(item.get("image") for item in input_data) else None
+            if img_list:
+                vectors = await state.rag_search.embedder.embed_multimodal(texts, images=img_list)
+            else:
+                vectors = await state.rag_search.embedder.embed_dense(texts)
+        elif isinstance(input_data, str):
             texts = [input_data]
+            if images:
+                if isinstance(images, str):
+                    images = [images]
+                vectors = await state.rag_search.embedder.embed_multimodal(texts, images=images)
+            else:
+                vectors = await state.rag_search.embedder.embed_dense(texts)
         elif isinstance(input_data, list):
-            texts = input_data
+            texts = [str(t) for t in input_data]
+            if images:
+                vectors = await state.rag_search.embedder.embed_multimodal(texts, images=images)
+            else:
+                vectors = await state.rag_search.embedder.embed_dense(texts)
         else:
-            raise HTTPException(status_code=400, detail="input must be a string or array of strings")
-
-        # Generate embeddings
-        vectors = await state.rag_search.embedder.embed_dense(texts)
+            raise HTTPException(status_code=400, detail="input must be a string, array, or array of {text, image} objects")
 
         # Format as OpenAI response
         data = [{"object": "embedding", "index": i, "embedding": emb} for i, emb in enumerate(vectors)]
@@ -4077,7 +4093,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         Knowledge Fabric compatible embed endpoint.
 
         Expects: {"texts": ["...", "..."]}
-        Returns: {"vectors": [[...], [...]], "dim": 384}
+        Returns: {"vectors": [[...], [...]], "dim": 2048}
         """
         state: GatewayState = app.state.gateway
 
