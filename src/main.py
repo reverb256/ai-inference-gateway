@@ -3026,7 +3026,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 "results": results,
             }
 
-        @app.get("/rag/search")
+        @app.api_route("/rag/search", methods=["GET", "POST"])
         async def search_knowledge_base(request: Request):
             """Search RAG knowledge base."""
             state: GatewayState = app.state.gateway
@@ -3034,13 +3034,14 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             if not state.rag_search:
                 raise HTTPException(status_code=501, detail="RAG service not enabled")
 
-            query = request.query_params.get("query", "")
+            body = await request.json() if request.method == "POST" else {}
+            query = body.get("query") or request.query_params.get("query", "")
             if not query:
                 raise HTTPException(status_code=400, detail="Missing required parameter: query")
 
-            collection = request.query_params.get("collection", "brain-wiki")
-            top_k = int(request.query_params.get("top_k", 5))
-            rerank = request.query_params.get("rerank", "true").lower() == "true"
+            collection = body.get("collection") or request.query_params.get("collection", "brain-wiki")
+            top_k = int(body.get("top_k") or request.query_params.get("top_k", 5))
+            rerank = str(body.get("rerank", request.query_params.get("rerank", "true"))).lower() == "true"
 
             result = await state.rag_search.search(query=query, collection=collection, top_k=top_k, rerank=rerank)
 
