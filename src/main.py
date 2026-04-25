@@ -5912,3 +5912,4 @@ except Exception as e:
     traceback.print_exc()
     raise
 # Build bump: 1777100615
+# Build bump: embeddings sys.path fix 1777101473
