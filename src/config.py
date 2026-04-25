@@ -71,10 +71,16 @@ class CacheConfig(BaseModel):
     )
 
 
-class CircuitBreakerConfig(BaseModel):
+class CircuitBreakerConfig(BaseSettings):
     """Circuit breaker configuration with validation"""
 
-    enabled: bool = Field(default=True, description="Enable circuit breaker")
+    model_config = SettingsConfigDict(
+        env_prefix="",
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    enabled: bool = Field(default=False, description="Enable circuit breaker")
     failure_threshold: int = Field(default=5, ge=1, le=100, description="Number of failures before opening circuit")
     success_threshold: int = Field(default=2, ge=1, le=10, description="Number of successes before closing circuit")
     timeout_seconds: int = Field(
