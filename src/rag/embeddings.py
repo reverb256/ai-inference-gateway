@@ -175,12 +175,9 @@ class EmbeddingService:
                 # import warnings from Qwen3VLVideoProcessor and re-raises
                 # as a misleading "requires Torchvision" ImportError even
                 # though torchvision is installed and importable.
+                # Must patch the LOCAL reference in the transformer module,
+                # not just the source module (Python import = local binding).
                 import contextlib
-                try:
-                    import sentence_transformers.util.environment as _env
-                    _env.suggest_extra_on_exception = contextlib.nullcontext
-                except Exception:
-                    pass
                 try:
                     import sentence_transformers.base.modules.transformer as _tf
                     _tf.suggest_extra_on_exception = contextlib.nullcontext
