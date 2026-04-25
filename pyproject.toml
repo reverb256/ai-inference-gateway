@@ -101,9 +101,25 @@ dev = [
 ai-inference-gateway = "ai_inference_gateway.main:main"
 
 [tool.setuptools]
-packages = ["ai_inference_gateway"]
+packages = [
+    "ai_inference_gateway",
+    "ai_inference_gateway.middleware",
+    "ai_inference_gateway.utils",
+    "ai_inference_gateway.rag",
+    "ai_inference_gateway.routes",
+    "ai_inference_gateway.services",
+    "ai_inference_gateway.mcp_servers",
+    "ai_inference_gateway.output",
+    "ai_inference_gateway.observability",
+    "ai_inference_gateway.middleware.knowledge_fabric",
+    "ai_inference_gateway.middleware.knowledge_fabric.sources",
+    "ai_inference_gateway.middleware.knowledge_fabric.tests",
+    "ai_inference_gateway.middleware.knowledge_fabric.tests.fixtures",
+    "ai_inference_gateway.middleware.knowledge_fabric.tests.integration",
+    "ai_inference_gateway.middleware.knowledge_fabric.tests.performance",
+    "ai_inference_gateway.middleware.knowledge_fabric.tests.unit",
+]
 package-dir = {"ai_inference_gateway" = "src"}
-
 [tool.ruff]
 target-version = "py311"
 line-length = 120

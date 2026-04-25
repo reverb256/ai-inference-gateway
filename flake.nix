@@ -43,6 +43,7 @@
         transformers
         torch
         torchaudio
+        torchvision
         accelerate
         soundfile
         librosa
