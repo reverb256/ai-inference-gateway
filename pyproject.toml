@@ -100,9 +100,9 @@ dev = [
 [project.scripts]
 ai-inference-gateway = "ai_inference_gateway.main:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["ai_inference_gateway*"]
+[tool.setuptools]
+packages = ["ai_inference_gateway"]
+package-dir = {"ai_inference_gateway" = "src"}
 
 [tool.ruff]
 target-version = "py311"
