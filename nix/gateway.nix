@@ -205,6 +205,9 @@ in
         SEMANTIC_CACHE_TTL_SECONDS = toString cfg.semanticCache.ttlSeconds;
         SEMANTIC_CACHE_SIMILARITY_THRESHOLD = toString cfg.semanticCache.similarityThreshold;
         HF_HOME = "/var/cache/ai-inference";
+        HF_HUB_OFFLINE = "1";
+        CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        HF_HUB_ENABLE_HF_TRANSFER = "0";
         TRANSFORMERS_CACHE = "/var/cache/ai-inference";
       }
       // lib.optionalAttrs cfg.backend.zai.enable {

@@ -4715,6 +4715,7 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             RoundtableResponse,
             run_roundtable,
             format_roundtable_markdown,
+            DEFAULT_PANEL,
         )
 
         @app.post("/v1/roundtable")
