@@ -70,9 +70,21 @@ def _patch_sentence_transformers_compat():
 
             Transformer.__init__ = _compat_init
 
-            # Shim 3 removed: sentence-transformers v5 already has both
-            # .model and .auto_model — adding a property creates infinite recursion
-            # (auto_model -> model -> auto_model -> ...)
+            # Shim 3: BidirLM custom code uses self.model but ST 5.3.0
+            # only has self.auto_model. Add property alias.
+            # (Use a closure to avoid infinite recursion.)
+            _real_getattr = Transformer.__getattr__ if hasattr(Transformer, "__getattr__") else None
+
+            def _compat_getattr(self, name):
+                if name == "model":
+                    return self.auto_model
+                if _real_getattr:
+                    return _real_getattr(self, name)
+                raise AttributeError(
+                    f"'{type(self).__name__}' object has no attribute '{name}'"
+                )
+
+            Transformer.__getattr__ = _compat_getattr
 
             Transformer._compat_patched = True
     except ImportError:
