@@ -51,6 +51,13 @@
         httptools
         feedgen
         datasets
+        # MLSEC Phase 3: Observability (OTel tracing)
+        opentelemetry-api
+        opentelemetry-sdk
+        opentelemetry-instrumentation-fastapi
+        opentelemetry-exporter-otlp-proto-grpc
+        opentelemetry-instrumentation
+        opentelemetry-util-http
       ];
 
       # Install the gateway source as a Python package

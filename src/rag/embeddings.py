@@ -10,13 +10,42 @@ Handles text embedding using BGE-M3 model with support for:
 
 import asyncio
 import logging
-from typing import List, Optional, Dict
-from sentence_transformers import SentenceTransformer
+import sys
+import types
+from typing import List, Optional, Dict, Union
 import torch
 
 from .config import EmbeddingConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _patch_sentence_transformers_compat():
+    """Compatibility shim for models using old sentence_transformers.base.modules path.
+
+    sentence-transformers v5 moved Transformer from base.modules to models.
+    Custom models (e.g. BidirLM-Omni) still import from the old path.
+    """
+    try:
+        from sentence_transformers import models
+        base_pkg = sys.modules.get("sentence_transformers.base")
+        if base_pkg is None:
+            base_pkg = types.ModuleType("sentence_transformers.base")
+            base_pkg.__path__ = []
+            sys.modules["sentence_transformers.base"] = base_pkg
+        modules_pkg = sys.modules.get("sentence_transformers.base.modules")
+        if modules_pkg is None:
+            modules_pkg = types.ModuleType("sentence_transformers.base.modules")
+            sys.modules["sentence_transformers.base.modules"] = modules_pkg
+        if not hasattr(modules_pkg, "Transformer"):
+            modules_pkg.Transformer = models.Transformer
+    except ImportError:
+        pass
+
+
+_patch_sentence_transformers_compat()
+
+from sentence_transformers import SentenceTransformer  # noqa: E402
 
 
 class EmbeddingService:

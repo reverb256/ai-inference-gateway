@@ -39,6 +39,10 @@ from ai_inference_gateway.middleware.pii_input import PIIInputMiddleware
 from ai_inference_gateway.prompt_injection_scorer import PromptInjectionScorer
 from ai_inference_gateway.middleware.validation import RequestValidationMiddleware
 
+# MLSEC Phase 3: Observability hardening
+from ai_inference_gateway.observability.tracing import setup_tracing
+
+
 # Import TTS handler
 try:
     from ai_inference_gateway.tts_handler import (
@@ -381,6 +385,8 @@ class GatewayState:
         self.pii_input = None;
         self.injection_scorer = None;
         self.request_validator = None;
+        # MLSEC Phase 3: Observability hardening
+        self.tracer = None
 
 
 def build_backend_headers(config: GatewayConfig, request_headers: dict) -> dict:
@@ -779,6 +785,13 @@ async def lifespan(app: FastAPI):
         logger.info("RequestValidationMiddleware initialized")
     except Exception as e:
         logger.warning(f"MLSEC Phase 2 initialization failed: {e}")
+
+    # --- MLSEC Phase 3: Initialize OTel tracing with PII sanitization ---
+    try:
+        setup_tracing(app, get_default_redactor())
+        logger.info("OTel tracing initialized with PII sanitizing span processor")
+    except Exception as e:
+        logger.warning(f"OTel tracing setup failed (non-fatal): {e}")
 
     yield
 
