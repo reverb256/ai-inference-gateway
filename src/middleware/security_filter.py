@@ -2,10 +2,11 @@
 import re
 import json
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from fastapi import Request, HTTPException
 from ai_inference_gateway.middleware.base import Middleware
 from ai_inference_gateway.config import SecurityConfig
+from ai_inference_gateway.prompt_injection_scorer import PromptInjectionScorer, InjectionRisk
 
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class SecurityFilterMiddleware(Middleware):
         """
         self.config = config
         self._compile_patterns()
+        self._scorer = PromptInjectionScorer()
 
     def _compile_patterns(self):
         """Compile regex patterns for efficiency."""
@@ -155,21 +157,42 @@ class SecurityFilterMiddleware(Middleware):
                 return True
         return False
 
-    def _detect_injection(self, text: str) -> bool:
+    def _detect_injection(self, text: str) -> Tuple[bool, InjectionRisk]:
         """
-        Detect prompt injection attempts in text.
+        Detect prompt injection attempts in text using the tiered scorer.
 
         Args:
             text: The text to check
 
         Returns:
-            True if injection detected
+            Tuple of (is_blocked, InjectionRisk)
         """
-        for pattern in self._injection_patterns:
-            if pattern.search(text):
-                logger.warning(f"Prompt injection detected: {pattern.pattern}")
-                return True
-        return False
+        import asyncio;
+        loop = asyncio.get_event_loop();
+        risk = loop.run_until_complete(self._scorer.score(text));
+
+        if risk.score >= 0.8:
+            logger.warning(
+                f"Prompt injection confirmed (score={risk.score}): "
+                f"triggers={risk.triggers}, heuristics={risk.heuristic_flags}"
+            );
+            return True, risk;
+
+        if risk.score >= 0.5:
+            logger.warning(
+                f"Prompt injection likely (score={risk.score}): "
+                f"triggers={risk.triggers}, heuristics={risk.heuristic_flags}"
+            );
+            return False, risk;
+
+        if risk.score >= 0.2:
+            logger.info(
+                f"Prompt injection suspicious (score={risk.score}): "
+                f"triggers={risk.triggers}, heuristics={risk.heuristic_flags}"
+            );
+            return False, risk;
+
+        return False, risk;
 
     def _redact_pii(self, text: str) -> str:
         """
@@ -231,11 +254,17 @@ class SecurityFilterMiddleware(Middleware):
         if not (context and self._is_trusted_source(context)):
             for message in messages:
                 content = message.get("content", "")
-                if isinstance(content, str) and self._detect_injection(content):
-                    error = HTTPException(
-                        status_code=400, detail="Request blocked: prompt injection detected"
-                    )
-                    return False, error
+                if isinstance(content, str):
+                    is_blocked, risk = self._detect_injection(content)
+                    context["injection_risk"] = risk;
+
+                    if is_blocked:
+                        error = HTTPException(
+                            status_code=400,
+                            detail=f"Request blocked: prompt injection detected "
+                                   f"(score={risk.score}, level={risk.level})",
+                        )
+                        return False, error
 
         # Redact PII if enabled
         if self.config.pii_redaction:

@@ -34,6 +34,11 @@ from ai_inference_gateway.utils.tool_utils import (
 from ai_inference_gateway.output.response_sanitizer import ResponseSanitizer
 from ai_inference_gateway.observability.sanitizing_logger import PIISanitizingFilter
 
+# MLSEC Phase 2: Input security pipeline
+from ai_inference_gateway.middleware.pii_input import PIIInputMiddleware
+from ai_inference_gateway.prompt_injection_scorer import PromptInjectionScorer
+from ai_inference_gateway.middleware.validation import RequestValidationMiddleware
+
 # Import TTS handler
 try:
     from ai_inference_gateway.tts_handler import (
@@ -372,6 +377,10 @@ class GatewayState:
         self.searxng = None
         # MLSEC: Response sanitizer (initialized in lifespan)
         self.response_sanitizer = None
+        # MLSEC Phase 2: Input security (initialized in lifespan)
+        self.pii_input = None;
+        self.injection_scorer = None;
+        self.request_validator = None;
 
 
 def build_backend_headers(config: GatewayConfig, request_headers: dict) -> dict:
@@ -742,6 +751,34 @@ async def lifespan(app: FastAPI):
             logger.info("PIISanitizingFilter added to root logger")
     except Exception as e:
         logger.warning(f"PIISanitizingFilter setup failed: {e}")
+
+    # --- MLSEC Phase 2: Input security initialization ---
+    try:
+        redactor = get_default_redactor() if PII_REDACTOR_AVAILABLE else None
+
+        # Initialize PII input middleware
+        privacy_client = None
+        if hasattr(state.config.middleware, "privacy_filter"):
+            pf_cfg = state.config.middleware.privacy_filter
+            if pf_cfg.enabled and hasattr(state, "response_sanitizer") and state.response_sanitizer:
+                privacy_client = state.response_sanitizer.privacy_filter_client
+
+        state.pii_input = PIIInputMiddleware(
+            pii_redactor=redactor,
+            privacy_filter_client=privacy_client,
+            enabled=redactor is not None,
+        )
+        logger.info("PIIInputMiddleware initialized (enabled=%s)", state.pii_input.enabled)
+
+        # Initialize prompt injection scorer
+        state.injection_scorer = PromptInjectionScorer()
+        logger.info("PromptInjectionScorer initialized")
+
+        # Initialize request validation middleware
+        state.request_validator = RequestValidationMiddleware()
+        logger.info("RequestValidationMiddleware initialized")
+    except Exception as e:
+        logger.warning(f"MLSEC Phase 2 initialization failed: {e}")
 
     yield
 
@@ -1489,6 +1526,16 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         # Read request body
         body = await request.json()
 
+        # MLSEC Phase 2: Validate request structure
+        if state.request_validator:
+            errors = await state.request_validator.validate_chat_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+
+        # MLSEC Phase 2: Sanitize input messages (PII + injection)
+        if state.pii_input and "messages" in body:
+            body["messages"] = await state.pii_input.sanitize_messages(body["messages"])
+
         # Transform response_format to backend instructions
         # (OpenAI JSON mode -> system prompts)
         if "response_format" in body:
@@ -1811,6 +1858,16 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         # Read request body
         body = await request.json()
+
+        # MLSEC Phase 2: Validate request structure
+        if state.request_validator:
+            errors = await state.request_validator.validate_anthropic_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+
+        # MLSEC Phase 2: Sanitize input messages (PII + injection)
+        if state.pii_input and "messages" in body:
+            body["messages"] = await state.pii_input.sanitize_messages(body["messages"])
 
         # Extract parameters
         model = body.get("model", "")
@@ -2538,6 +2595,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 )
 
             body = await request.json()
+
+            # MLSEC Phase 2: Validate request structure
+            if state.request_validator:
+                errors = await state.request_validator.validate_search_request(body)
+                if errors:
+                    raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+
             query = body.get("query", "").strip()
 
             if not query:
@@ -3028,6 +3092,13 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         """
         state: GatewayState = app.state.gateway
         body = await request.json()
+
+        # MLSEC Phase 2: Validate request structure
+        if state.request_validator:
+            errors = await state.request_validator.validate_search_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+
         query = body.get("query", "").strip()
         if not query:
             raise HTTPException(status_code=400, detail="Query is required")
@@ -3516,6 +3587,19 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         # Parse Ollama request
         body = await request.json()
+
+        # MLSEC Phase 2: Validate request structure
+        if state.request_validator:
+            errors = await state.request_validator.validate_chat_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+
+        # MLSEC Phase 2: Sanitize prompt field
+        if state.pii_input and "prompt" in body and body["prompt"]:
+            body["prompt"] = await state.pii_input.sanitize_messages(
+                [{"role": "user", "content": body["prompt"]}]
+            )[0]["content"]
+
         model = body.get("model", "qwen/qwen3.5-9b")
         prompt = body.get("prompt", "")
         stream = body.get("stream", False)
@@ -3628,6 +3712,15 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         # Parse Ollama request
         body = await request.json()
+
+        # MLSEC Phase 2: Validate + Sanitize
+        if state.request_validator:
+            errors = await state.request_validator.validate_chat_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+        if state.pii_input and "messages" in body:
+            body["messages"] = await state.pii_input.sanitize_messages(body["messages"])
+
         model = body.get("model", "qwen/qwen3.5-9b")
         messages = body.get("messages", [])
         stream = body.get("stream", False)
@@ -3896,6 +3989,15 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             raise HTTPException(status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true")
 
         body = await request.json()
+
+        # MLSEC Phase 2: Validate + Sanitize embedding input
+        if state.request_validator:
+            errors = await state.request_validator.validate_embedding_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+        if state.pii_input and "prompt" in body and body["prompt"]:
+            body["prompt"] = await state.pii_input.sanitize_text(body["prompt"])
+
         _model = body.get("model", "BAAI/bge-m3")  # noqa: F841
         prompt = body.get("prompt", "")
 
@@ -3919,6 +4021,16 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             raise HTTPException(status_code=501, detail="Embeddings not enabled. Set RAG_ENABLED=true")
 
         body = await request.json()
+
+        # MLSEC Phase 2: Validate + Sanitize embedding input
+        if state.request_validator:
+            errors = await state.request_validator.validate_embedding_request(body)
+            if errors:
+                raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
+        if state.pii_input and "input" in body:
+            sanitized = await state.pii_input.sanitize_embedding_input(body["input"])
+            body["input"] = sanitized
+
         model = body.get("model", "BAAI/bge-m3")
         input_data = body.get("input", "")
 
