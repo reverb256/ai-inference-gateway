@@ -14,11 +14,12 @@ let
   # Nix caches the derivation even when source files change, serving STALE CODE.
   # Fix: use builtins.path to compute a hash of the source tree, then reference
   # that hash in the derivation so any source change forces a rebuild.
+  # Recursively collect all .py files under gatewaySrc for hash computation
+  allPyFiles = lib.filesystem.listFilesRecursive gatewaySrc;
+  pyFiles = builtins.filter (f: lib.hasSuffix ".py" f) allPyFiles;
   gatewaySrcHash = builtins.hashString "sha256" (
     builtins.concatStringsSep ""
-      (map (f: builtins.hashFile "sha256" "${gatewaySrc}/${f}")
-        (builtins.filter (f: lib.hasSuffix ".py" f)
-          (builtins.attrNames (builtins.readDir gatewaySrc))))
+      (map (f: builtins.hashFile "sha256" f) pyFiles)
   );
 
   modularGatewayPkgBase =
