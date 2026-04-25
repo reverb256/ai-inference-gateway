@@ -3026,27 +3026,36 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 "results": results,
             }
 
-        async def _search_knowledge_base(request: Request):
+        async def _search_knowledge_base(query: str = "", collection: str = "brain-wiki", top_k: int = 5, rerank: bool = True):
             """Shared handler for RAG search (GET and POST)."""
             state: GatewayState = app.state.gateway
 
             if not state.rag_search:
                 raise HTTPException(status_code=501, detail="RAG service not enabled")
 
-            body = await request.json() if request.method == "POST" else {}
-            query = body.get("query") or request.query_params.get("query", "")
-            if not query:
-                raise HTTPException(status_code=400, detail="Missing required parameter: query")
-
-            collection = body.get("collection") or request.query_params.get("collection", "brain-wiki")
-            top_k = int(body.get("top_k") or request.query_params.get("top_k", 5))
-            rerank = str(body.get("rerank", request.query_params.get("rerank", "true"))).lower() == "true"
-
             result = await state.rag_search.search(query=query, collection=collection, top_k=top_k, rerank=rerank)
 
             return result
 
-        app.add_api_route("/rag/search", _search_knowledge_base, methods=["GET", "POST"])
+        @app.get("/rag/search")
+        async def rag_search_get(request: Request, query: str = "", collection: str = "brain-wiki", top_k: int = 5, rerank: str = "true"):
+            """Search Knowledge Base via GET."""
+            return await _search_knowledge_base(query=query, collection=collection, top_k=top_k, rerank=rerank.lower() == "true")
+
+        @app.post("/rag/search")
+        async def rag_search_post(request: Request):
+            """Search Knowledge Base via POST."""
+            state: GatewayState = app.state.gateway
+            if not state.rag_search:
+                raise HTTPException(status_code=501, detail="RAG service not enabled")
+            body = await request.json()
+            query = body.get("query", "")
+            if not query:
+                raise HTTPException(status_code=400, detail="Missing required parameter: query")
+            collection = body.get("collection", "brain-wiki")
+            top_k = int(body.get("top_k", 5))
+            rerank = str(body.get("rerank", "true")).lower() == "true"
+            return await state.rag_search.search(query=query, collection=collection, top_k=top_k, rerank=rerank)
 
         @app.get("/rag/collections")
         async def list_collections(request: Request):
@@ -4698,6 +4707,70 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
             logger.warning(f"Failed to initialize self-improvement system: {e}")
             logger.warning(f"Traceback: {traceback.format_exc()}")
+
+    # Add Roundtable (Multi-Model Deliberation) endpoint
+    try:
+        from ai_inference_gateway.roundtable import (
+            RoundtableRequest,
+            RoundtableResponse,
+            run_roundtable,
+            format_roundtable_markdown,
+        )
+
+        @app.post("/v1/roundtable")
+        async def roundtable_deliberate(request_obj: Request):
+            """
+            Multi-model roundtable deliberation.
+
+            Orchestrates structured multi-round discussions between different LLM models.
+            Uses the gateway's model routing, circuit breakers, and optional RAG enrichment.
+
+            Request body:
+                topic (str): Topic/question for deliberation
+                models (list, optional): Model participants (defaults to NIM panel)
+                rounds (int): Number of rounds (1-5, default 2)
+                context (str, optional): Additional context
+                use_rag (bool): Enrich with Knowledge Fabric search (default false)
+                rag_collection (str): Qdrant collection (default "brain-wiki")
+                rag_max_results (int): Max RAG results (default 5)
+                synthesis_model (str, optional): Model for synthesis
+                stream (bool): Stream via SSE (default true) — currently returns JSON
+                format (str, optional): "markdown" for full transcript output
+            """
+            state: GatewayState = app.state.gateway
+            body = await request_obj.json()
+            rt_req = RoundtableRequest(**body)
+
+            result = await run_roundtable(state, rt_req)
+
+            # If caller wants markdown format
+            if body.get("format") == "markdown":
+                from fastapi.responses import PlainTextResponse
+                return PlainTextResponse(
+                    content=format_roundtable_markdown(result),
+                    media_type="text/markdown",
+                )
+
+            return result.model_dump()
+
+        @app.get("/v1/roundtable/models")
+        async def roundtable_available_models(request_obj: Request):
+            """List models available for roundtable deliberation."""
+            state: GatewayState = app.state.gateway
+            models = []
+            if state.router:
+                for model_id, info in state.router.models.items():
+                    models.append({
+                        "id": model_id,
+                        "backend": info.backend,
+                        "context_length": info.context_length,
+                    })
+            return {"models": models, "default_count": len(DEFAULT_PANEL)}
+
+        logger.info("Roundtable deliberation endpoints registered")
+    except ImportError as e:
+        logger.warning(f"Roundtable endpoints not available: {e}")
+
     return app
 
 
