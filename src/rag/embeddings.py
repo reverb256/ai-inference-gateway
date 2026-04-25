@@ -70,9 +70,9 @@ def _patch_sentence_transformers_compat():
 
             Transformer.__init__ = _compat_init
 
-            # Shim 3: self.model alias for self.auto_model (renamed in v5)
-            if not hasattr(Transformer, "model"):
-                Transformer.model = property(lambda self: self.auto_model)
+            # Shim 3 removed: sentence-transformers v5 already has both
+            # .model and .auto_model — adding a property creates infinite recursion
+            # (auto_model -> model -> auto_model -> ...)
 
             Transformer._compat_patched = True
     except ImportError:
