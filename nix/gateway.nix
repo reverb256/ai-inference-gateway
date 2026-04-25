@@ -146,7 +146,7 @@ let
         "PATH=${gatewayPython}/bin:/usr/bin:/bin"
         "HOME=/home/ai-gateway"
         "USER=ai-gateway"
-        "TRANSFORMERS_CACHE=/var/cache/ai-inference"
+#         "TRANSFORMERS_CACHE=/var/cache/ai-inference"
         "HF_HOME=/var/cache/ai-inference"
         "TORCHINDUCTOR_CACHE_DIR=/var/cache/ai-inference/torch-cache"
       ];
@@ -208,7 +208,7 @@ in
         HF_HUB_OFFLINE = "1";
         CURL_CA_BUNDLE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
         HF_HUB_ENABLE_HF_TRANSFER = "0";
-        TRANSFORMERS_CACHE = "/var/cache/ai-inference";
+#         TRANSFORMERS_CACHE = "/var/cache/ai-inference/hub";
       }
       // lib.optionalAttrs cfg.backend.zai.enable {
         ZAI_API_KEY_FILE =
