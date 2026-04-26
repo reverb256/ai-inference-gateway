@@ -5,14 +5,31 @@ from typing import Optional, List
 logger = logging.getLogger(__name__)
 
 
+def normalize_roles(messages: List[dict]) -> List[dict]:
+    """
+    Normalize message roles for backend compatibility.
+
+    Converts 'developer' role to 'system' role for OMP compatibility.
+    The 'developer' role is used by some MCP clients but not supported by llama.cpp.
+    """
+    normalized = []
+    for msg in messages:
+        normalized_msg = msg.copy()
+        if msg.get("role") == "developer":
+            normalized_msg["role"] = "system"
+            logger.debug("Converted 'developer' role to 'system' for backend compatibility")
+        normalized.append(normalized_msg)
+    return normalized
+
+
 class RequestValidationMiddleware:
     """Validates incoming API request bodies before forwarding to providers."""
 
     MAX_REQUEST_SIZE = 128 * 1024;  # 128KB
     MAX_MESSAGES = 128;
     MAX_CONTENT_LENGTH = 100_000;
-    MAX_TOOLS = 64;
-    ALLOWED_ROLES = {"system", "user", "assistant", "tool", "function"};
+    MAX_TOOLS = 200;  # Increased for OMP compatibility (175 tools from 7 MCP servers)
+    ALLOWED_ROLES = {"system", "user", "assistant", "tool", "function", "developer"};  # Added 'developer' for OMP
 
     async def validate_chat_request(self, body: dict) -> Optional[List[str]]:
         """Validate /v1/chat/completions request body."""

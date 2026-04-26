@@ -1041,6 +1041,13 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
     gpu_scheduler.notify_ai_starting()
 
     _request_start = time.time()
+
+    # Normalize message roles for backend compatibility
+    # Convert 'developer' role to 'system' for OMP compatibility
+    if "messages" in body:
+        from ai_inference_gateway.middleware.validation import normalize_roles
+        body["messages"] = normalize_roles(body["messages"])
+
     stream = body.get("stream", False)
     messages = body.get("messages", [])
     headers = dict(request.headers)
@@ -1548,6 +1555,12 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         # MLSEC Phase 2: Sanitize input messages (PII + injection)
         if state.pii_input and "messages" in body:
             body["messages"] = await state.pii_input.sanitize_messages(body["messages"])
+
+        # Normalize message roles for backend compatibility
+        # Convert 'developer' role to 'system' for OMP compatibility
+        if "messages" in body:
+            from ai_inference_gateway.middleware.validation import normalize_roles
+            body["messages"] = normalize_roles(body["messages"])
 
         # Transform response_format to backend instructions
         # (OpenAI JSON mode -> system prompts)
@@ -3744,6 +3757,11 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 raise HTTPException(status_code=400, detail=f"Validation error: {'; '.join(errors)}")
         if state.pii_input and "messages" in body:
             body["messages"] = await state.pii_input.sanitize_messages(body["messages"])
+
+        # Normalize message roles for backend compatibility
+        if "messages" in body:
+            from ai_inference_gateway.middleware.validation import normalize_roles
+            body["messages"] = normalize_roles(body["messages"])
 
         model = body.get("model", "qwen/qwen3.5-9b")
         messages = body.get("messages", [])
