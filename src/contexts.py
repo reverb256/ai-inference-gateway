@@ -53,13 +53,34 @@ CLOUD_MODEL_CONTEXT = {
 
     # NVIDIA NIM (free tier)
     "qwen/qwen3-coder-480b-a35b-instruct":     262144,  # 256K (NIM free tier)
-    "moonshotai/kimi-k2.5":                     262144,  # 256K
-    "deepseek-ai/deepseek-v3.2":                131072,  # 128K
     "z-ai/glm-5.1":                             202752,  # ~200K
-    "google/gemma-4-31b-it":                    131072,  # 128K
     "meta/llama-3.1-405b-instruct":             131072,  # 128K
     "nvidia/llama-3.3-nemotron-super-49b-v1":   131072,  # 128K
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1":  131072,  # 128K
+    "nvidia/nemotron-3-super-120b-a12b":        131072,
+    "nvidia/nemotron-mini-4b-instruct":          131072,
+    "qwen/qwen3.5-397b-a17b":                    131072,
+    "qwen/qwen3.5-122b-a10b":                    131072,
+    "qwen/qwen3-next-80b-a3b-instruct":          131072,
+    "deepseek-ai/deepseek-v4-flash":              1048576,
+    "meta/llama-3.3-70b-instruct":                131072,
+    "meta/llama-4-maverick-17b-128e-instruct":    131072,
+    "meta/llama-3.2-90b-vision-instruct":         131072,
+    "moonshotai/kimi-k2-instruct":                131072,
+    "moonshotai/kimi-k2-thinking":                131072,
+    "mistralai/mistral-large-3-675b-instruct-2512": 131072,
+    "mistralai/devstral-2-123b-instruct-2512":     131072,
+    "mistralai/mistral-small-4-119b-2603":         131072,
+    "mistralai/magistral-small-2506":              32768,
+    "mistralai/mixtral-8x22b-instruct-v0.1":       65536,
+    "minimaxai/minimax-m2.5":                       131072,
+    "minimaxai/minimax-m2.7":                       131072,
+    "openai/gpt-oss-120b":                          131072,
+    "z-ai/glm4.7":                                  131072,
+    "google/gemma-3-27b-it":                        131072,
+    "microsoft/phi-4-multimodal-instruct":          131072,
+    "stepfun-ai/step-3.5-flash":                    131072,
+    "bytedance/seed-oss-36b-instruct":              131072,
+    "stockmark/stockmark-2-100b-instruct":          131072,
 
     # Google Gemini (free tier)
     "gemini-2.5-flash":      1048576,  # 1M
@@ -107,13 +128,34 @@ MAX_OUTPUT_TOKENS = {
 
     # NVIDIA NIM
     "qwen/qwen3-coder-480b-a35b-instruct":     65536,
-    "moonshotai/kimi-k2.5":                   262144,
-    "deepseek-ai/deepseek-v3.2":               65536,
     "z-ai/glm-5.1":                           131072,
-    "google/gemma-4-31b-it":                   32768,
     "meta/llama-3.1-405b-instruct":            65536,
     "nvidia/llama-3.3-nemotron-super-49b-v1":  32768,
-    "nvidia/llama-3.1-nemotron-ultra-253b-v1": 32768,
+    "nvidia/nemotron-3-super-120b-a12b":       32768,
+    "nvidia/nemotron-mini-4b-instruct":         8192,
+    "qwen/qwen3.5-397b-a17b":                   65536,
+    "qwen/qwen3.5-122b-a10b":                   32768,
+    "qwen/qwen3-next-80b-a3b-instruct":         32768,
+    "deepseek-ai/deepseek-v4-flash":             65536,
+    "meta/llama-3.3-70b-instruct":               32768,
+    "meta/llama-4-maverick-17b-128e-instruct":   32768,
+    "meta/llama-3.2-90b-vision-instruct":        32768,
+    "moonshotai/kimi-k2-instruct":               32768,
+    "moonshotai/kimi-k2-thinking":               65536,
+    "mistralai/mistral-large-3-675b-instruct-2512": 32768,
+    "mistralai/devstral-2-123b-instruct-2512":     32768,
+    "mistralai/mistral-small-4-119b-2603":         32768,
+    "mistralai/magistral-small-2506":              8192,
+    "mistralai/mixtral-8x22b-instruct-v0.1":       32768,
+    "minimaxai/minimax-m2.5":                       32768,
+    "minimaxai/minimax-m2.7":                       32768,
+    "openai/gpt-oss-120b":                          32768,
+    "z-ai/glm4.7":                                  32768,
+    "google/gemma-3-27b-it":                        32768,
+    "microsoft/phi-4-multimodal-instruct":          16384,
+    "stepfun-ai/step-3.5-flash":                    8192,
+    "bytedance/seed-oss-36b-instruct":              16384,
+    "stockmark/stockmark-2-100b-instruct":          16384,
 
     # Google Gemini
     "gemini-2.5-flash":      65536,
