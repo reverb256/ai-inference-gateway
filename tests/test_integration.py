@@ -161,7 +161,7 @@ class TestIntegration:
 
         # Force circuit breaker open
         circuit_breaker._state = CircuitBreakerState.OPEN
-        circuit_breaker._open_until = time.time() + 60
+        circuit_breaker._last_failure_time = time.time()
 
         pipeline = MiddlewarePipeline([observability, circuit_breaker])
 
@@ -498,7 +498,7 @@ class TestErrorScenarios:
 
         # Force open
         circuit_breaker._state = CircuitBreakerState.OPEN
-        circuit_breaker._open_until = time.time() + 60
+        circuit_breaker._last_failure_time = time.time()
 
         observability = ObservabilityMiddleware(config.middleware.observability)
 

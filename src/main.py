@@ -42,6 +42,9 @@ from ai_inference_gateway.middleware.validation import RequestValidationMiddlewa
 # MLSEC Phase 3: Observability hardening
 from ai_inference_gateway.observability.tracing import setup_tracing
 
+# Model discovery for auto-detecting llama-server and LM Studio models
+from ai_inference_gateway.model_discovery import ModelDiscovery
+
 
 # Import TTS handler
 try:
@@ -487,9 +490,18 @@ async def lifespan(app: FastAPI):
     state.pipeline = build_middleware_pipeline(state.config, state.redis_client)
     logger.info("Middleware pipeline initialized with %d middleware", state.pipeline.count)
 
+    # Initialize model discovery for llama-servers and LM Studio
+    state.model_discovery = None
+    try:
+        state.model_discovery = ModelDiscovery(refresh_interval=300)
+        await state.model_discovery.start()
+        logger.info("Model discovery started")
+    except Exception as e:
+        logger.warning(f"Model discovery initialization failed: {e}")
+
     # Initialize router (no API key needed for llama-cpp)
     try:
-        state.router = create_default_router()
+        state.router = create_default_router(model_discovery=state.model_discovery)
         logger.info("Router initialized with %d models", len(state.router.models))
     except Exception as e:
         logger.warning(f"Router initialization failed: {e}")
@@ -1467,6 +1479,32 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         return get_all_models_info()
 
     # Add system prompts endpoint
+    @app.get("/models/discovery")
+    async def get_model_discovery_status(request: Request):
+        """
+        Get model discovery status and backend information.
+
+        Shows which models are discovered on which backends (llama-servers, LM Studio).
+        """
+        state: GatewayState = app.state.gateway
+
+        if not state.model_discovery:
+            return {
+                "status": "disabled",
+                "message": "Model discovery is not enabled"
+            }
+
+        return {
+            "status": "enabled",
+            "backends": state.model_discovery.get_backend_status(),
+            "models": {
+                model_id: backend_name
+                for model_id, backend_name in state.model_discovery.get_all_models().items()
+            },
+            "total_models": len(state.model_discovery.model_registry),
+            "total_backends": len(state.model_discovery.backend_registry),
+        }
+
     @app.get("/system-prompts")
     async def get_system_prompts(request: Request):
         """

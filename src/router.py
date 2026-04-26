@@ -363,12 +363,15 @@ class Router:
 
     Analyzes requests and routes to appropriate models based on
     token count, task type, and current model performance.
+
+    Now with auto-discovery of llama-server and LM Studio models!
     """
 
     def __init__(
         self,
         models: List[ModelInfo],
         latency_tracker: Optional[LatencyTracker] = None,
+        model_discovery=None,
     ):
         """
         Initialize router.
@@ -376,9 +379,11 @@ class Router:
         Args:
             models: List of available models
             latency_tracker: Optional latency tracker for performance-based routing
+            model_discovery: Optional ModelDiscovery instance for auto-discovery
         """
         self.models = {model.id: model for model in models}
         self.latency_tracker = latency_tracker or LatencyTracker()
+        self.model_discovery = model_discovery
         self.claude_model_mapping = self._build_claude_mapping()
         # Active request tracking for smart load balancing
         self.active_requests: Dict[str, Dict] = (
@@ -447,6 +452,66 @@ class Router:
         if request_id in self.active_requests:
             del self.active_requests[request_id]
             logger.debug(f"Stopped tracking request {request_id}")
+
+    def get_backend_for_model(self, model_id: str) -> Optional[str]:
+        """
+        Get the backend name for a given model ID.
+
+        Uses model discovery for auto-discovered models, falls back to
+        static backend mapping for cloud models.
+
+        Args:
+            model_id: Model ID to look up
+
+        Returns:
+            Backend name (llama-3090, llama-3060ti, zai, nvidia, etc.)
+        """
+        # Try model discovery first (for llama-servers, LM Studio)
+        if self.model_discovery:
+            backend = self.model_discovery.get_backend_for_model(model_id)
+            if backend:
+                logger.debug(f"Model {model_id} → discovered backend {backend}")
+                return backend
+
+        # Fallback to static backend mapping (cloud models)
+        model_info = self.models.get(model_id)
+        if model_info:
+            return model_info.backend
+
+        # Default to llama-cpp for unknown models
+        logger.warning(f"Unknown model {model_id}, defaulting to llama-cpp backend")
+        return "llama-cpp"
+
+    def get_backend_url(self, model_id: str) -> Optional[str]:
+        """
+        Get the backend URL for a given model ID.
+
+        Args:
+            model_id: Model ID to look up
+
+        Returns:
+            Full backend URL (http://host:port/v1)
+        """
+        backend = self.get_backend_for_model(model_id)
+
+        # Use model discovery for local backends
+        if self.model_discovery and backend in ["llama-3090", "llama-3060ti", "llama-sentry", "lmstudio"]:
+            return self.model_discovery.get_backend_url(backend)
+
+        # Fallback to static BACKEND_PORTS for legacy compatibility
+        port = self.BACKEND_PORTS.get(backend)
+        if port:
+            return f"http://localhost:{port}/v1"
+
+        # Cloud backends use environment variables
+        import os
+        if backend == "zai":
+            return os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4")
+        elif backend == "nvidia":
+            return os.getenv("NVIDIA_NIM_BASE_URL", "https://integrate.api.nvidia.com/v1")
+
+        logger.error(f"Cannot determine URL for backend {backend}")
+        return None
 
     def route_by_category(
         self,
@@ -1135,8 +1200,51 @@ class Router:
         return sorted(candidates, key=lambda c: c.score, reverse=True)
 
 
-def create_default_router() -> Router:
-    """Create router with default model configuration."""
+def create_default_router(model_discovery=None) -> Router:
+    """Create router with default model configuration.
+
+    Args:
+        model_discovery: Optional ModelDiscovery instance for auto-discovering models
+    """
+    # If model discovery is available, use it to dynamically discover models
+    # Otherwise, fall back to hardcoded model list
+    if model_discovery:
+        # Query backends for available models
+        discovered = asyncio.run(model_discovery.refresh_all_backends())
+
+        # Build model list from discovered models
+        models = []
+        for backend_name, backend_info in discovered.items():
+            if backend_info.models:
+                for model_id in backend_info.models:
+                    # Determine model characteristics from model ID
+                    priority = backend_info.priority
+                    backend = "llama-cpp"  # All llama-servers use llama-cpp backend
+
+                    # Add model info
+                    models.append(ModelInfo(
+                        id=model_id,
+                        name=model_id,  # Use full model ID as name
+                        context_length=131072,  # Safe default
+                        priority=priority,
+                        specializations=[TaskSpecialization.GENERAL],
+                        cost_tier=0,  # Free (local)
+                        estimated_tokens_per_second=50.0,
+                        backend=backend,
+                    ))
+                    logger.info(f"Discovered model {model_id} on {backend_name}")
+
+        # Fall back to hardcoded models if discovery failed
+        if not models:
+            logger.warning("Model discovery failed, using hardcoded model list")
+            models = _get_hardcoded_models()
+    else:
+        models = _get_hardcoded_models()
+
+    return Router(models, model_discovery=model_discovery)
+
+
+def _get_hardcoded_models() -> List[ModelInfo]:
     models = [
         # ========================================================================
         # Local llama.cpp models - routed by model name to correct GPU
@@ -1639,5 +1747,3 @@ def create_default_router() -> Router:
             backend="nvidia",
         ),
     ]
-
-    return Router(models=models)

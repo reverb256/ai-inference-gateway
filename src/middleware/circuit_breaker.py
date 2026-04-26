@@ -1,4 +1,3 @@
-# modules/services/ai-inference/ai_inference_gateway/middleware/circuit_breaker.py
 import asyncio
 import logging
 import time
@@ -79,9 +78,17 @@ class CircuitBreaker(Middleware):
         self._success_count = 0
         self._last_failure_time = 0.0
 
-        # Load state from Redis if available
+        # Track whether initial Redis load has completed
+        self._redis_loaded = False
+
+        # Schedule Redis state load (non-blocking)
         if self._redis:
-            asyncio.create_task(self._load_state())
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._load_state())
+            except RuntimeError:
+                # No running event loop — will load lazily on first request
+                pass
 
     @property
     def enabled(self) -> bool:
@@ -106,23 +113,24 @@ class CircuitBreaker(Middleware):
                     state_str, _timestamp = parts[0], parts[1]
                     self._state = CircuitBreakerState(state_str)
 
-                    # Load counts
-                    failures = await self._redis.get(self._failure_count_key)
-                    if failures:
-                        self._failure_count = int(failures)
+            # Load counts
+            failures = await self._redis.get(self._failure_count_key)
+            if failures:
+                self._failure_count = int(failures)
 
-                    successes = await self._redis.get(self._success_count_key)
-                    if successes:
-                        self._success_count = int(successes)
+            successes = await self._redis.get(self._success_count_key)
+            if successes:
+                self._success_count = int(successes)
 
-                    last_failure = await self._redis.get(self._last_failure_time_key)
-                    if last_failure:
-                        self._last_failure_time = float(last_failure)
+            last_failure = await self._redis.get(self._last_failure_time_key)
+            if last_failure:
+                self._last_failure_time = float(last_failure)
 
-                    logger.info(
-                        f"Loaded circuit breaker state for {self.service_id}: "
-                        f"{self._state.value}"
-                    )
+            self._redis_loaded = True
+            logger.info(
+                f"Loaded circuit breaker state for {self.service_id}: "
+                f"{self._state.value}"
+            )
         except Exception as e:
             logger.warning(f"Failed to load circuit breaker state: {e}")
 
@@ -150,6 +158,22 @@ class CircuitBreaker(Middleware):
             )
         except Exception as e:
             logger.warning(f"Failed to save circuit breaker state: {e}")
+
+    async def _increment_failure_count(self):
+        """Increment failure count, using Redis incrby if available."""
+        self._failure_count += 1
+        self._last_failure_time = time.time()
+
+        if self._redis:
+            try:
+                await self._redis.incrby(self._failure_count_key, 1)
+                await self._redis.set(
+                    self._last_failure_time_key,
+                    str(self._last_failure_time),
+                    ex=3600,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to increment failure count in Redis: {e}")
 
     async def allow_request(self) -> bool:
         """
@@ -216,8 +240,7 @@ class CircuitBreaker(Middleware):
         if not self.enabled:
             return
 
-        self._failure_count += 1
-        self._last_failure_time = time.time()
+        await self._increment_failure_count()
 
         if self._state == CircuitBreakerState.HALF_OPEN:
             # Immediately reopen on failure in HALF_OPEN
