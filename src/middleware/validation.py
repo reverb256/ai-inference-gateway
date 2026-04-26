@@ -28,7 +28,7 @@ class RequestValidationMiddleware:
     MAX_REQUEST_SIZE = 128 * 1024;  # 128KB
     MAX_MESSAGES = 128;
     MAX_CONTENT_LENGTH = 100_000;
-    MAX_TOOLS = 200;  # Increased for OMP compatibility (175 tools from 7 MCP servers)
+    MAX_TOOLS = 250;  # Increased for OMP compatibility (175+ tools from 7 MCP servers)
     ALLOWED_ROLES = {"system", "user", "assistant", "tool", "function", "developer"};  # Added 'developer' for OMP
 
     async def validate_chat_request(self, body: dict) -> Optional[List[str]]:

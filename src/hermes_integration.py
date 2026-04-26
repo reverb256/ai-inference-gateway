@@ -51,13 +51,21 @@ class HermesBridge:
         self.enabled = enabled
 
         # Ensure cluster memory directories exist (we have write access here)
-        self.cluster_memory.mkdir(parents=True, exist_ok=True)
-        EPISODIC_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            self.cluster_memory.mkdir(parents=True, exist_ok=True)
+            EPISODIC_DIR.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            logger.warning(f"Cannot create cluster memory directory: {self.cluster_memory}")
+            self.cluster_memory = None
+            EPISODIC_DIR = None
 
         # Try to create hermes memory, but don't fail if we can't
         # (systemd should create this directory with proper permissions)
         try:
             self.hermes_memory.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            logger.warning(f"Cannot create hermes memory directory: {self.hermes_memory} - {e}")
+            self.hermes_memory = None
         except (PermissionError, OSError) as e:
             logger.warning(f"Cannot create hermes memory directory: {e}")
             logger.info(f"Hermes integration will use cluster memory only")

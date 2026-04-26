@@ -11,6 +11,7 @@ import logging
 import subprocess
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Optional, Dict
 from datetime import datetime, timezone
@@ -33,8 +34,32 @@ STATE_TRANSITIONS = {
     STATE_AI_STOPPING: "AI workload stopping - mining can resume"
 }
 
+# Global flag to track if kubectl is available
+_KUBECTL_AVAILABLE = None
+
+
+def _check_kubectl_available() -> bool:
+    """Check if kubectl is available in the container."""
+    global _KUBECTL_AVAILABLE
+    if _KUBECTL_AVAILABLE is not None:
+        return _KUBECTL_AVAILABLE
+
+    _KUBECTL_AVAILABLE = shutil.which("kubectl") is not None
+    if not _KUBECTL_AVAILABLE:
+        logger.warning("kubectl not found in PATH - GPU scheduler features disabled")
+    return _KUBECTL_AVAILABLE
+
 
 def _kubectl_patch_configmap(state: str) -> bool:
+    """
+    Update GPU scheduler state using kubectl patch.
+
+    Uses kubectl patch for atomic ConfigMap updates without race conditions.
+    Requires RBAC: Role (gpu-scheduler-state-updater) with get/patch/update on ConfigMaps.
+    """
+    if not _check_kubectl_available():
+        logger.debug(f"GPU scheduler: kubectl unavailable, skipping ConfigMap update (state={state})")
+        return False  # Silently skip if kubectl not available
     """
     Update GPU scheduler state using kubectl patch.
 
@@ -89,6 +114,9 @@ def _kubectl_get_configmap() -> Optional[Dict[str, str]]:
     Returns:
         Dict with 'ai-state', 'last-updated', 'active-workload' or None if error.
     """
+    if not _check_kubectl_available():
+        return None
+
     try:
         result = subprocess.run(
             [
@@ -142,6 +170,10 @@ def init_scheduler_comms() -> None:
 
     Creates ConfigMap if it doesn't exist and ensures RBAC is configured.
     """
+    if not _check_kubectl_available():
+        logger.info("GPU scheduler: kubectl unavailable - skipping initialization")
+        return
+
     try:
         # Check if ConfigMap exists
         current_state = _kubectl_get_configmap()
@@ -312,6 +344,8 @@ def _init_file_state() -> None:
             SCHEDULER_STATE_FILE.write_text(current_state or STATE_IDLE)
             logger.debug(f"Initialized file state from ConfigMap: {current_state}")
 
+    except PermissionError as e:
+        logger.warning(f"Cannot create scheduler state directory: {SCHEDULER_STATE_DIR} - {e}")
     except Exception as e:
         logger.error(f"Failed to initialize file state: {e}")
 

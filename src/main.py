@@ -1704,8 +1704,9 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 )
 
                 # Apply optimal params only if not explicitly set by user
+                # Skip params with list/dict values (like recommended_for) - only apply simple types
                 for param, value in qwen_params.items():
-                    if param not in body:
+                    if param not in body and isinstance(value, (int, float, str, bool)):
                         body[param] = value
                         logger.debug(
                             f"Applied Qwen optimal param: {param}={value} "

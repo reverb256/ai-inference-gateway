@@ -52,10 +52,17 @@ class VirtualKeyManager:
 
     def __init__(self, db_path: str = "/var/cache/ai-inference/virtual_keys.db"):
         self.db_path = db_path
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        self._init_db()
+        self._enabled = True  # Track if database is writable
+        try:
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+            self._init_db()
+        except (PermissionError, OSError) as e:
+            logger.warning(f"Cannot create virtual keys database at {self.db_path}: {e}")
+            self._enabled = False
 
     def _init_db(self):
+        if not self._enabled:
+            return
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS virtual_keys (
@@ -85,6 +92,9 @@ class VirtualKeyManager:
 
     def generate_key(self, name: str, agent: str, **kwargs) -> tuple:
         """Generate a new virtual key. Returns (plaintext_key, key_hash)."""
+        if not self._enabled:
+            raise RuntimeError("Virtual keys database not available")
+
         raw_key = f"vgk_{secrets.token_urlsafe(32)}"
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()
 
@@ -113,6 +123,9 @@ class VirtualKeyManager:
 
     def validate_key(self, raw_key: str) -> Optional[VirtualKey]:
         """Validate a key and return its metadata. Returns None if invalid."""
+        if not self._enabled:
+            return None  # Database not available
+
         if not raw_key or not raw_key.startswith("vgk_"):
             return None
 

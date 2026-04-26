@@ -19,6 +19,10 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
+# Synchronous client for initial discovery (before event loop is ready)
+_sync_client = httpx.Client(timeout=10.0)
+
+
 @dataclass
 class BackendInfo:
     """Information about a model backend."""
@@ -39,16 +43,19 @@ class ModelDiscovery:
     a registry for intelligent routing.
     """
 
-    # Backend configurations (using K8s service names)
+    # Backend configurations (using K8s service names with ClusterIP fallbacks)
+    # ClusterIPs are from kubectl get svc -n ai-inference
     BACKENDS = {
         "llama-3090": BackendInfo(
             name="llama-3090",
-            base_url="http://llama-server-zephyr.ai-inference.svc.cluster.local:1235/v1",
+            base_url="http://10.10.199.121:1235/v1",  # ClusterIP fallback
+            # Alternative: http://llama-server-zephyr.ai-inference.svc.cluster.local:1235/v1
             priority=10,  # Highest priority (24GB VRAM)
         ),
         "llama-3060ti": BackendInfo(
             name="llama-3060ti",
-            base_url="http://llama-server-zephyr-3060ti.ai-inference.svc.cluster.local:1236/v1",
+            base_url="http://10.3.49.134:1236/v1",  # ClusterIP fallback
+            # Alternative: http://llama-server-zephyr-3060ti.ai-inference.svc.cluster.local:1236/v1
             priority=9,   # Secondary (8GB VRAM)
         ),
         "lmstudio": BackendInfo(
@@ -58,7 +65,8 @@ class ModelDiscovery:
         ),
         "llama-sentry": BackendInfo(
             name="llama-sentry",
-            base_url="http://llama-server-sentry.ai-inference.svc.cluster.local:1235/v1",
+            base_url="http://10.11.224.232:1235/v1",  # ClusterIP fallback
+            # Alternative: http://llama-server-sentry.ai-inference.svc.cluster.local:1235/v1
             priority=7,   # AMD GPU (8GB)
         ),
     }
@@ -120,6 +128,96 @@ class ModelDiscovery:
                 continue
 
             models = await self._discover_backend_models(backend_info)
+            if models:
+                backend_info.models = models
+                backend_info.last_checked = datetime.now()
+                backend_info.health_status = "healthy"
+                discovered[backend_name] = backend_info
+
+                # Update model registry
+                for model_id in models:
+                    # Use exact model ID from backend
+                    self.model_registry[model_id] = backend_name
+                    logger.debug(f"Discovered {model_id} on {backend_name}")
+
+        self.backend_registry = discovered
+
+        # Log summary
+        total_models = sum(len(b.models) for b in discovered.values())
+        logger.info(
+            f"Model discovery complete: {len(discovered)} backends, "
+            f"{total_models} models total"
+        )
+
+        return discovered
+
+    def _discover_backend_models_sync(self, backend: BackendInfo, retries: int = 3) -> Optional[List[str]]:
+        """
+        Query a backend for available models (synchronous with retries).
+
+        Args:
+            backend: Backend to query
+            retries: Number of retry attempts
+
+        Returns:
+            List of model IDs, or None if query failed
+        """
+        import time
+
+        for attempt in range(retries):
+            try:
+                response = _sync_client.get(
+                    f"{backend.base_url}/models",
+                    headers={"Accept": "application/json"},
+                    timeout=5.0  # Short timeout for faster failure detection
+                )
+                response.raise_for_status()
+
+                data = response.json()
+                if "data" not in data:
+                    logger.warning(f"Backend {backend.name} returned unexpected format")
+                    return None
+
+                models = [item["id"] for item in data["data"]]
+                logger.debug(f"Discovered {len(models)} models on {backend.name}")
+                return models
+
+            except httpx.ConnectError as e:
+                # Connection refused - backend might be starting up
+                if attempt < retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff: 1, 2, 4 seconds
+                    logger.debug(f"Backend {backend.name} connection failed (attempt {attempt + 1}/{retries}), retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                logger.warning(f"Failed to query {backend.name} after {retries} attempts: {e}")
+                backend.health_status = "unreachable"
+                return None
+            except httpx.HTTPError as e:
+                logger.warning(f"Failed to query {backend.name}: {e}")
+                backend.health_status = "unreachable"
+                return None
+            except Exception as e:
+                logger.error(f"Error querying {backend.name}: {e}")
+                backend.health_status = "error"
+                return None
+
+        return None
+
+    def refresh_all_backends_sync(self) -> Dict[str, BackendInfo]:
+        """
+        Query all backends synchronously (for initial discovery).
+
+        Returns:
+            Dict of backend name → BackendInfo with discovered models
+        """
+        logger.info("Refreshing model registry (synchronous)...")
+        discovered = {}
+
+        for backend_name, backend_info in self.BACKENDS.items():
+            if not backend_info.enabled:
+                continue
+
+            models = self._discover_backend_models_sync(backend_info)
             if models:
                 backend_info.models = models
                 backend_info.last_checked = datetime.now()

@@ -77,7 +77,17 @@ def _patch_sentence_transformers_compat():
 
             def _compat_getattr(self, name):
                 if name == "model":
-                    return self.auto_model
+                    # Use object.__getattribute__ to avoid infinite recursion
+                    try:
+                        return object.__getattribute__(self, "auto_model")
+                    except AttributeError:
+                        # If auto_model doesn't exist yet, try the real model
+                        try:
+                            return object.__getattribute__(self, "_modules")["model"]
+                        except (AttributeError, KeyError):
+                            raise AttributeError(
+                                f"'{type(self).__name__}' object has no attribute 'model'"
+                            )
                 if _real_getattr:
                     return _real_getattr(self, name)
                 raise AttributeError(

@@ -46,13 +46,24 @@ class CostTracker:
 
     def __init__(self, db_path: str = "/var/cache/ai-inference/token_usage.db"):
         self.db_path = db_path
-        self._ensure_dir()
-        self._init_db()
+        self._enabled = True  # Track if database is writable
+        try:
+            self._ensure_dir()
+            self._init_db()
+        except (PermissionError, OSError) as e:
+            logger.warning(f"Cannot create cost tracker database at {self.db_path}: {e}")
+            self._enabled = False
 
     def _ensure_dir(self):
-        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        try:
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        except (PermissionError, OSError) as e:
+            # Re-raise with more context
+            raise PermissionError(f"Cannot create directory for {self.db_path}: {e}")
 
     def _init_db(self):
+        if not self._enabled:
+            return
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS token_usage (
@@ -85,6 +96,9 @@ class CostTracker:
         output_tokens: int = 0,
     ) -> None:
         """Record a token usage event."""
+        if not self._enabled:
+            return  # Silently skip if database not writable
+
         total = input_tokens + output_tokens
         if total == 0:
             return
