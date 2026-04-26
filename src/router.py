@@ -1209,8 +1209,12 @@ def create_default_router(model_discovery=None) -> Router:
     # If model discovery is available, use it to dynamically discover models
     # Otherwise, fall back to hardcoded model list
     if model_discovery:
-        # Query backends for available models
-        discovered = asyncio.run(model_discovery.refresh_all_backends())
+        # Query backends for available models (synchronously, before event loop)
+        try:
+            discovered = model_discovery.refresh_all_backends_sync()
+        except Exception as e:
+            logger.warning(f"Model discovery failed: {e}")
+            discovered = {}
 
         # Build model list from discovered models
         models = []
@@ -1240,6 +1244,22 @@ def create_default_router(model_discovery=None) -> Router:
             models = _get_hardcoded_models()
     else:
         models = _get_hardcoded_models()
+
+    # Merge hardcoded cloud models (NIM, ZAI) with discovered local models
+    # This ensures cloud models are always available regardless of discovery state
+    try:
+        hardcoded = _get_hardcoded_models() or []
+        if hardcoded and models:
+            existing_ids = {m.id for m in models}
+            cloud_models = [m for m in hardcoded if m.backend in ("nvidia", "zai") and m.id not in existing_ids]
+            models.extend(cloud_models)
+            if cloud_models:
+                logger.warning(f"Added {len(cloud_models)} cloud models, total: {len(models)}")
+        elif hardcoded and not models:
+            models = hardcoded
+            logger.warning(f"No discovered models, using {len(models)} hardcoded models")
+    except Exception as e:
+        logger.warning(f"Failed to merge cloud models: {e}")
 
     return Router(models, model_discovery=model_discovery)
 
@@ -1304,6 +1324,16 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL, TaskSpecialization.CODING],
             cost_tier=4,
             estimated_tokens_per_second=40.0,
+            backend="zai",
+        ),
+        ModelInfo(
+            id="glm-5-turbo",
+            name="GLM-5 Turbo",
+            context_length=CLOUD_MODEL_CONTEXT["glm-5-turbo"],
+            priority=7,  # Same as glm-5.1 (turbo variant)
+            specializations=[TaskSpecialization.AGENTIC, TaskSpecialization.GENERAL, TaskSpecialization.CODING],
+            cost_tier=4,
+            estimated_tokens_per_second=50.0,
             backend="zai",
         ),
         ModelInfo(
@@ -1747,3 +1777,4 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             backend="nvidia",
         ),
     ]
+    return models
