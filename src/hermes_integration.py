@@ -57,7 +57,7 @@ class HermesBridge:
         except PermissionError:
             logger.warning(f"Cannot create cluster memory directory: {self.cluster_memory}")
             self.cluster_memory = None
-            EPISODIC_DIR = None
+            # Don't modify global EPISODIC_DIR - it will be checked at point of use
 
         # Try to create hermes memory, but don't fail if we can't
         # (systemd should create this directory with proper permissions)
@@ -115,7 +115,7 @@ class HermesBridge:
     ) -> None:
         """
         Sync Hermes task execution to cluster memory.
-        
+
         This enables:
         - Pattern extraction across all cluster operations
         - Skill effectiveness tracking
@@ -123,10 +123,14 @@ class HermesBridge:
         """
         if not self.enabled:
             return
-        
+
+        # Skip if cluster memory is not available
+        if not self.cluster_memory:
+            return
+
         timestamp = datetime.now().isoformat()
         episode_id = f"hermes-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        
+
         # Create episodic memory entry
         episode = {
             "id": episode_id,
@@ -138,10 +142,11 @@ class HermesBridge:
             "lessons": lessons or [],
             "related_patterns": [],
         }
-        
+
         # Write to cluster episodic memory
         today = datetime.now().strftime("%Y-%m-%d")
-        episode_file = EPISODIC_DIR / f"{today}-hermes.json"
+        episodic_dir = self.cluster_memory / "episodic"
+        episode_file = episodic_dir / f"{today}-hermes.json"
         
         try:
             if episode_file.exists():
