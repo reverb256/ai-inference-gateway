@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # Cloud providers (ZAI, NIM) timeout around 60-90s on large requests.
 # Local llama.cpp has no API timeout — just KV cache limits.
 # Requests exceeding this threshold get a cloud penalty to prefer local.
-TOKEN_THRESHOLD_LOCAL = 60_000  # tokens
+TOKEN_THRESHOLD_LOCAL=60000  # tokens
 
 
 # Prefill optimization config for faster TTFT on base models
