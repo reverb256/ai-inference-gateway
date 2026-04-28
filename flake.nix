@@ -81,7 +81,7 @@
       # Container image
       gatewayContainerImage = pkgs.dockerTools.buildLayeredImage {
         name = "ai-inference-gateway";
-        tag = "2.3.3";
+        tag = "2.3.4";
         extraCommands = ''
           mkdir -p home/ai-gateway
           mkdir -p var/cache/ai-inference
