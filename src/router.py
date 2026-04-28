@@ -20,6 +20,12 @@ from enum import Enum
 
 logger = logging.getLogger(__name__)
 
+# Token threshold for forcing local routing.
+# Cloud providers (ZAI, NIM) timeout around 60-90s on large requests.
+# Local llama.cpp has no API timeout — just KV cache limits.
+# Requests exceeding this threshold get a cloud penalty to prefer local.
+TOKEN_THRESHOLD_LOCAL = 60_000  # tokens
+
 
 # Prefill optimization config for faster TTFT on base models
 # Extended context variants get full context, base models get aggressive limits
@@ -1085,6 +1091,7 @@ class Router:
             candidates=candidates,
             specialization=specialization,
             urgency=urgency,
+            estimated_tokens=estimated_tokens,
         )
 
         if not ranked_candidates:
@@ -1172,6 +1179,7 @@ class Router:
         candidates: List[ModelCandidate],
         specialization: TaskSpecialization,
         urgency: str,
+        estimated_tokens: int = 0,
     ) -> List[ModelCandidate]:
         """Rank candidates by multiple factors."""
         for candidate in candidates:
@@ -1187,6 +1195,21 @@ class Router:
                     candidate.score *= 0.5
                 elif avg_latency > 1000:  # > 1s
                     candidate.score *= 0.7
+
+            # Token-aware routing: penalize cloud backends for large requests
+            # Cloud APIs timeout on 60k+ token requests; local has no timeout
+            if estimated_tokens > TOKEN_THRESHOLD_LOCAL:
+                cloud_backends = ("zai", "nvidia")
+                if candidate.backend in cloud_backends:
+                    # Progressive penalty: at 60k it's mild, at 100k it's severe
+                    overshoot = (estimated_tokens - TOKEN_THRESHOLD_LOCAL) / TOKEN_THRESHOLD_LOCAL
+                    penalty = max(0.1, 1.0 - overshoot * 0.5)
+                    candidate.score *= penalty
+                    if overshoot > 0.5:
+                        logger.warning(
+                            f"Token-aware routing: {candidate.model} ({candidate.backend}) "
+                            f"penalized {penalty:.2f}x for {estimated_tokens} tokens"
+                        )
 
             # Urgency adjustment
             if urgency == "fast":

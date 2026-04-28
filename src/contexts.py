@@ -24,12 +24,28 @@ LLAMA_SERVER_CONTEXT = {
     # NixOS: hosts/zephyr/llama-3060ti.nix  ctxSize = 131072
     "supergemma4": 131072,
 
-    # sentry:1235 — RX 5600 XT (8GB ROCm), Qwen3.5-4B Q4_K_M
-    # K8s: kubernetes/modules/ai-inference.nix  -c 262144
+    # sentry:1235 — RX 5600 XT (8GB Vulkan/RADV), Qwen3.5-4B Q4_K_M
+    # K8s: kubernetes/modules/llama-servers.nix  -c 262144
     "qwen3.5-4b": 262144,
 
     # K8s: kubernetes/modules/ai-inference.nix  --ctx-size=16384
     "qwen3.5-0.8b": 16384,
+
+    # zephyr:1236 — RTX 3060Ti (8GB), Harmonic-Hermes-9B i1 Q4_K_M
+    # K8s: kubernetes/modules/llama-servers.nix  -c 32768
+    "harmonic-hermes-9b": 32768,
+
+    # sentry:1235 — RX 5600 XT (6GB Vulkan/RADV), Qwen3-4B-Wrist-On-Hermes i1 Q4_K_M
+    # K8s: kubernetes/modules/llama-servers.nix  -c 262144
+    "qwen3-4b-wrist-on-hermes": 262144,
+
+    # zephyr:1237 — RTX 3090 (24GB), Ornstein-Hermes-3.6-27b-SABER Q5_K_M (burst)
+    # K8s: kubernetes/modules/llama-servers.nix  -c 131072
+    "ornstein-hermes-27b": 131072,
+
+    # zephyr:1238 — RTX 3090 (24GB), hermes-qwen3.5-35b-a3b Q4_K_M (burst)
+    # K8s: kubernetes/modules/llama-servers.nix  -c 131072
+    "hermes-qwen3.5-35b": 131072,
 }
 
 
@@ -111,6 +127,10 @@ MAX_OUTPUT_TOKENS = {
     "supergemma4":  32768,
     "qwen3.5-4b":   32768,
     "qwen3.5-0.8b":  8192,
+    "harmonic-hermes-9b":  32768,
+    "qwen3-4b-wrist-on-hermes":  32768,
+    "ornstein-hermes-27b":  32768,
+    "hermes-qwen3.5-35b":  32768,
 
     # Z.AI
     "glm-5.1":       131072,
