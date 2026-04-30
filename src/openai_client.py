@@ -16,6 +16,7 @@ The OpenAI SDK handles:
 """
 
 import logging
+import os
 from typing import Optional, Dict, Any
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
