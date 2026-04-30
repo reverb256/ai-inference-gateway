@@ -108,17 +108,19 @@ class OpenAIClientWrapper:
             http_client=_http_client,
         )
 
-        # Initialize fallback client if configured
+        # Initialize ZAI client (primary cloud fallback)
+        # Accepts either dedicated zai_url/zai_api_key or generic fallback_url/fallback_api_key
         self.fallback_client: Optional[AsyncOpenAI] = None
-        if self.fallback_url and self.fallback_api_key:
-            # ZAI uses /api/coding/paas/v4 without /v1 prefix
+        _zai_url = zai_url or self.fallback_url
+        _zai_key = zai_api_key or self.fallback_api_key
+        if _zai_url and _zai_key:
             self.fallback_client = AsyncOpenAI(
-                base_url=self.fallback_url,
-                api_key=self.fallback_api_key,
+                base_url=_zai_url,
+                api_key=_zai_key,
                 timeout=timeout,
                 http_client=_http_client,
             )
-            logger.info(f"Initialized ZAI fallback client: {self.fallback_url}")
+            logger.info(f"Initialized ZAI fallback client: {_zai_url}")
             logger.info(f"ZAI model fallback order: {self.zai_models}")
 
         # Initialize NVIDIA NIM client if configured
@@ -624,6 +626,8 @@ def create_openai_client(config) -> OpenAIClientWrapper:
         primary_api_key=primary_api_key,
         fallback_url=fallback_url,
         fallback_api_key=fallback_api_key,
+        zai_url=config.zai_base_url,
+        zai_api_key=config.get_zai_api_key(),
         nvidia_url=nvidia_url,
         nvidia_api_key=nvidia_api_key,
         openrouter_api_key=openrouter_api_key,
