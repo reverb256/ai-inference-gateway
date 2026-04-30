@@ -5722,35 +5722,35 @@ async def stream_anthropic_response(
             chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else chunk
 
             # Convert OpenAI chunk to Anthropic format
-            choices = chunk_dict.get("choices", [])
+            choices = chunk_dict.get("choices") or []
             if choices:
                 choice = choices[0]
-                delta = choice.get("delta", {})
+                delta = choice.get("delta") or {}
+
+                # ZAI puts text in reasoning_content, fallback to content
+                text_delta = delta.get("reasoning_content") or delta.get("content") or ""
+                finish_reason = choice.get("finish_reason")
+                tool_calls = delta.get("tool_calls")
 
                 # MLSEC Phase 1: Sanitize Anthropic streaming content
-                if "content" in delta and delta["content"] and _sanitizer:
+                if text_delta and _sanitizer:
                     try:
-                        delta["content"] = await _sanitizer._sanitize_text(delta["content"])
-                    except Exception:
-                        pass
-                if "reasoning_content" in delta and delta["reasoning_content"] and _sanitizer:
-                    try:
-                        delta["reasoning_content"] = await _sanitizer.sanitize_reasoning(delta["reasoning_content"])
+                        text_delta = await _sanitizer._sanitize_text(text_delta)
                     except Exception:
                         pass
 
-                # Content block
-                if "content" in delta and delta["content"]:
+                # Content block — handle both reasoning_content and content
+                if text_delta:
                     content_event = {
                         "type": "content_block_delta",
                         "index": 0,
-                        "delta": {"type": "text", "text": delta["content"]},
+                        "delta": {"type": "text", "text": text_delta},
                     }
                     yield f"event: content_block_delta\ndata: {json.dumps(content_event)}\n\n"
 
-                # Tool calls
-                if "tool_calls" in delta:
-                    for tool_call in delta["tool_calls"]:
+                # Tool calls (only if not None/empty)
+                if tool_calls:
+                    for tool_call in tool_calls:
                         tool_event = {
                             "type": "content_block_delta",
                             "index": 0,
@@ -5764,7 +5764,7 @@ async def stream_anthropic_response(
                         yield f"event: content_block_delta\ndata: {json.dumps(tool_event)}\n\n"
 
                 # Finish reason
-                if "finish_reason" in delta:
+                if finish_reason:
                     stop_event = {
                         "type": "content_block_stop",
                         "index": 0,
@@ -5780,7 +5780,7 @@ async def stream_anthropic_response(
                             "role": "assistant",
                             "content": [],
                             "model": original_model,
-                            "stop_reason": delta["finish_reason"],
+                            "stop_reason": finish_reason,
                         },
                     }
                     yield f"event: message_stop\ndata: {json.dumps(final_event)}\n\n"
