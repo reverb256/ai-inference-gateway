@@ -45,6 +45,9 @@ from ai_inference_gateway.observability.tracing import setup_tracing
 # Model discovery for auto-detecting llama-server and LM Studio models
 from ai_inference_gateway.model_discovery import ModelDiscovery
 
+# Cloud model discovery for OpenRouter, NIM, ZAI auto-management
+from ai_inference_gateway.cloud_discovery import CloudModelRegistry
+
 
 # Import TTS handler
 try:
@@ -499,9 +502,34 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Model discovery initialization failed: {e}")
 
+    # Initialize cloud model discovery (OpenRouter, NIM, ZAI)
+    state.cloud_discovery = None
+    try:
+        openrouter_key = config.get_openrouter_api_key()
+        nim_key = config.get_nvidia_nim_api_key()
+        zai_key = config.get_zai_api_key()
+        if openrouter_key or nim_key or zai_key:
+            state.cloud_discovery = CloudModelRegistry(
+                openrouter_key=openrouter_key,
+                nim_key=nim_key,
+                zai_key=zai_key,
+                refresh_interval=3600,  # Refresh every hour
+            )
+            await state.cloud_discovery.start()
+            logger.info(
+                "Cloud discovery started: %d models (%d free)",
+                len(state.cloud_discovery.models),
+                len(state.cloud_discovery.get_free_models()),
+            )
+    except Exception as e:
+        logger.warning(f"Cloud discovery initialization failed: {e}")
+
     # Initialize router (no API key needed for llama-cpp)
     try:
-        state.router = create_default_router(model_discovery=state.model_discovery)
+        state.router = create_default_router(
+            model_discovery=state.model_discovery,
+            cloud_discovery=state.cloud_discovery,
+        )
         logger.info("Router initialized with %d models", len(state.router.models))
     except Exception as e:
         logger.warning(f"Router initialization failed: {e}")
@@ -1504,6 +1532,23 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             "total_models": len(state.model_discovery.model_registry),
             "total_backends": len(state.model_discovery.backend_registry),
         }
+
+    @app.get("/models/cloud")
+    async def get_cloud_discovery_status(request: Request):
+        """
+        Get cloud model discovery status.
+
+        Shows auto-discovered models from OpenRouter, NIM, ZAI with routing metadata.
+        """
+        state: GatewayState = app.state.gateway
+
+        if not state.cloud_discovery:
+            return {
+                "status": "disabled",
+                "message": "Cloud discovery is not enabled (no API keys configured)"
+            }
+
+        return state.cloud_discovery.to_dict()
 
     @app.get("/system-prompts")
     async def get_system_prompts(request: Request):
@@ -5320,6 +5365,13 @@ async def try_backends_with_failover(
                     api_key = config.get_nvidia_nim_api_key()
                     if api_key:
                         headers["Authorization"] = f"Bearer {api_key}"
+                elif backend_api_type == "openrouter":
+                    api_key = config.get_openrouter_api_key()
+                    if api_key:
+                        headers["Authorization"] = f"Bearer {api_key}"
+                    # OpenRouter recommends these headers for routing
+                    headers.setdefault("HTTP-Referer", "https://gateway.lan")
+                    headers.setdefault("X-Title", "AI Inference Gateway")
                 # llama-cpp, vllm, sglang don't need auth
 
             logger.info(

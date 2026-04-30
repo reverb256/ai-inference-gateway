@@ -50,7 +50,7 @@ class VirtualKeyManager:
     Uses SQLite for persistence. Keys are stored as SHA256 hashes.
     """
 
-    def __init__(self, db_path: str = "/var/cache/ai-inference/virtual_keys.db"):
+    def __init__(self, db_path: str = "/tmp/ai-inference/virtual_keys.db"):
         self.db_path = db_path
         self._enabled = True  # Track if database is writable
         try:

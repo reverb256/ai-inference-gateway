@@ -44,7 +44,7 @@ class CostTracker:
     Uses SQLite for persistence (single-file, zero-config).
     """
 
-    def __init__(self, db_path: str = "/var/cache/ai-inference/token_usage.db"):
+    def __init__(self, db_path: str = "/tmp/ai-inference/token_usage.db"):
         self.db_path = db_path
         self._enabled = True  # Track if database is writable
         try:

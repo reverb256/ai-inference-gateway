@@ -47,6 +47,8 @@ class OpenAIClientWrapper:
         zai_models: Optional[list[str]] = None,
         nvidia_url: Optional[str] = None,
         nvidia_api_key: Optional[str] = None,
+        openrouter_url: Optional[str] = None,
+        openrouter_api_key: Optional[str] = None,
         local_backend_url: Optional[str] = None,
         local_backend_model: Optional[str] = None,
         secondary_backend_url: Optional[str] = None,
@@ -111,6 +113,22 @@ class OpenAIClientWrapper:
                 timeout=timeout,
             )
             logger.info(f"Initialized NVIDIA NIM client: {nvidia_url}")
+
+        # Initialize OpenRouter client if configured
+        self.openrouter_client: Optional[AsyncOpenAI] = None
+        self.openrouter_url: Optional[str] = None
+        if openrouter_api_key:
+            self.openrouter_url = openrouter_url or "https://openrouter.ai/api/v1"
+            self.openrouter_client = AsyncOpenAI(
+                base_url=self.openrouter_url,
+                api_key=openrouter_api_key,
+                timeout=timeout,
+                default_headers={
+                    "HTTP-Referer": "https://gateway.lan",
+                    "X-Title": "AI Inference Gateway",
+                },
+            )
+            logger.info(f"Initialized OpenRouter client: {self.openrouter_url}")
 
         # Initialize local backend client (e.g., sentry ROCm) if configured
         self.local_client: Optional[AsyncOpenAI] = None
@@ -283,6 +301,20 @@ class OpenAIClientWrapper:
             except Exception as e:
                 logger.error(f"NVIDIA NIM backend failed: {str(e)}")
                 raise OpenAIBackendError(f"NVIDIA NIM backend error: {str(e)}")
+        elif backend == "openrouter" and self.openrouter_client:
+            logger.info(f"Using OpenRouter backend for model: {model}")
+            try:
+                response = await self.openrouter_client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **kwargs,
+                )
+                logger.info(f"OpenRouter backend succeeded with model: {model}")
+                return response
+            except Exception as e:
+                logger.error(f"OpenRouter backend failed: {str(e)}")
+                raise OpenAIBackendError(f"OpenRouter backend error: {str(e)}")
         elif backend == "pollinations":
             logger.info(f"Using Pollinations backend directly for model: {model}")
             try:
@@ -405,8 +437,8 @@ class OpenAIClientWrapper:
         """
         Determine if an error should trigger failover.
 
-        Only connection errors should trigger failover, not application errors.
-        This prevents cascading bad requests across all backends.
+        Connection errors and empty/degraded responses should trigger failover.
+        Application errors (4xx) should not — prevents cascading bad requests.
 
         Args:
             error_message: Error message string
@@ -425,8 +457,21 @@ class OpenAIClientWrapper:
             "all connection attempts failed",
         ]
 
+        # Empty/degraded response indicators - should failover
+        # (Catches the glm-5-turbo empty response incident pattern)
+        empty_response_errors = [
+            "empty response",
+            "empty content",
+            "no content",
+            "blank response",
+            "response is empty",
+        ]
+
         error_lower = error_message.lower()
-        return any(err in error_lower for err in connection_errors)
+        return (
+            any(err in error_lower for err in connection_errors)
+            or any(err in error_lower for err in empty_response_errors)
+        )
 
     def _should_try_next_model(self, error_message: str) -> bool:
         """
@@ -509,6 +554,8 @@ class OpenAIClientWrapper:
             await self.fallback_client.close()
         if self.nvidia_client:
             await self.nvidia_client.close()
+        if self.openrouter_client:
+            await self.openrouter_client.close()
         if self.local_client:
             await self.local_client.close()
         if self.secondary_client:
@@ -545,6 +592,9 @@ def create_openai_client(config) -> OpenAIClientWrapper:
     nvidia_api_key = config.get_nvidia_nim_api_key()
     nvidia_url = config.nvidia_nim_base_url if nvidia_api_key else None
 
+    # Get OpenRouter credentials
+    openrouter_api_key = config.get_openrouter_api_key()
+
     return OpenAIClientWrapper(
         primary_url=config.backend_url,
         primary_api_key=primary_api_key,
@@ -552,6 +602,7 @@ def create_openai_client(config) -> OpenAIClientWrapper:
         fallback_api_key=fallback_api_key,
         nvidia_url=nvidia_url,
         nvidia_api_key=nvidia_api_key,
+        openrouter_api_key=openrouter_api_key,
         local_backend_url=config.local_backend_url,
         local_backend_model=config.local_backend_model,
         secondary_backend_url=config.secondary_backend_url,

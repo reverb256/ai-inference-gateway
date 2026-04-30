@@ -555,6 +555,9 @@ class GatewayConfig(BaseSettings):
     zai_api_key: Optional[SecretStr] = Field(default=None, repr=False, exclude=True, description="ZAI API key")
     zai_api_key_file: Optional[str] = Field(default=None, description="Path to file containing ZAI API key")
 
+    openrouter_api_key: Optional[SecretStr] = Field(default=None, repr=False, exclude=True, description="OpenRouter API key")
+    openrouter_api_key_file: Optional[str] = Field(default=None, description="Path to file containing OpenRouter API key")
+
     pollinations_api_key: Optional[SecretStr] = Field(
         default=None, repr=False, exclude=True, description="Pollinations API key"
     )
@@ -611,6 +614,18 @@ class GatewayConfig(BaseSettings):
             except Exception:
                 return None
 
+        return None
+
+    def get_openrouter_api_key(self) -> Optional[str]:
+        """Get OpenRouter API key from file or direct value."""
+        if self.openrouter_api_key_file:
+            try:
+                with open(self.openrouter_api_key_file, "r") as f:
+                    return f.read().strip()
+            except Exception:
+                return None
+        if self.openrouter_api_key:
+            return self.openrouter_api_key.get_secret_value()
         return None
 
     def get_pollinations_api_key(self) -> Optional[str]:

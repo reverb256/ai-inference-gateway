@@ -43,31 +43,19 @@ class ModelDiscovery:
     a registry for intelligent routing.
     """
 
-    # Backend configurations (using K8s service names with ClusterIP fallbacks)
-    # ClusterIPs are from kubectl get svc -n ai-inference
+    # Backend configurations — use K8s DNS service names.
+    # Updated 2026-04-28: removed llama-3090 (scaled down), lmstudio (not in K8s).
+    # ClusterIPs change on redeploy; K8s DNS is stable.
     BACKENDS = {
-        "llama-3090": BackendInfo(
-            name="llama-3090",
-            base_url="http://10.10.199.121:1235/v1",  # ClusterIP fallback
-            # Alternative: http://llama-server-zephyr.ai-inference.svc.cluster.local:1235/v1
-            priority=10,  # Highest priority (24GB VRAM)
-        ),
         "llama-3060ti": BackendInfo(
             name="llama-3060ti",
-            base_url="http://10.3.49.134:1236/v1",  # ClusterIP fallback
-            # Alternative: http://llama-server-zephyr-3060ti.ai-inference.svc.cluster.local:1236/v1
-            priority=9,   # Secondary (8GB VRAM)
-        ),
-        "lmstudio": BackendInfo(
-            name="lmstudio",
-            base_url="http://10.1.1.110:1234/v1",  # Host-only, not in K8s
-            priority=8,   # Desktop client
+            base_url="http://llama-server-zephyr-3060ti.ai-inference.svc.cluster.local:1236/v1",
+            priority=10,  # Primary (9B model, zephyr RTX 3060 Ti 8GB)
         ),
         "llama-sentry": BackendInfo(
             name="llama-sentry",
-            base_url="http://10.11.224.232:1235/v1",  # ClusterIP fallback
-            # Alternative: http://llama-server-sentry.ai-inference.svc.cluster.local:1235/v1
-            priority=7,   # AMD GPU (8GB)
+            base_url="http://llama-server-sentry.ai-inference.svc.cluster.local:1235/v1",
+            priority=9,   # Secondary (4B model, sentry RX 5600 XT 8GB AMD)
         ),
     }
 

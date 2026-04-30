@@ -515,6 +515,8 @@ class Router:
             return os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4")
         elif backend == "nvidia":
             return os.getenv("NVIDIA_NIM_BASE_URL", "https://integrate.api.nvidia.com/v1")
+        elif backend == "openrouter":
+            return os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
         logger.error(f"Cannot determine URL for backend {backend}")
         return None
@@ -730,7 +732,7 @@ class Router:
         Note: "1M" context variants map to the same underlying model since Qwen models
         support up to 256K context. The distinction is client-side metadata.
 
-        ZAI fallback chain (when Local backend down/capacity): glm-5 → glm-4.7 → glm-4.5-air
+        Cloud fallback chain (when Local backend down/capacity): NIM → OpenRouter
         """
         return {
             # Haiku tier → Local 0.8B Opus reasoning distilled (fastest)
@@ -942,54 +944,39 @@ class Router:
         # Check if llama.cpp is healthy before routing
         local_backend_healthy = await self.check_backend_health("llama-cpp")
 
-        # If Local backend (llama-cpp) is down, route directly to ZAI
+        # If Local backend (llama-cpp) is down, failover to cloud backends
         if not local_backend_healthy:
-            logger.info("Local backend (llama-cpp) is down, auto-failing over to ZAI")
+            logger.info("Local backend (llama-cpp) is down, using cloud fallback")
             estimated_tokens = self.estimate_tokens(messages)
 
-            # Get available ZAI models
-            zai_models = [m for m in self.models.values() if m.backend == "zai"]
-            if zai_models:
+            # Get available cloud models (NIM, OpenRouter, etc. - NOT ZAI)
+            cloud_models = [m for m in self.models.values()
+                           if m.backend in ["nvidia", "openrouter"] and m.priority > 0]
+
+            if cloud_models:
                 # Sort by priority and pick the best one
-                best_zai = max(zai_models, key=lambda m: m.priority)
+                best_cloud = max(cloud_models, key=lambda m: m.priority)
                 specialization = self.detect_specialization(messages)
 
-                # If client requested a specific model, try to map it
-                if requested_model and requested_model in self.claude_model_mapping:
-                    mapped_model = self.claude_model_mapping[requested_model]
-                    model_info = self.models.get(mapped_model)
-                    if model_info and model_info.backend == "zai":
-                        return RouteDecision(
-                            model=mapped_model,
-                            confidence=1.0,
-                            reason=f"Local backend down, using ZAI fallback for {requested_model}",
-                            estimated_tokens=estimated_tokens,
-                            backend="zai",
-                            specialization=specialization,
-                            expected_latency_ms=model_info.estimated_tokens_per_second
-                            * estimated_tokens
-                            / 1000,
-                        )
-
                 return RouteDecision(
-                    model=best_zai.id,
+                    model=best_cloud.id,
                     confidence=0.95,
-                    reason="Local backend down (auto-failover to ZAI)",
+                    reason="Local backend down (auto-failover to cloud)",
                     estimated_tokens=estimated_tokens,
-                    backend="zai",
+                    backend=best_cloud.backend,
                     specialization=specialization,
-                    expected_latency_ms=best_zai.estimated_tokens_per_second
+                    expected_latency_ms=best_cloud.estimated_tokens_per_second
                     * estimated_tokens
                     / 1000,
                 )
             else:
-                # No ZAI models available - this is an error condition
-                logger.error("Local backend down and no ZAI models available!")
+                # No cloud models available - this is an error condition
+                logger.error("Local backend down and no cloud fallback available!")
                 # Return default model anyway (will likely fail)
                 return RouteDecision(
                     model="qwen/qwen3.5-9b",
                     confidence=0.1,
-                    reason="Local backend down, no ZAI fallback available",
+                    reason="Local backend down, no cloud fallback available",
                     estimated_tokens=estimated_tokens,
                     backend="llama-cpp",
                 )
@@ -1223,11 +1210,12 @@ class Router:
         return sorted(candidates, key=lambda c: c.score, reverse=True)
 
 
-def create_default_router(model_discovery=None) -> Router:
+def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
     """Create router with default model configuration.
 
     Args:
-        model_discovery: Optional ModelDiscovery instance for auto-discovering models
+        model_discovery: Optional ModelDiscovery instance for auto-discovering local models
+        cloud_discovery: Optional CloudModelRegistry for auto-discovering cloud models
     """
     # If model discovery is available, use it to dynamically discover models
     # Otherwise, fall back to hardcoded model list
@@ -1267,6 +1255,38 @@ def create_default_router(model_discovery=None) -> Router:
             models = _get_hardcoded_models()
     else:
         models = _get_hardcoded_models()
+
+    # Merge cloud-discovered models (OpenRouter, NIM, ZAI)
+    # These replace hardcoded cloud models with auto-discovered equivalents
+    if cloud_discovery and cloud_discovery.models:
+        existing_ids = {m.id for m in models}
+        cloud_count = 0
+        for mid, cloud_model in cloud_discovery.models.items():
+            if mid in existing_ids:
+                continue  # Don't override local models with same ID
+
+            # Map provider to backend name
+            backend_map = {
+                "openrouter": "openrouter",
+                "nim": "nvidia",
+                "zai": "zai",
+            }
+            backend = backend_map.get(cloud_model.provider, "openrouter")
+
+            models.append(ModelInfo(
+                id=mid,
+                name=cloud_model.name,
+                context_length=cloud_model.context_length,
+                priority=cloud_model.priority,
+                specializations=[TaskSpecialization.GENERAL],  # TODO: map from cloud_model.specializations
+                cost_tier=cloud_model.cost_tier,
+                estimated_tokens_per_second=80.0,  # Cloud models are fast
+                backend=backend,
+            ))
+            cloud_count += 1
+
+        if cloud_count:
+            logger.info(f"Added {cloud_count} cloud-discovered models, total: {len(models)}")
 
     # Merge hardcoded cloud models (NIM, ZAI) with discovered local models
     # This ensures cloud models are always available regardless of discovery state
@@ -1394,19 +1414,49 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             backend="zai",
         ),
         ModelInfo(
-            id="glm-4.5-air",
-            name="GLM-4.5 Air",
-            context_length=CLOUD_MODEL_CONTEXT["glm-4.5-air"],
-            priority=5,
-            specializations=[TaskSpecialization.FAST],
-            cost_tier=1,
-            estimated_tokens_per_second=80.0,
+            id="glm-4.6",
+            name="GLM-4.6",
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.6"],
+            priority=4,
+            specializations=[TaskSpecialization.GENERAL, TaskSpecialization.CODING],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
             backend="zai",
         ),
         ModelInfo(
-            id="glm-4-flash",
-            name="GLM-4 Flash",
-            context_length=CLOUD_MODEL_CONTEXT["glm-4-flash"],
+            id="glm-4.7-flash",
+            name="GLM-4.7 Flash",
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.7-flash"],
+            priority=4,
+            specializations=[TaskSpecialization.FAST, TaskSpecialization.GENERAL],
+            cost_tier=1,
+            estimated_tokens_per_second=70.0,
+            backend="zai",
+        ),
+        ModelInfo(
+            id="glm-4.5",
+            name="GLM-4.5",
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.5"],
+            priority=3,
+            specializations=[TaskSpecialization.GENERAL],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="zai",
+        ),
+        ModelInfo(
+            id="glm-4.5-flash",
+            name="GLM-4.5 Flash",
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.5-flash"],
+            priority=3,
+            specializations=[TaskSpecialization.FAST],
+            cost_tier=1,
+            estimated_tokens_per_second=70.0,
+            backend="zai",
+        ),
+        ModelInfo(
+            id="glm-4.5-air",
+            name="GLM-4.5 Air",
+            context_length=CLOUD_MODEL_CONTEXT["glm-4.5-air"],
             priority=5,
             specializations=[TaskSpecialization.FAST],
             cost_tier=1,

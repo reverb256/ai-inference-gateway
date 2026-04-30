@@ -53,19 +53,19 @@ LLAMA_SERVER_CONTEXT = {
 # Native context windows from vendor docs.
 
 CLOUD_MODEL_CONTEXT = {
-    # Z.AI (expires May 8 2026)
-    "glm-5.1":       200000,   # 200K native
-    "glm-5":         200000,
-    "glm-5-turbo":   200000,
-    "glm-4.7":       200000,
-    "glm-4.7-flash": 131072,   # 128K
-    "glm-4.7-flashx":131072,   # 128K
-    "glm-4.6":       131072,   # 128K
+    # Z.AI — context windows from OpenRouter API + docs.z.ai/concept-param
+    # Updated 2026-04-29
+    "glm-5.1":       202752,   # ~200K (OpenRouter verified)
+    "glm-5":         202752,   # ~200K
+    "glm-5-turbo":   202752,   # ~200K
+    "glm-4.7":       202752,   # ~200K (upgraded from 128K)
+    "glm-4.7-flash": 202752,   # ~200K
+    "glm-4.7-flashx":202752,   # ~200K
+    "glm-4.6":       204800,   # 200K (OpenRouter verified)
     "glm-4.6v":      131072,   # 128K (vision)
     "glm-4.5":       131072,   # 128K
     "glm-4.5-flash": 131072,   # 128K
-    "glm-4.5-air":   132000,   # 132K native
-    "glm-4-flash":   128000,   # 128K
+    "glm-4.5-air":   131072,   # 128K (was incorrectly 132K)
 
     # NVIDIA NIM (free tier)
     "qwen/qwen3-coder-480b-a35b-instruct":     262144,  # 256K (NIM free tier)
@@ -132,19 +132,18 @@ MAX_OUTPUT_TOKENS = {
     "ornstein-hermes-27b":  32768,
     "hermes-qwen3.5-35b":  32768,
 
-    # Z.AI
-    "glm-5.1":       131072,
+    # Z.AI — max output from docs.z.ai/concept-param
+    "glm-5.1":       131072,  # docs: max 131072
     "glm-5":         131072,
     "glm-5-turbo":   131072,
     "glm-4.7":       131072,
-    "glm-4.7-flash":   8192,
-    "glm-4.7-flashx":  8192,
-    "glm-4.6":         8192,
-    "glm-4.6v":       32768,
-    "glm-4.5":         8192,
-    "glm-4.5-flash":   8192,
-    "glm-4.5-air":     98304,
-    "glm-4-flash":     8192,
+    "glm-4.7-flash": 131072,
+    "glm-4.7-flashx":131072,
+    "glm-4.6":       131072,  # docs: max 131072
+    "glm-4.6v":      32768,   # docs: max 32768
+    "glm-4.5":       98304,   # docs: max 98304
+    "glm-4.5-flash": 98304,
+    "glm-4.5-air":   98304,
 
     # NVIDIA NIM
     "qwen/qwen3-coder-480b-a35b-instruct":     65536,
