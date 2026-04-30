@@ -23,13 +23,16 @@ def normalize_roles(messages: List[dict]) -> List[dict]:
 
 
 class RequestValidationMiddleware:
-    """Validates incoming API request bodies before forwarding to providers."""
+    """Validates incoming API request bodies before forwarding to providers.
 
-    MAX_REQUEST_SIZE = 128 * 1024;  # 128KB
-    MAX_MESSAGES = 128;
-    MAX_CONTENT_LENGTH = 100_000;
-    MAX_TOOLS = 250;  # Increased for OMP compatibility (175+ tools from 7 MCP servers)
-    ALLOWED_ROLES = {"system", "user", "assistant", "tool", "function", "developer"};  # Added 'developer' for OMP
+    Message count and content length limits are NOT enforced here — the model
+    is the authority on what it can handle. If it can't, the gateway's circuit
+    breaker and fallback chain handle it (try next, larger model).
+    """
+
+    MAX_REQUEST_SIZE = 10 * 1024 * 1024;  # 10MB — actual abuse prevention
+    MAX_TOOLS = 250;
+    ALLOWED_ROLES = {"system", "user", "assistant", "tool", "function", "developer"};
 
     async def validate_chat_request(self, body: dict) -> Optional[List[str]]:
         """Validate /v1/chat/completions request body."""
@@ -42,10 +45,6 @@ class RequestValidationMiddleware:
         if not isinstance(messages, list):
             errors.append("field 'messages' is required and must be an array");
         else:
-            if len(messages) > self.MAX_MESSAGES:
-                errors.append(
-                    f"too many messages: {len(messages)} exceeds limit of {self.MAX_MESSAGES}"
-                );
             for idx, msg in enumerate(messages):
                 if not isinstance(msg, dict):
                     errors.append(f"message at index {idx} must be an object");
@@ -56,15 +55,6 @@ class RequestValidationMiddleware:
                     errors.append(
                         f"message at index {idx} has invalid role '{msg['role']}'"
                     );
-                if "content" not in msg:
-                    errors.append(f"message at index {idx} missing 'content'");
-                elif isinstance(msg["content"], str):
-                    if len(msg["content"]) > self.MAX_CONTENT_LENGTH:
-                        errors.append(
-                            f"message at index {idx} content length "
-                            f"{len(msg['content'])} exceeds limit of "
-                            f"{self.MAX_CONTENT_LENGTH}"
-                        );
 
         tools = body.get("tools");
         if tools is not None:

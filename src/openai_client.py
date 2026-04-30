@@ -89,16 +89,23 @@ class OpenAIClientWrapper:
         # ZAI models to try in order (from fastest to most capable)
         self.zai_models = zai_models or ["glm-5-turbo", "glm-5", "glm-5.1", "glm-4.7", "glm-4.6"]
 
-        # CA cert bundle path (NixOS container)
+        # CA cert bundle for NixOS container (httpx uses this via http_client)
         _ca_bundle = "/etc/ssl/certs/ca-bundle.crt"
-        _verify = _ca_bundle if os.path.exists(_ca_bundle) else True
+        _ssl_ctx = None
+        if os.path.exists(_ca_bundle):
+            import ssl
+            _ssl_ctx = ssl.create_default_context(cafile=_ca_bundle)
+        _http_client = None
+        if _ssl_ctx:
+            import httpx
+            _http_client = httpx.AsyncClient(verify=_ca_bundle)
 
         # Initialize primary client
         self.primary_client = AsyncOpenAI(
             base_url=f"{self.primary_url}/v1",
             api_key=self.primary_api_key,
             timeout=timeout,
-            verify=_verify,
+            http_client=_http_client,
         )
 
         # Initialize fallback client if configured
@@ -109,7 +116,7 @@ class OpenAIClientWrapper:
                 base_url=self.fallback_url,
                 api_key=self.fallback_api_key,
                 timeout=timeout,
-                verify=_verify,
+                http_client=_http_client,
             )
             logger.info(f"Initialized ZAI fallback client: {self.fallback_url}")
             logger.info(f"ZAI model fallback order: {self.zai_models}")
@@ -122,7 +129,7 @@ class OpenAIClientWrapper:
                 base_url=nvidia_url,
                 api_key=nvidia_api_key,
                 timeout=timeout,
-                verify=_verify,
+                http_client=_http_client,
             )
             logger.info(f"Initialized NVIDIA NIM client: {nvidia_url}")
 

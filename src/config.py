@@ -551,7 +551,11 @@ class GatewayConfig(BaseSettings):
             return self.nvidia_nim_api_key.get_secret_value()
         return None
 
-    # API Keys (marked as secrets - won't appear in logs or repr)
+    # Z.AI backend
+    zai_base_url: str = Field(
+        default="https://api.z.ai/api/coding/paas/v4",
+        description="Z.AI (ZhipuAI) API base URL",
+    )
     zai_api_key: Optional[SecretStr] = Field(default=None, repr=False, exclude=True, description="ZAI API key")
     zai_api_key_file: Optional[str] = Field(default=None, description="Path to file containing ZAI API key")
 
