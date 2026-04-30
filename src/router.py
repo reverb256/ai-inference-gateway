@@ -378,6 +378,7 @@ class Router:
         models: List[ModelInfo],
         latency_tracker: Optional[LatencyTracker] = None,
         model_discovery=None,
+        cloud_discovery=None,
     ):
         """
         Initialize router.
@@ -386,16 +387,25 @@ class Router:
             models: List of available models
             latency_tracker: Optional latency tracker for performance-based routing
             model_discovery: Optional ModelDiscovery instance for auto-discovery
+            cloud_discovery: Optional CloudModelRegistry for cloud model lookup
         """
         self.models = {model.id: model for model in models}
         self.latency_tracker = latency_tracker or LatencyTracker()
         self.model_discovery = model_discovery
+        self.cloud_discovery = cloud_discovery
         self.claude_model_mapping = self._build_claude_mapping()
         # Active request tracking for smart load balancing
         self.active_requests: Dict[str, Dict] = (
             {}
         )  # request_id -> {model, backend, stream, start_time}
         self.max_concurrent_streams = 1  # Backend can handle 1 stream at a time
+
+        # Per-backend concurrency semaphores — 1 request per GPU at a time
+        self.backend_semaphores: Dict[str, asyncio.Semaphore] = {}
+        self._init_backend_semaphores()
+
+        # Round-robin counter for local backend selection
+        self._rr_index: int = 0
 
         # Backend health cache
         self._backend_health: Dict[str, bool] = {
@@ -458,6 +468,78 @@ class Router:
         if request_id in self.active_requests:
             del self.active_requests[request_id]
             logger.debug(f"Stopped tracking request {request_id}")
+
+    def _init_backend_semaphores(self):
+        """Initialize per-backend concurrency semaphores from discovery."""
+        if self.model_discovery:
+            for name in self.model_discovery.BACKENDS:
+                self.backend_semaphores[name] = asyncio.Semaphore(1)
+                logger.info(f"Initialized semaphore for backend: {name}")
+
+    def is_backend_busy(self, backend_name: str) -> bool:
+        """Check if a backend is currently processing a request."""
+        sem = self.backend_semaphores.get(backend_name)
+        if sem is None:
+            return False  # Unknown backend — let it through
+        return sem._value == 0
+
+    async def acquire_backend(self, backend_name: str) -> bool:
+        """
+        Try to acquire a backend for exclusive use. Non-blocking.
+        Returns True if acquired, False if busy.
+        """
+        sem = self.backend_semaphores.get(backend_name)
+        if sem is None:
+            logger.debug(f"No semaphore for {backend_name}, allowing request")
+            return True
+        try:
+            await asyncio.wait_for(sem.acquire(), timeout=0.01)
+            logger.info(f"Acquired backend: {backend_name}")
+            return True
+        except asyncio.TimeoutError:
+            logger.info(f"Backend busy: {backend_name}")
+            return False
+
+    def release_backend(self, backend_name: str):
+        """Release a backend after request completes."""
+        sem = self.backend_semaphores.get(backend_name)
+        if sem is not None:
+            sem.release()
+            logger.info(f"Released backend: {backend_name}")
+
+    def get_idle_local_backend(self) -> Optional[str]:
+        """
+        Get the next idle local backend using round-robin.
+        Returns backend name or None if all busy.
+        """
+        if not self.backend_semaphores:
+            return None
+
+        backends = list(self.backend_semaphores.keys())
+        # Try each backend starting from rr_index
+        for i in range(len(backends)):
+            idx = (self._rr_index + i) % len(backends)
+            name = backends[idx]
+            if not self.is_backend_busy(name):
+                self._rr_index = (idx + 1) % len(backends)
+                return name
+        return None
+
+    def get_backend_status(self) -> Dict[str, Dict]:
+        """Get status of all local backends."""
+        status = {}
+        for name, sem in self.backend_semaphores.items():
+            active = sem._value == 0
+            model = "unknown"
+            if self.model_discovery:
+                backend_info = self.model_discovery.BACKENDS.get(name)
+                if backend_info and backend_info.models:
+                    model = backend_info.models[0]
+            status[name] = {
+                "active": active,
+                "model": model,
+            }
+        return status
 
     def get_backend_for_model(self, model_id: str) -> Optional[str]:
         """
@@ -1062,6 +1144,27 @@ class Router:
                     * estimated_tokens
                     / 1000,
                 )
+            # Cloud discovery fallback: model not in router but known to cloud registry
+            elif self.cloud_discovery:
+                cloud_model = self.cloud_discovery.get_model(requested_model)
+                if cloud_model:
+                    backend_map = {
+                        "openrouter": "openrouter",
+                        "nim": "nvidia",
+                        "zai": "zai",
+                    }
+                    backend = backend_map.get(cloud_model.provider, "openrouter")
+                    logger.info(
+                        f"Cloud discovery fallback: {requested_model} -> {backend}"
+                    )
+                    return RouteDecision(
+                        model=requested_model,
+                        confidence=0.9,
+                        reason=f"Cloud-discovered model ({cloud_model.provider})",
+                        estimated_tokens=estimated_tokens,
+                        backend=backend,
+                        expected_latency_ms=80.0 * estimated_tokens / 1000,
+                    )
 
         # Detect task specialization
         specialization = self.detect_specialization(messages)
@@ -1138,6 +1241,12 @@ class Router:
 
             # Base score from priority
             score = float(model_info.priority)
+
+            # Penalize models on busy local backends
+            backend = model_info.backend
+            if backend and backend.startswith("llama-") and self.is_backend_busy(backend):
+                score -= 5.0
+                logger.debug(f"Backend {backend} busy, penalizing model {model_id}")
 
             # Boost for specialization match
             if specialization in model_info.specializations:
@@ -1304,7 +1413,7 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
     except Exception as e:
         logger.warning(f"Failed to merge cloud models: {e}")
 
-    return Router(models, model_discovery=model_discovery)
+    return Router(models, model_discovery=model_discovery, cloud_discovery=cloud_discovery)
 
 
 def _get_hardcoded_models() -> List[ModelInfo]:

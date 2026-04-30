@@ -101,6 +101,8 @@ FAMILY_DEFAULTS = {
     "google/gemma-4": {"cost_tier": 2, "priority": 5, "specializations": ["general"]},
     "openai/gpt-oss": {"cost_tier": 2, "priority": 5, "specializations": ["general"]},
     "nvidia/nemotron": {"cost_tier": 2, "priority": 4, "specializations": ["general"]},
+    "nvidia/nvidia-nemotron": {"cost_tier": 2, "priority": 5, "specializations": ["general", "reasoning"]},
+    "nvidia/llama-3": {"cost_tier": 2, "priority": 4, "specializations": ["general", "reasoning"]},
     "minimaxai/": {"cost_tier": 3, "priority": 4, "specializations": ["general"]},
     "z-ai/glm": {"cost_tier": 3, "priority": 5, "specializations": ["coding"]},
 }
@@ -118,7 +120,7 @@ INCLUDE_PATTERNS: List[str] = [
     "qwen/qwen3-coder", "qwen/qwen3.5", "qwen/qwen3-next",
     "moonshotai/kimi",
     "mistralai/mistral-large", "mistralai/devstral", "mistralai/mistral-small",
-    "nvidia/nemotron",
+    "nvidia/nemotron", "nvidia/nvidia-nemotron", "nvidia/llama-3",
     "minimaxai/minimax",
     "openai/gpt-oss",
     "z-ai/glm",
