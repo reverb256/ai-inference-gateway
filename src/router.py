@@ -1144,6 +1144,17 @@ class Router:
                     * estimated_tokens
                     / 1000,
                 )
+            # Check if it's a discovered model (not in static models but in discovery registry)
+            elif self.model_discovery:
+                disc_backend = self.model_discovery.get_backend_for_model(requested_model)
+                if disc_backend:
+                    return RouteDecision(
+                        model=requested_model,
+                        confidence=1.0,
+                        reason=f"Requested discovered model {requested_model}",
+                        estimated_tokens=estimated_tokens,
+                        backend=disc_backend,
+                    )
             # Cloud discovery fallback: model not in router but known to cloud registry
             elif self.cloud_discovery:
                 cloud_model = self.cloud_discovery.get_model(requested_model)

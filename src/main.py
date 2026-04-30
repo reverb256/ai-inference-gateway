@@ -1132,6 +1132,24 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
         stream=stream,
     )
 
+    # Acquire per-backend semaphore for local backends (GPU concurrency control)
+    _acquired_backend = None
+    if route_decision.backend and route_decision.backend.startswith("llama-"):
+        acquired = await state.router.acquire_backend(route_decision.backend)
+        if not acquired:
+            state.router.track_request_end(request_id)
+            gpu_scheduler.notify_ai_stopping()
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "backend_busy",
+                    "backend": route_decision.backend,
+                    "message": f"Backend {route_decision.backend} is busy. Retry or use cloud fallback.",
+                },
+                headers={"Retry-After": "2"},
+            )
+        _acquired_backend = route_decision.backend
+
     logger.info(f"[role-route] Routed to model: {route_decision.model} (backend: {route_decision.backend})")
 
     metrics_tracker = ModelMetricsTracker(
@@ -1177,6 +1195,7 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
                 "router": state.router,
                 "request_id": request_id,
                 "metrics_tracker": metrics_tracker,
+                "acquired_backend": _acquired_backend,
             }
             if has_tools and state.mcp_broker:
                 stream_kwargs["mcp_broker"] = state.mcp_broker
@@ -1198,9 +1217,13 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
                 )
             finally:
                 state.router.track_request_end(request_id)
+                if _acquired_backend:
+                    state.router.release_backend(_acquired_backend)
                 gpu_scheduler.notify_ai_stopping()
     except Exception:
         state.router.track_request_end(request_id)
+        if _acquired_backend:
+            state.router.release_backend(_acquired_backend)
         gpu_scheduler.notify_ai_stopping()
         raise
 
@@ -1551,6 +1574,20 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             },
             "total_models": len(state.model_discovery.model_registry),
             "total_backends": len(state.model_discovery.backend_registry),
+        }
+
+    @app.get("/admin/backends")
+    async def get_backend_semaphore_status(request: Request):
+        """
+        Get per-backend semaphore status (busy/idle, model loaded, active requests).
+        """
+        state: GatewayState = app.state.gateway
+        backend_status = state.router.get_backend_status()
+        return {
+            "backends": backend_status,
+            "total": len(backend_status),
+            "idle": [name for name, info in backend_status.items() if not info["active"]],
+            "busy": [name for name, info in backend_status.items() if info["active"]],
         }
 
     @app.get("/models/cloud")
@@ -4906,6 +4943,7 @@ async def stream_backend_response(
     router,
     request_id: str,
     metrics_tracker: ModelMetricsTracker,
+    acquired_backend: Optional[str] = None,
 ):
     """
     Stream backend response using OpenAI SDK with automatic failover.
@@ -4919,6 +4957,7 @@ async def stream_backend_response(
         router: Router instance for tracking requests
         request_id: Request ID for tracking
         metrics_tracker: Metrics tracker for this request
+        acquired_backend: Backend semaphore to release on completion
 
     Yields:
         SSE formatted response chunks
@@ -5036,6 +5075,9 @@ async def stream_backend_response(
     finally:
         # Always clean up request tracking
         router.track_request_end(request_id)
+        # Release backend semaphore
+        if acquired_backend:
+            router.release_backend(acquired_backend)
         # Signal GPU scheduler that AI workload is stopping
         gpu_scheduler.notify_ai_stopping()
 
@@ -5050,6 +5092,7 @@ async def stream_backend_response_with_tools(
     request_id: str,
     metrics_tracker: ModelMetricsTracker,
     mcp_broker,
+    acquired_backend: Optional[str] = None,
 ):
     """
     Stream backend response with tool calling support using OpenAI SDK.
@@ -5071,6 +5114,7 @@ async def stream_backend_response_with_tools(
         request_id: Request ID for tracking
         metrics_tracker: Metrics tracker for this request
         mcp_broker: MCP broker for tool execution
+        acquired_backend: Backend semaphore to release on completion
 
     Yields:
         SSE formatted response chunks
@@ -5264,6 +5308,8 @@ async def stream_backend_response_with_tools(
         yield f"data: {json.dumps({'error': f'Unexpected error: {str(e)}'})}\n\n"
     finally:
         router.track_request_end(request_id)
+        if acquired_backend:
+            router.release_backend(acquired_backend)
         gpu_scheduler.notify_ai_stopping()
 
 
@@ -5514,6 +5560,12 @@ async def handle_non_streaming_request(
 
     start_time = time.time()
 
+    # Request timeout — prevent backend hangs from blocking the gateway indefinitely.
+    # Hermes auxiliary calls (compaction, memory flush) send large prompts that can
+    # take a long time on local models. Default 300s aligns with Hermes flush_memories timeout.
+    import asyncio
+    request_timeout = float(body.pop("request_timeout", 300))
+
     try:
         # Extract parameters from request body
         messages = body.get("messages", [])
@@ -5526,14 +5578,22 @@ async def handle_non_streaming_request(
         route_decision = context.get("route_decision")
         backend = route_decision.backend if route_decision else None
 
-        # Create chat completion with automatic failover
-        response = await openai_client.chat_completion(
-            messages=messages,
-            model=model,
-            stream=False,
-            backend=backend,
-            **extra_params,
-        )
+        # Create chat completion with automatic failover + timeout
+        try:
+            async with asyncio.timeout(request_timeout):
+                response = await openai_client.chat_completion(
+                    messages=messages,
+                    model=model,
+                    stream=False,
+                    backend=backend,
+                    **extra_params,
+                )
+        except TimeoutError:
+            logger.error(f"Backend call timed out after {request_timeout}s for model: {model}")
+            raise HTTPException(
+                status_code=504,
+                detail=f"Backend timeout after {request_timeout}s. Model: {model}"
+            )
 
         # Convert OpenAI response object to dict for JSON serialization
         response_data = response.model_dump()

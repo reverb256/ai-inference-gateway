@@ -249,8 +249,12 @@ class OpenAIClientWrapper:
         # These are only valid for llama.cpp and ZAI backends — NIM rejects them.
         extra_body = kwargs.get("extra_body", {})
         if isinstance(extra_body, dict):
-            for _k in ("think", "enable_thinking", "chat_template_kwargs"):
-                extra_body.pop(_k, None)
+            # Only strip for cloud backends (NIM, OpenRouter) — local llama.cpp needs these
+            is_local = backend and (backend.startswith("llama-") or backend == "llama-cpp")
+            is_zai = backend == "zai"
+            if not is_local and not is_zai:
+                for _k in ("think", "enable_thinking", "chat_template_kwargs"):
+                    extra_body.pop(_k, None)
             if extra_body:
                 kwargs["extra_body"] = extra_body
             else:

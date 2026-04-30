@@ -44,9 +44,13 @@ class ModelDiscovery:
     """
 
     # Backend configurations — use K8s DNS service names.
-    # Updated 2026-04-28: removed llama-3090 (scaled down), lmstudio (not in K8s).
     # ClusterIPs change on redeploy; K8s DNS is stable.
     BACKENDS = {
+        "llama-3090": BackendInfo(
+            name="llama-3090",
+            base_url="http://llama-server-zephyr-3090-moe.ai-inference.svc.cluster.local:1237/v1",
+            priority=11,  # Highest — 35B MoE model on RTX 3090 24GB (flex slot)
+        ),
         "llama-3060ti": BackendInfo(
             name="llama-3060ti",
             base_url="http://llama-server-zephyr-3060ti.ai-inference.svc.cluster.local:1236/v1",
