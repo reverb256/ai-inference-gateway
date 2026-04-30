@@ -56,6 +56,7 @@ class OpenAIClientWrapper:
         local_backend_model: Optional[str] = None,
         secondary_backend_url: Optional[str] = None,
         secondary_backend_model: Optional[str] = None,
+        model_discovery=None,
     ):
         """
         Initialize OpenAI client wrapper.
@@ -189,6 +190,10 @@ class OpenAIClientWrapper:
         if self.local_model_map:
             logger.info(f"Local model routing map: {list(self.local_model_map.keys())} -> clients")
 
+        # Dynamic client cache for model_discovery backends
+        self.model_discovery = model_discovery
+        self._backend_client_cache: Dict[str, AsyncOpenAI] = {}
+
     async def chat_completion(
         self,
         messages: list[Dict[str, Any]],
@@ -286,18 +291,18 @@ class OpenAIClientWrapper:
             except Exception as e:
                 logger.error(f"ZAI backend failed: {str(e)}")
                 raise OpenAIBackendError(f"ZAI backend error: {str(e)}")
-        elif backend == "llama-cpp":
-            logger.info(f"Using llama.cpp backend directly for model: {model}")
+        elif backend and backend.startswith("llama-"):
+            logger.info(f"Using llama.cpp backend ({backend}) for model: {model}")
             try:
-                # Model-aware local routing: pick the right client based on model name
-                client = self._resolve_local_client(model)
+                # Resolve client: check discovery for dynamic URL, then local_model_map, then primary
+                client = self._resolve_backend_client(model, backend)
                 response = await client.chat.completions.create(
                     messages=messages,
                     model=model,
                     stream=stream,
                     **kwargs,
                 )
-                logger.info(f"llama.cpp backend succeeded with model: {model} via {client.base_url}")
+                logger.info(f"llama.cpp backend ({backend}) succeeded with model: {model} via {client.base_url}")
                 return response
             except Exception as e:
                 logger.error(f"llama.cpp backend failed: {str(e)}")
@@ -576,6 +581,36 @@ class OpenAIClientWrapper:
                 return client
         # Default: use primary client (3090)
         return self.primary_client
+
+    def _resolve_backend_client(self, model: str, backend: str) -> AsyncOpenAI:
+        """
+        Resolve the correct backend client using model_discovery for URL resolution.
+        Falls back to local_model_map pattern matching, then primary_client.
+
+        Args:
+            model: Model name from the request
+            backend: Backend name (e.g., "llama-3090", "llama-3060ti", "llama-sentry")
+
+        Returns:
+            AsyncOpenAI client for the target backend
+        """
+        # Try model_discovery for dynamic URL
+        if self.model_discovery:
+            url = self.model_discovery.get_backend_url(backend)
+            if url:
+                # Strip trailing /v1 if present (we add it in the client)
+                base = url.rstrip("/v1").rstrip("/")
+                if backend not in self._backend_client_cache or self._backend_client_cache[backend].base_url != f"{base}/v1":
+                    logger.info(f"Creating new client for backend {backend} -> {base}/v1")
+                    self._backend_client_cache[backend] = AsyncOpenAI(
+                        api_key="not-needed",
+                        base_url=f"{base}/v1",
+                        timeout=self.timeout,
+                    )
+                return self._backend_client_cache[backend]
+
+        # Fall back to static model map
+        return self._resolve_local_client(model)
 
     async def close(self):
         """Close all client connections."""

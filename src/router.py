@@ -1354,7 +1354,7 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
                 for model_id in backend_info.models:
                     # Determine model characteristics from model ID
                     priority = backend_info.priority
-                    backend = "llama-cpp"  # All llama-servers use llama-cpp backend
+                    backend = backend_name  # "llama-3090", "llama-3060ti", "llama-sentry"
 
                     # Add model info
                     models.append(ModelInfo(

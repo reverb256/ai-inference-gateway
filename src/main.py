@@ -10,6 +10,10 @@ import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
+# Configure root logger so application loggers propagate correctly
+_log_level = getattr(logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO)
+logging.basicConfig(level=_log_level, format="%(levelname)s:%(name)s:%(message)s")
+
 # Initialize logger early (needed for import error handling)
 logger = logging.getLogger(__name__)
 
@@ -505,6 +509,9 @@ async def lifespan(app: FastAPI):
     try:
         state.model_discovery = ModelDiscovery(refresh_interval=300)
         await state.model_discovery.start()
+        # Inject into openai_client for dynamic backend routing
+        if state.openai_client:
+            state.openai_client.model_discovery = state.model_discovery
         logger.info("Model discovery started")
     except Exception as e:
         logger.warning(f"Model discovery initialization failed: {e}")

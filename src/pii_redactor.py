@@ -86,10 +86,13 @@ class PIIRedactor:
         ),
         PIIPattern(
             name="ip_address",
-            pattern=re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", re.IGNORECASE),
+            pattern=re.compile(
+                r"\b(?!(?:10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|127\.))(?:\d{1,3}\.){3}\d{1,3}\b",
+                re.IGNORECASE,
+            ),
             mode=RedactionMode.REDACT,
-            description="IP addresses",
-            examples=["192.168.1.1", "10.0.0.1"],
+            description="Public IP addresses (RFC1918 private IPs excluded)",
+            examples=["8.8.8.8", "203.0.113.1"],
         ),
         PIIPattern(
             name="api_key",
