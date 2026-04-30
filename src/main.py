@@ -438,12 +438,16 @@ async def lifespan(app: FastAPI):
 
     Handles startup (initialize connections) and shutdown (cleanup).
     """
+    import sys
+    def _log(msg):
+        print(f"[LIFESPAN] {msg}", file=sys.stderr, flush=True)
+
     # Get gateway state from app state
     state: GatewayState = app.state.gateway
 
-    logger.info("Starting AI Inference Gateway v%s", GATEWAY_VERSION)
+    _log("1/14: Starting AI Inference Gateway")
 
-    # Initialize Sentry if enabled
+    _log("2/14: Sentry init")
     if state.config.sentry.enabled:
         sentry_dsn = state.config.sentry.get_dsn()
         if sentry_dsn:
@@ -479,20 +483,23 @@ async def lifespan(app: FastAPI):
         else:
             logger.info("Sentry enabled but no DSN configured")
 
-    # Initialize Redis client
+    _log("3/14: Redis connect")
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     state.redis_client = RedisClient(redis_url=redis_url)
     redis_connected = await state.redis_client.connect()
+    _log(f"3/14: Redis connected={redis_connected}")
 
     if redis_connected:
         logger.info("Connected to Redis")
     else:
         logger.warning("Redis unavailable, using in-memory fallback")
 
+    _log("4/14: Middleware pipeline")
     # Build middleware pipeline
     state.pipeline = build_middleware_pipeline(state.config, state.redis_client)
     logger.info("Middleware pipeline initialized with %d middleware", state.pipeline.count)
 
+    _log("5/14: Model discovery")
     # Initialize model discovery for llama-servers and LM Studio
     state.model_discovery = None
     try:
@@ -502,6 +509,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Model discovery initialization failed: {e}")
 
+    _log("6/14: Cloud discovery")
     # Initialize cloud model discovery (OpenRouter, NIM, ZAI)
     state.cloud_discovery = None
     try:
@@ -524,6 +532,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Cloud discovery initialization failed: {e}")
 
+    _log("7/14: Router init")
     # Initialize router (no API key needed for llama-cpp)
     try:
         state.router = create_default_router(
@@ -535,6 +544,7 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Router initialization failed: {e}")
         state.router = None
 
+    _log("8/14: MCP broker")
     # Initialize MCP broker if enabled
     state.mcp_broker = None
     try:
@@ -546,6 +556,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"MCP broker initialization failed: {e}", exc_info=True)
 
+    _log("9/14: RAG init")
     # Initialize RAG if enabled
     state.rag_search = None
     state.rag_config = None
@@ -653,6 +664,7 @@ async def lifespan(app: FastAPI):
             traceback.print_exc()
             state.rag_search = None
 
+    _log("10/14: Semantic cache")
     # Initialize semantic cache if enabled
     if SEMANTIC_CACHE_AVAILABLE:
         try:
@@ -689,6 +701,7 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Semantic cache not available (install redis, qdrant-client)")
 
+    _log("11/14: SearXNG")
     # Initialize SearXNG integration if enabled
     if SEARXNG_AVAILABLE:
         try:
@@ -705,6 +718,7 @@ async def lifespan(app: FastAPI):
             logger.warning(f"SearXNG initialization failed: {e}")
             state.searxng = None
 
+    _log("12/14: GPU scheduler")
     # Initialize GPU scheduler communication
     try:
         gpu_scheduler.init_scheduler_comms()
@@ -712,6 +726,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"GPU scheduler initialization failed: {e}")
 
+    _log("13/14: Backend health check")
     # Startup health validation — check backend reachability
     backend_healthy = await check_backend_health(
         state.config.backend_url,
@@ -736,6 +751,7 @@ async def lifespan(app: FastAPI):
             state.config.backend_type,
         )
 
+    _log("14/14: Cost tracker + Virtual keys + DONE")
     # Initialize cost tracker (always available — SQLite, zero deps)
     try:
         from ai_inference_gateway.services.cost_tracker import CostTracker
@@ -759,6 +775,7 @@ async def lifespan(app: FastAPI):
 
     # Startup complete
     logger.info("Gateway startup complete")
+    _log("STARTUP COMPLETE - yielding to requests")
 
     # --- MLSEC Phase 1: Initialize response sanitizer ---
     try:
