@@ -1240,7 +1240,7 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
                     models.append(ModelInfo(
                         id=model_id,
                         name=model_id,  # Use full model ID as name
-                        context_length=131072,  # Safe default
+                        context_length=get_context_length(model_id),
                         priority=priority,
                         specializations=[TaskSpecialization.GENERAL],
                         cost_tier=0,  # Free (local)
