@@ -43,6 +43,8 @@ class OpenAIClientWrapper:
         primary_api_key: Optional[str],
         fallback_url: Optional[str] = None,
         fallback_api_key: Optional[str] = None,
+        zai_url: Optional[str] = None,
+        zai_api_key: Optional[str] = None,
         timeout: float = 120.0,
         zai_models: Optional[list[str]] = None,
         nvidia_url: Optional[str] = None,
@@ -60,8 +62,10 @@ class OpenAIClientWrapper:
         Args:
             primary_url: Primary backend URL (e.g., llama.cpp)
             primary_api_key: API key for primary backend (optional for local)
-            fallback_url: Fallback backend URL (e.g., ZAI)
+            fallback_url: Fallback backend URL (e.g., secondary llama.cpp)
             fallback_api_key: API key for fallback backend
+            zai_url: Z.AI API base URL (e.g., https://api.z.ai/api/coding/paas/v4)
+            zai_api_key: Z.AI API key
             timeout: Request timeout in seconds
             zai_models: List of ZAI models to try (in order)
             nvidia_url: NVIDIA NIM API base URL
@@ -82,7 +86,7 @@ class OpenAIClientWrapper:
         self.fallback_api_key = fallback_api_key
         self.timeout = timeout
         # ZAI models to try in order (from fastest to most capable)
-        self.zai_models = zai_models or ["glm-4.6", "glm-4.7", "glm-5"]
+        self.zai_models = zai_models or ["glm-5-turbo", "glm-5", "glm-5.1", "glm-4.7", "glm-4.6"]
 
         # Initialize primary client
         self.primary_client = AsyncOpenAI(
@@ -502,9 +506,14 @@ class OpenAIClientWrapper:
             "too many requests",  # Rate limiting message
             "model unloaded",  # Model not loaded
             "no models loaded",  # No models available
-            "insufficient balance",  # Balance issues
+            "insufficient balance",  # Balance issues (per-model)
+            "no resource package",  # ZAI: no credits for this model
+            "error code: 1113",  # ZAI balance exhausted
             "error code: 400",  # ZAI returns 400 for model issues
             "unknown model",  # Model doesn't exist
+            "timeout",  # Connection/request timeout - try next model
+            "timed out",  # Timeout variant
+            "connection",  # Connection errors - try next model
         ]
 
         # Non-retryable errors - stop immediately

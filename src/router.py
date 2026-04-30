@@ -949,9 +949,9 @@ class Router:
             logger.info("Local backend (llama-cpp) is down, using cloud fallback")
             estimated_tokens = self.estimate_tokens(messages)
 
-            # Get available cloud models (NIM, OpenRouter, etc. - NOT ZAI)
+            # Get available cloud models (NIM, ZAI, OpenRouter)
             cloud_models = [m for m in self.models.values()
-                           if m.backend in ["nvidia", "openrouter"] and m.priority > 0]
+                           if m.backend in ["nvidia", "zai", "openrouter"] and m.priority > 0]
 
             if cloud_models:
                 # Sort by priority and pick the best one

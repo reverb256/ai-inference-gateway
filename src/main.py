@@ -5673,12 +5673,15 @@ async def stream_anthropic_response(
         backend = route_decision.backend if route_decision else None
 
         # Get the streaming response from OpenAI client
-        async for chunk in await openai_client.stream_chat_completion(
+        response = await openai_client.chat_completion(
             messages=messages,
             model=model,
+            stream=True,
             backend=backend,
             **extra_params,
-        ):
+        )
+        # chat_completion returns an async stream when stream=True
+        async for chunk in response:
             if not first_chunk_sent:
                 first_chunk_sent = True
                 # Send initial event with request metadata
