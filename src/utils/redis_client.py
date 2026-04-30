@@ -156,7 +156,10 @@ class RedisClient:
             True if connected to Redis, False if using fallback
         """
         try:
-            self._redis = Redis.from_url(self.redis_url, decode_responses=True)
+            self._redis = Redis.from_url(
+                self.redis_url, decode_responses=True,
+                socket_connect_timeout=5, socket_timeout=5
+            )
             await self._redis.ping()
             self._backend = self._redis
             self._connected = True

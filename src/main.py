@@ -505,9 +505,9 @@ async def lifespan(app: FastAPI):
     # Initialize cloud model discovery (OpenRouter, NIM, ZAI)
     state.cloud_discovery = None
     try:
-        openrouter_key = config.get_openrouter_api_key()
-        nim_key = config.get_nvidia_nim_api_key()
-        zai_key = config.get_zai_api_key()
+        openrouter_key = state.config.get_openrouter_api_key()
+        nim_key = state.config.get_nvidia_nim_api_key()
+        zai_key = state.config.get_zai_api_key()
         if openrouter_key or nim_key or zai_key:
             state.cloud_discovery = CloudModelRegistry(
                 openrouter_key=openrouter_key,
