@@ -5718,10 +5718,14 @@ async def stream_anthropic_response(
                 }
                 yield f"event: message_start\ndata: {json.dumps(event_data)}\n\n"
 
+            # Convert Pydantic ChatCompletionChunk to dict for field access
+            chunk_dict = chunk.model_dump() if hasattr(chunk, 'model_dump') else chunk
+
             # Convert OpenAI chunk to Anthropic format
-            if chunk.get("choices"):
-                choice = chunk["choices"][0]
-                delta = choice.get("message", {})
+            choices = chunk_dict.get("choices", [])
+            if choices:
+                choice = choices[0]
+                delta = choice.get("delta", {})
 
                 # MLSEC Phase 1: Sanitize Anthropic streaming content
                 if "content" in delta and delta["content"] and _sanitizer:
