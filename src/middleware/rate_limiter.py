@@ -11,6 +11,40 @@ from ai_inference_gateway.utils.redis_client import RedisClient
 
 logger = logging.getLogger(__name__)
 
+DISCOVERED_PROVIDER_LIMITS: Dict[str, dict] = {}
+
+
+def get_provider_rate_limit(provider: str, model_id: str = "") -> dict:
+    """
+    Get rate limit for a provider, using discovered limits if available.
+
+    Args:
+        provider: Backend provider name (e.g., "kilo", "nvidia", "vllm-local")
+        model_id: Model ID to check for free tier
+
+    Returns:
+        Dict with requests_per_minute, requests_per_hour, requests_per_day (None = unlimited)
+    """
+    if provider in DISCOVERED_PROVIDER_LIMITS:
+        return DISCOVERED_PROVIDER_LIMITS[provider].copy()
+
+    if provider == "vllm-local" or provider == "llama-cpp":
+        return {"requests_per_minute": None, "requests_per_hour": None, "requests_per_day": None}
+
+    if provider == "kilo":
+        if ":free" in model_id or "free" in model_id.lower():
+            return {"requests_per_minute": 3, "requests_per_hour": 200, "requests_per_day": None}
+        return {"requests_per_minute": 60, "requests_per_hour": None, "requests_per_day": None}
+
+    return {"requests_per_minute": 60, "requests_per_hour": 1000, "requests_per_day": None}
+
+
+def update_discovered_limit(provider: str, limit_type: str, value: int):
+    """Update a discovered rate limit for a provider."""
+    if provider not in DISCOVERED_PROVIDER_LIMITS:
+        DISCOVERED_PROVIDER_LIMITS[provider] = {"requests_per_minute": None, "requests_per_hour": None, "requests_per_day": None}
+    DISCOVERED_PROVIDER_LIMITS[provider][limit_type] = value
+
 
 class RateLimiterMiddleware(Middleware):
     """
