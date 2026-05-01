@@ -218,9 +218,12 @@ class ModelBenchmark:
             )
 
             async for chunk in stream:
-                if first_token_time is None and chunk.choices[0].delta.content:
+                # Check both content and reasoning_content fields (llama.cpp uses reasoning_content)
+                delta = chunk.choices[0].delta
+                token_content = delta.content or delta.reasoning_content
+                if first_token_time is None and token_content:
                     first_token_time = time.time()
-                if chunk.choices[0].delta.content:
+                if token_content:
                     tokens_generated += 1
 
             total_time = time.time() - start_time
