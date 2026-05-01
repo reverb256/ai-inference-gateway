@@ -74,6 +74,8 @@ CLOUD_PROVIDERS = {"openrouter", "nim", "zai"}
 EXCLUDED_MODELS: Set[str] = {
     "glm-4-flash",          # Dead on ZAI API
     "glm-4.7-flashx",       # 429 on coding plan
+    "glm-4.5-flash",        # 504 timeout on ZAI API — inference endpoint broken
+    "glm-4.7-flash",        # 504 timeout on ZAI API — inference endpoint broken
 }
 
 # Family-level curation — applied when a model matches a prefix

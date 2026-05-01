@@ -61,14 +61,9 @@ class ModelDiscovery:
             base_url="http://llama-server-sentry.ai-inference.svc.cluster.local:1235/v1",
             priority=9,   # Secondary (4B model, sentry RX 5600 XT 8GB AMD)
         ),
-        "vllm-3060ti": BackendInfo(
-            name="vllm-3060ti",
-            base_url="http://10.1.1.110:8040/v1",
-            priority=12,  # Highest - vLLM 2B AWQ, 16 concurrent, 530 tok/s aggregate
-        ),
     }
 
-    def __init__(self, refresh_interval: int = 300):
+    def __init__(self, refresh_interval: int = 300, extra_backends: Optional[Dict] = None):
         """
         Initialize model discovery.
 
@@ -80,6 +75,15 @@ class ModelDiscovery:
         self.backend_registry: Dict[str, BackendInfo] = {}
         self._refresh_task: Optional[asyncio.Task] = None
         self._client: Optional[httpx.AsyncClient] = None
+
+        # Merge extra backends from config (env var driven)
+        if extra_backends:
+            for name, info in extra_backends.items():
+                if isinstance(info, dict):
+                    self.BACKENDS[name] = BackendInfo(**info)
+                else:
+                    self.BACKENDS[name] = info
+            logger.info(f"Merged {len(extra_backends)} extra backend(s) from config")
 
     async def start(self):
         """Start background refresh task."""

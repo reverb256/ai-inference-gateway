@@ -507,8 +507,18 @@ async def lifespan(app: FastAPI):
     # Initialize model discovery for llama-servers and LM Studio
     state.model_discovery = None
     try:
-        state.model_discovery = ModelDiscovery(refresh_interval=300)
-        await state.model_discovery.start()
+        # Parse discovery backends from config
+        extra_backends = None
+        if state.config.discovery_backends:
+            import json
+            try:
+                backend_list = json.loads(state.config.discovery_backends)
+                extra_backends = {b["name"]: b for b in backend_list}
+                logger.info(f"Loaded {len(extra_backends)} discovery backend(s) from config")
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.warning(f"Failed to parse DISCOVERY_BACKENDS: {e}")
+
+        state.model_discovery = ModelDiscovery(refresh_interval=300, extra_backends=extra_backends)
         # Inject into openai_client for dynamic backend routing
         if state.openai_client:
             state.openai_client.model_discovery = state.model_discovery

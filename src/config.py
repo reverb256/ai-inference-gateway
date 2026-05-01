@@ -500,6 +500,10 @@ class GatewayConfig(BaseSettings):
     # Secondary local backend (3060Ti)
     secondary_backend_url: str = Field(default="", description="Secondary local backend URL (e.g., 3060Ti)")
     secondary_backend_model: str = Field(default="", description="Model name on secondary backend")
+    # Model discovery backends (JSON array of {name, base_url, priority})
+    # If set, these backends are merged with the hardcoded defaults in ModelDiscovery.
+    # Backends with the same name override defaults.
+    discovery_backends: str = Field(default="", description="Additional discovery backends as JSON array")
 
     # NVIDIA NIM backend
     nvidia_nim_base_url: str = Field(
