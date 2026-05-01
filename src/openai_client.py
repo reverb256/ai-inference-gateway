@@ -52,6 +52,8 @@ class OpenAIClientWrapper:
         nvidia_api_key: Optional[str] = None,
         openrouter_url: Optional[str] = None,
         openrouter_api_key: Optional[str] = None,
+        kilo_url: Optional[str] = None,
+        kilo_api_key: Optional[str] = None,
         local_backend_url: Optional[str] = None,
         local_backend_model: Optional[str] = None,
         secondary_backend_url: Optional[str] = None,
@@ -151,6 +153,18 @@ class OpenAIClientWrapper:
                 },
             )
             logger.info(f"Initialized OpenRouter client: {self.openrouter_url}")
+
+        # Initialize KILO client if configured
+        self.kilo_client: Optional[AsyncOpenAI] = None
+        self.kilo_url: Optional[str] = None
+        if kilo_api_key:
+            self.kilo_url = kilo_url or "https://api.kilo.ai/api/gateway"
+            self.kilo_client = AsyncOpenAI(
+                base_url=self.kilo_url,
+                api_key=kilo_api_key,
+                timeout=timeout,
+            )
+            logger.info(f"Initialized KILO client: {self.kilo_url}")
 
         # Initialize local backend client (e.g., sentry ROCm) if configured
         self.local_client: Optional[AsyncOpenAI] = None
@@ -345,6 +359,20 @@ class OpenAIClientWrapper:
             except Exception as e:
                 logger.error(f"OpenRouter backend failed: {str(e)}")
                 raise OpenAIBackendError(f"OpenRouter backend error: {str(e)}")
+        elif backend == "kilo" and self.kilo_client:
+            logger.info(f"Using KILO backend for model: {model}")
+            try:
+                response = await self.kilo_client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **kwargs,
+                )
+                logger.info(f"KILO backend succeeded with model: {model}")
+                return response
+            except Exception as e:
+                logger.error(f"KILO backend failed: {str(e)}")
+                raise OpenAIBackendError(f"KILO backend error: {str(e)}")
         elif backend == "pollinations":
             logger.info(f"Using Pollinations backend directly for model: {model}")
             try:
@@ -660,6 +688,9 @@ def create_openai_client(config) -> OpenAIClientWrapper:
     # Get OpenRouter credentials
     openrouter_api_key = config.get_openrouter_api_key()
 
+    # Get KILO credentials
+    kilo_api_key = config.get_kilo_api_key()
+
     return OpenAIClientWrapper(
         primary_url=config.backend_url,
         primary_api_key=primary_api_key,
@@ -670,6 +701,7 @@ def create_openai_client(config) -> OpenAIClientWrapper:
         nvidia_url=nvidia_url,
         nvidia_api_key=nvidia_api_key,
         openrouter_api_key=openrouter_api_key,
+        kilo_api_key=kilo_api_key,
         local_backend_url=config.local_backend_url,
         local_backend_model=config.local_backend_model,
         secondary_backend_url=config.secondary_backend_url,

@@ -8,14 +8,16 @@ Routes requests to appropriate models based on:
 - Model specialization matching
 - Cost tier considerations
 - Category-based routing (inspired by oh-my-opencode)
+- Autonomous model selection based on benchmarks
 """
 
 from .contexts import LLAMA_SERVER_CONTEXT, CLOUD_MODEL_CONTEXT, QWEN_FAMILY_CONTEXT, MAX_OUTPUT_TOKENS, get_context_length, get_max_tokens
+from .model_benchmark import ModelBenchmark, AutonomousModelSelector, get_benchmark, get_selector
 import logging
 import re
 import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -843,6 +845,119 @@ class Router:
             # Opus extended context variant (same underlying model)
             "claude-opus-4-20250514-1m": "qwen3.5-35b-a3b",
         }
+
+    # ========================================================================
+    # Autonomous Model Selection (Benchmark-based)
+    # ========================================================================
+
+    def get_benchmark(self) -> ModelBenchmark:
+        """Get the model benchmark instance."""
+        return get_benchmark()
+
+    def get_selector(self) -> AutonomousModelSelector:
+        """Get the autonomous model selector."""
+        return get_selector()
+
+    async def select_model_by_benchmark(
+        self,
+        requirements: Dict[str, any],
+        available_models: Optional[List[str]] = None,
+    ) -> Optional[str]:
+        """
+        Select best model using benchmark data.
+
+        Requirements:
+        - estimated_input_tokens: int
+        - estimated_output_tokens: int
+        - task_specialization: TaskSpecialization
+        - max_ttft_ms: Optional[float]
+        - min_throughput_tps: Optional[float]
+        - needs_concurrency: Optional[int]
+
+        Returns:
+            Best model ID or None if no suitable model found
+        """
+        selector = self.get_selector()
+
+        if available_models is None:
+            available_models = list(self.models.keys())
+
+        return await selector.select_best_model(requirements, available_models)
+
+    def get_model_rankings(
+        self,
+        requirements: Optional[Dict[str, float]] = None,
+    ) -> List[Dict]:
+        """
+        Get ranked models based on benchmark data.
+
+        Returns list of {model_id, rank, score, strengths, weaknesses, best_for}
+        """
+        benchmark = self.get_benchmark()
+        rankings = benchmark.rank_all_models(requirements)
+
+        return [
+            {
+                "model_id": r.model_id,
+                "rank": r.rank,
+                "score": r.score,
+                "strengths": r.strengths,
+                "weaknesses": r.weaknesses,
+                "best_for": r.best_for,
+                "avg_ttft_ms": r.avg_ttft_ms,
+                "avg_throughput_tps": r.avg_throughput_tps,
+                "actual_context_window": r.actual_context_window,
+            }
+            for r in rankings
+        ]
+
+    def get_model_recommendations(self, task_type: str) -> List[Dict]:
+        """
+        Get model recommendations for a task type.
+
+        Args:
+            task_type: fast-chat, coding, long-context, rag, analysis, batch, high-volume
+
+        Returns:
+            List of {model_id, score, reason}
+        """
+        selector = self.get_selector()
+        return selector.get_recommendations(task_type)
+
+    async def start_auto_benchmark(
+        self,
+        backend_configs: List[Tuple[str, str, str, Optional[str]]],
+    ) -> Dict[str, any]:
+        """
+        Start automatic benchmarking of all models.
+
+        Args:
+            backend_configs: List of (model_id, backend, backend_url, api_key)
+
+        Returns:
+            Benchmark results summary
+        """
+        benchmark = self.get_benchmark()
+
+        logger.info(f"Starting auto-benchmark of {len(backend_configs)} models")
+        results = await benchmark.auto_benchmark_all(backend_configs)
+
+        return {
+            "total_models": len(backend_configs),
+            "successful": sum(1 for r in results.values() if r.success),
+            "failed": sum(1 for r in results.values() if not r.success),
+            "results": {
+                model_id: {
+                    "success": r.success,
+                    "metrics": {k.value: v for k, v in r.metrics.items()},
+                }
+                for model_id, r in results.items()
+            },
+        }
+
+    # ========================================================================
+    # Token Estimation & Analysis
+    # ========================================================================
 
     def estimate_tokens(self, messages: List[Dict]) -> int:
         """

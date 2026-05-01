@@ -1624,6 +1624,140 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
 
         return state.cloud_discovery.to_dict()
 
+    @app.get("/models/benchmark")
+    async def get_benchmark_results(request: Request):
+        """
+        Get model benchmark results.
+
+        Returns benchmark data for all tested models including:
+        - TTFT (Time To First Token)
+        - Throughput (tokens/second)
+        - Context window (actual, not advertised)
+        - Concurrency limits
+        - Rate limits
+        - Quality scores
+        """
+        state: GatewayState = app.state.gateway
+        benchmark = state.router.get_benchmark()
+
+        results = {}
+        for model_id, result in benchmark.results.items():
+            results[model_id] = {
+                "backend": result.backend,
+                "success": result.success,
+                "timestamp": result.timestamp.isoformat(),
+                "metrics": {k.value: v for k, v in result.metrics.items()},
+                "error": result.error_message,
+            }
+
+        return {
+            "total_models": len(results),
+            "results": results,
+        }
+
+    @app.get("/models/rankings")
+    async def get_model_rankings(
+        request: Request,
+        min_context: Optional[int] = None,
+        max_ttft_ms: Optional[float] = None,
+        min_throughput_tps: Optional[float] = None,
+    ):
+        """
+        Get ranked models based on benchmark data.
+
+        Query parameters:
+        - min_context: Minimum context window required
+        - max_ttft_ms: Maximum acceptable TTFT
+        - min_throughput_tps: Minimum throughput required
+
+        Returns ranked list with scores, strengths, weaknesses.
+        """
+        state: GatewayState = app.state.gateway
+
+        requirements = {}
+        if min_context:
+            requirements["min_context"] = min_context
+        if max_ttft_ms:
+            requirements["max_ttft_ms"] = max_ttft_ms
+        if min_throughput_tps:
+            requirements["min_throughput_tps"] = min_throughput_tps
+
+        rankings = state.router.get_model_rankings(requirements if requirements else None)
+
+        return {
+            "total_ranked": len(rankings),
+            "requirements": requirements,
+            "rankings": rankings,
+        }
+
+    @app.get("/models/recommendations/{task_type}")
+    async def get_model_recommendations(request: Request, task_type: str):
+        """
+        Get model recommendations for a task type.
+
+        Task types: fast-chat, coding, long-context, rag, analysis, batch, high-volume
+
+        Returns top 5 recommended models with reasoning.
+        """
+        state: GatewayState = app.state.gateway
+
+        recommendations = state.router.get_model_recommendations(task_type)
+
+        return {
+            "task_type": task_type,
+            "count": len(recommendations),
+            "recommendations": recommendations,
+        }
+
+    @app.post("/admin/benchmark/start")
+    async def start_benchmark(request: Request):
+        """
+        Start automatic benchmarking of models.
+
+        Accepts JSON with list of models to benchmark:
+        {
+            "models": [
+                {"model_id": "...", "backend": "...", "url": "...", "api_key": "..."},
+                ...
+            ]
+        }
+
+        Returns benchmark job ID and status.
+        """
+        state: GatewayState = app.state.gateway
+        try:
+            body = await request.json()
+            models = body.get("models", [])
+
+            if not models:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "No models specified for benchmarking"}
+                )
+
+            # Convert to list of tuples
+            backend_configs = [
+                (m["model_id"], m["backend"], m["url"], m.get("api_key"))
+                for m in models
+            ]
+
+            # Start benchmark (async, non-blocking)
+            import asyncio
+            asyncio.create_task(state.router.start_auto_benchmark(backend_configs))
+
+            return {
+                "status": "started",
+                "models_queued": len(backend_configs),
+                "message": "Benchmark started in background",
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to start benchmark: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"Failed to start benchmark: {str(e)}"}
+            )
+
     @app.get("/system-prompts")
     async def get_system_prompts(request: Request):
         """
