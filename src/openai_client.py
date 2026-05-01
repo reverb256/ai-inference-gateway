@@ -16,6 +16,7 @@ The OpenAI SDK handles:
 """
 
 import logging
+from .provider_rate_limiter import check_provider_limit, record_provider_429, record_provider_request, get_provider_stats
 import os
 from typing import Optional, Dict, Any
 from openai import AsyncOpenAI, AsyncStream
@@ -281,6 +282,9 @@ class OpenAIClientWrapper:
 
         # If backend is specified, use it directly
         if backend == "zai" and self.fallback_client:
+            allowed, cooldown = await check_provider_limit("zai", model)
+            if not allowed:
+                raise OpenAIBackendError(f"ZAI backend rate limited (cooldown: {cooldown:.0f}s)")
             logger.info(f"Using ZAI backend directly for model: {model}")
             try:
                 response = await self.fallback_client.chat.completions.create(
@@ -303,8 +307,11 @@ class OpenAIClientWrapper:
                 logger.info(f"ZAI backend succeeded with model: {model}")
                 return response
             except Exception as e:
-                logger.error(f"ZAI backend failed: {str(e)}")
-                raise OpenAIBackendError(f"ZAI backend error: {str(e)}")
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("zai")
+                logger.error(f"ZAI backend failed: {error_str}")
+                raise OpenAIBackendError(f"ZAI backend error: {error_str}")
         elif backend and backend.startswith("llama-"):
             logger.info(f"Using llama.cpp backend ({backend}) for model: {model}")
             try:
@@ -322,6 +329,9 @@ class OpenAIClientWrapper:
                 logger.error(f"llama.cpp backend failed: {str(e)}")
                 raise OpenAIBackendError(f"llama.cpp backend error: {str(e)}")
         elif backend == "nvidia" and self.nvidia_client:
+            allowed, cooldown = await check_provider_limit("nvidia", model)
+            if not allowed:
+                raise OpenAIBackendError(f"NVIDIA backend rate limited (cooldown: {cooldown:.0f}s)")
             logger.info(f"Using NVIDIA NIM backend directly for model: {model}")
             try:
                 response = await self.nvidia_client.chat.completions.create(
@@ -343,9 +353,15 @@ class OpenAIClientWrapper:
                 logger.info(f"NVIDIA NIM backend succeeded with model: {model}")
                 return response
             except Exception as e:
-                logger.error(f"NVIDIA NIM backend failed: {str(e)}")
-                raise OpenAIBackendError(f"NVIDIA NIM backend error: {str(e)}")
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("nvidia")
+                logger.error(f"NVIDIA NIM backend failed: {error_str}")
+                raise OpenAIBackendError(f"NVIDIA NIM backend error: {error_str}")
         elif backend == "openrouter" and self.openrouter_client:
+            allowed, cooldown = await check_provider_limit("openrouter", model)
+            if not allowed:
+                raise OpenAIBackendError(f"OpenRouter backend rate limited (cooldown: {cooldown:.0f}s)")
             logger.info(f"Using OpenRouter backend for model: {model}")
             try:
                 response = await self.openrouter_client.chat.completions.create(
@@ -357,9 +373,15 @@ class OpenAIClientWrapper:
                 logger.info(f"OpenRouter backend succeeded with model: {model}")
                 return response
             except Exception as e:
-                logger.error(f"OpenRouter backend failed: {str(e)}")
-                raise OpenAIBackendError(f"OpenRouter backend error: {str(e)}")
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("openrouter")
+                logger.error(f"OpenRouter backend failed: {error_str}")
+                raise OpenAIBackendError(f"OpenRouter backend error: {error_str}")
         elif backend == "kilo" and self.kilo_client:
+            allowed, cooldown = await check_provider_limit("kilo", model)
+            if not allowed:
+                raise OpenAIBackendError(f"KILO backend rate limited (cooldown: {cooldown:.0f}s)")
             logger.info(f"Using KILO backend for model: {model}")
             try:
                 response = await self.kilo_client.chat.completions.create(
@@ -371,8 +393,11 @@ class OpenAIClientWrapper:
                 logger.info(f"KILO backend succeeded with model: {model}")
                 return response
             except Exception as e:
-                logger.error(f"KILO backend failed: {str(e)}")
-                raise OpenAIBackendError(f"KILO backend error: {str(e)}")
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("kilo")
+                logger.error(f"KILO backend failed: {error_str}")
+                raise OpenAIBackendError(f"KILO backend error: {error_str}")
         elif backend == "pollinations":
             logger.info(f"Using Pollinations backend directly for model: {model}")
             try:

@@ -1613,8 +1613,7 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             specializations=[
                 TaskSpecialization.FAST,
                 TaskSpecialization.GENERAL,
-                TaskSpecialization.CLASSIFICATION,
-                TaskSpecialization.ROUTING,
+                TaskSpecialization.CODING,
             ],
             cost_tier=0,  # Free (local)
             estimated_tokens_per_second=564.0,

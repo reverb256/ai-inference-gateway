@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 class MetricType(Enum):
     """Types of metrics to collect."""
     TTFT_MS = "ttft_ms"  # Time to first token
+    TPOT_MS = "tpot_ms"  # Time per output token (NEW)
     THROUGHPUT_TPS = "throughput_tps"  # Tokens per second
     CONTEXT_WINDOW = "context_window"  # Actual context limit
     CONCURRENCY_LIMIT = "concurrency_limit"  # Max concurrent requests
@@ -163,10 +164,11 @@ class ModelBenchmark:
             )
 
             # Test 1: Baseline performance
-            ttft, throughput = await self._measure_baseline_performance(
+            ttft, tpot, throughput = await self._measure_baseline_performance(
                 client, model_id, result
             )
             result.metrics[MetricType.TTFT_MS] = ttft
+            result.metrics[MetricType.TPOT_MS] = tpot
             result.metrics[MetricType.THROUGHPUT_TPS] = throughput
 
             # Test 2: Context window
@@ -201,13 +203,15 @@ class ModelBenchmark:
         client,
         model_id: str,
         result: BenchmarkResult,
-    ) -> Tuple[float, float]:
-        """Measure baseline TTFT and throughput."""
+    ) -> Tuple[float, float, float]:
+        """Measure baseline TTFT, TPOT, and throughput."""
         test_prompt = "Say 'Hello, World!' briefly."
 
         start_time = time.time()
         first_token_time = None
+        last_token_time = None
         tokens_generated = 0
+        token_times = []
 
         try:
             stream = await client.chat.completions.create(
@@ -224,7 +228,9 @@ class ModelBenchmark:
                 if first_token_time is None and token_content:
                     first_token_time = time.time()
                 if token_content:
+                    token_times.append(time.time())
                     tokens_generated += 1
+                    last_token_time = token_times[-1]
 
             total_time = time.time() - start_time
 
@@ -233,17 +239,24 @@ class ModelBenchmark:
             else:
                 ttft_ms = total_time * 1000
 
+            # Calculate TPOT (average time between tokens)
+            if len(token_times) > 1:
+                intervals = [token_times[i] - token_times[i-1] for i in range(1, len(token_times))]
+                tpot_ms = (sum(intervals) / len(intervals)) * 1000
+            else:
+                tpot_ms = 0.0
+
             if tokens_generated > 0 and total_time > 0:
                 throughput_tps = tokens_generated / total_time
             else:
                 throughput_tps = 0.0
 
             result.test_prompts_used.append(test_prompt)
-            return ttft_ms, throughput_tps
+            return ttft_ms, tpot_ms, throughput_tps
 
         except Exception as e:
             logger.warning(f"Baseline test failed: {e}")
-            return 0.0, 0.0
+            return 0.0, 0.0, 0.0
 
     async def _discover_context_window(
         self,
