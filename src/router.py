@@ -410,6 +410,7 @@ class Router:
         # Backend health cache
         self._backend_health: Dict[str, bool] = {
             "llama-cpp": True,
+            "vllm-local": True,
             "zai": True,
             "nvidia": True,
         }
@@ -475,6 +476,11 @@ class Router:
             for name in self.model_discovery.BACKENDS:
                 self.backend_semaphores[name] = asyncio.Semaphore(1)
                 logger.info(f"Initialized semaphore for backend: {name}")
+
+        # Initialize vllm-local semaphore (not in model discovery)
+        if "vllm-local" not in self.backend_semaphores:
+            self.backend_semaphores["vllm-local"] = asyncio.Semaphore(1)
+            logger.info("Initialized semaphore for backend: vllm-local")
 
     def is_backend_busy(self, backend_name: str) -> bool:
         """Check if a backend is currently processing a request."""
@@ -593,7 +599,9 @@ class Router:
 
         # Cloud backends use environment variables
         import os
-        if backend == "zai":
+        if backend == "vllm-local":
+            return os.getenv("VLLM_LOCAL_BASE_URL", "http://10.1.1.110:8040/v1")
+        elif backend == "zai":
             return os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/coding/paas/v4")
         elif backend == "nvidia":
             return os.getenv("NVIDIA_NIM_BASE_URL", "https://integrate.api.nvidia.com/v1")
@@ -1475,6 +1483,22 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             cost_tier=0,  # Free (local)
             estimated_tokens_per_second=80.0,
             backend="llama-cpp",
+        ),
+        # Qwen 3.5 2B AWQ - vLLM (3060Ti, zephyr:8040)
+        ModelInfo(
+            id="qwen3.5-2b-awq",
+            name="Qwen 3.5 2B AWQ (vLLM Local)",
+            context_length=32768,
+            priority=9,  # Highest priority for fast tasks (classification, routing)
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CLASSIFICATION,
+                TaskSpecialization.ROUTING,
+            ],
+            cost_tier=0,  # Free (local)
+            estimated_tokens_per_second=564.0,
+            backend="vllm-local",
         ),
         # ========================================================================
         # ZAI models - Cloud fallback

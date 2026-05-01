@@ -151,10 +151,13 @@ class SemanticRouter:
         if intent_scores:
             primary_intent = max(intent_scores, key=intent_scores.get)
             max_score = intent_scores[primary_intent]
-            confidence = min(0.9, max_score * 0.2)  # Scale to 0-1
+            # Scale: 1 match=0.4, 2=0.65, 3=0.85, 4+=0.95
+            confidence = min(0.95, 0.15 + max_score * 0.25)
         else:
-            primary_intent = QueryIntent.UNKNOWN
-            confidence = 0.3
+            # No pattern match — still a valid query, give it a chance
+            # Default to FACTUAL with low-moderate confidence
+            primary_intent = QueryIntent.FACTUAL
+            confidence = 0.35
 
         # Map intent to required capabilities
         capability_map = {

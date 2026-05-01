@@ -286,6 +286,7 @@ class KnowledgeFabricMiddleware(Middleware):
                 if source_name not in self._sources_by_name:
                     continue
                 source = self._sources_by_name[source_name]
+
                 # Inject search_service if needed (for RAG)
                 if (
                     hasattr(source, "search_service")
@@ -301,15 +302,16 @@ class KnowledgeFabricMiddleware(Middleware):
                         )
                         continue
 
-                    # Wrap retrieve with circuit breaker protection
-                    protected_retrieve = execute_with_circuit_breaker(
-                        registry=self.circuit_registry,
-                        source_name=source_name,
-                        callable_func=source.retrieve,
-                        query=query,
-                        context=context,
-                    )
-                    retrieval_tasks.append(protected_retrieve)
+                # Wrap retrieve with circuit breaker protection
+                protected_retrieve = execute_with_circuit_breaker(
+                    registry=self.circuit_registry,
+                    source_name=source_name,
+                    callable_func=source.retrieve,
+                    query=query,
+                    context=context,
+                )
+                retrieval_tasks.append(protected_retrieve)
+                task_source_names.append(source_name)
 
             # Execute parallel retrieval
             if retrieval_tasks:
