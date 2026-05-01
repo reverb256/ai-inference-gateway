@@ -413,6 +413,8 @@ class Router:
             "vllm-local": True,
             "zai": True,
             "nvidia": True,
+            "kilo": True,
+            "openrouter": True,
         }
         self._backend_health_check_time: Dict[str, float] = {}
         self._health_check_ttl: float = 10.0  # Check health every 10 seconds
@@ -607,6 +609,8 @@ class Router:
             return os.getenv("NVIDIA_NIM_BASE_URL", "https://integrate.api.nvidia.com/v1")
         elif backend == "openrouter":
             return os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+        elif backend == "kilo":
+            return os.getenv("KILO_BASE_URL", "https://api.kilo.ai/api/gateway")
 
         logger.error(f"Cannot determine URL for backend {backend}")
         return None
@@ -1992,6 +1996,88 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             cost_tier=2,
             estimated_tokens_per_second=50.0,
             backend="nvidia",
+        ),
+        # ========================================================================
+        # KILO AI free models (https://api.kilo.ai/api/gateway)
+        # ========================================================================
+        ModelInfo(
+            id="kilo-auto/free",
+            name="KILO Auto Free (Best available free model)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=50.0,
+            backend="kilo",
+        ),
+        ModelInfo(
+            id="bytedance-seed/dola-seed-2.0-pro:free",
+            name="Dola Seed 2.0 Pro (KILO Free)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=40.0,
+            backend="kilo",
+        ),
+        ModelInfo(
+            id="x-ai/grok-code-fast-1:optimized:free",
+            name="Grok Code Fast 1 Optimized (KILO Free)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=60.0,
+            backend="kilo",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-3-super-120b-a12b:free",
+            name="Nemotron 3 Super 120B (KILO Free)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=35.0,
+            backend="kilo",
+        ),
+        ModelInfo(
+            id="arcee-ai/trinity-large-thinking:free",
+            name="Trinity Large Thinking (KILO Free)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=30.0,
+            backend="kilo",
+        ),
+        ModelInfo(
+            id="openrouter/free",
+            name="OpenRouter Free (KILO)",
+            context_length=128000,
+            priority=5,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=45.0,
+            backend="kilo",
         ),
     ]
     return models

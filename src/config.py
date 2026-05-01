@@ -573,6 +573,13 @@ class GatewayConfig(BaseSettings):
         default=None, description="Path to file containing Pollinations API key"
     )
 
+    kilo_api_key: Optional[SecretStr] = Field(
+        default=None, repr=False, exclude=True, description="KILO AI API key"
+    )
+    kilo_api_key_file: Optional[str] = Field(
+        default=None, description="Path to file containing KILO AI API key"
+    )
+
     # Middleware configuration
     middleware: MiddlewareConfig = Field(default=MiddlewareConfig(), description="Middleware configuration")
 
@@ -654,6 +661,28 @@ class GatewayConfig(BaseSettings):
         if self.pollinations_api_key_file:
             try:
                 with open(self.pollinations_api_key_file, "r") as f:
+                    return f.read().strip()
+            except Exception:
+                return None
+
+        return None
+
+    def get_kilo_api_key(self) -> Optional[str]:
+        """
+        Get KILO AI API key value.
+
+        Priority:
+        1. Environment variable KILO_API_KEY
+        2. File specified in KILO_API_KEY_FILE
+        """
+        if self.kilo_api_key:
+            value = self.kilo_api_key.get_secret_value()
+            if value and value.strip():
+                return value
+
+        if self.kilo_api_key_file:
+            try:
+                with open(self.kilo_api_key_file, "r") as f:
                     return f.read().strip()
             except Exception:
                 return None
