@@ -91,7 +91,8 @@ class OpenAIClientWrapper:
         self.fallback_api_key = fallback_api_key
         self.timeout = timeout
         # ZAI models to try in order (from fastest to most capable)
-        self.zai_models = zai_models or ["glm-5-turbo", "glm-5", "glm-5.1", "glm-4.7", "glm-4.6"]
+        # Limiting to top 2 fastest models to prevent slow fallback chains
+        self.zai_models = zai_models or ["glm-5-turbo", "glm-5", "glm-5.1"]
 
         # CA cert bundle for NixOS container (httpx uses this via http_client)
         _ca_bundle = "/etc/ssl/certs/ca-bundle.crt"
