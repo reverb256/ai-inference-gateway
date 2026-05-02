@@ -1564,16 +1564,19 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
         if cloud_count:
             logger.info(f"Added {cloud_count} cloud-discovered models, total: {len(models)}")
 
-    # Merge hardcoded cloud models (NIM, ZAI) with discovered local models
-    # This ensures cloud models are always available regardless of discovery state
+    # Merge hardcoded cloud models (NIM, ZAI, OpenRouter) with discovered models
+    # Hardcoded entries OVERRIDE cloud-discovered ones for the same model ID
+    # because they have accurate backend assignments (not auto-detected).
     try:
         hardcoded = _get_hardcoded_models() or []
         if hardcoded and models:
             existing_ids = {m.id for m in models}
-            cloud_models = [m for m in hardcoded if m.backend in ("nvidia", "zai") and m.id not in existing_ids]
+            # Replace cloud-discovered models with hardcoded ones (better backend mapping)
+            models = [m for m in models if m.id not in {h.id for h in hardcoded}]
+            cloud_models = [m for m in hardcoded if m.backend in ("nvidia", "zai", "openrouter", "kilo")]
             models.extend(cloud_models)
             if cloud_models:
-                logger.warning(f"Added {len(cloud_models)} cloud models, total: {len(models)}")
+                logger.warning(f"Added {len(cloud_models)} hardcoded cloud models, total: {len(models)}")
         elif hardcoded and not models:
             models = hardcoded
             logger.warning(f"No discovered models, using {len(models)} hardcoded models")
@@ -2221,6 +2224,381 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             cost_tier=0,
             estimated_tokens_per_second=45.0,
             backend="kilo",
+        ),
+        # ========================================================================
+        # Additional NIM models (2026-05-02 — new from /v1/models discovery)
+        # ========================================================================
+        # Vision models
+        ModelInfo(
+            id="z-ai/glm-5v-turbo",
+            name="GLM 5V Turbo (Z.AI Vision)",
+            context_length=131072,
+            priority=7,
+            specializations=[
+                TaskSpecialization.VISION,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=45.0,
+            backend="zai",
+        ),
+        ModelInfo(
+            id="z-ai/glm-4.5v",
+            name="GLM 4.5V (Z.AI Vision)",
+            context_length=131072,
+            priority=5,
+            specializations=[
+                TaskSpecialization.VISION,
+                TaskSpecialization.FAST,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=50.0,
+            backend="zai",
+        ),
+        ModelInfo(
+            id="z-ai/glm-4.6v",
+            name="GLM 4.6V (Z.AI Vision)",
+            context_length=131072,
+            priority=5,
+            specializations=[
+                TaskSpecialization.VISION,
+                TaskSpecialization.CODING,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="zai",
+        ),
+        # Nemotron new additions
+        ModelInfo(
+            id="nvidia/nemotron-4-340b-instruct",
+            name="Nemotron 4 340B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=50.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-3-nano-30b-a3b",
+            name="Nemotron 3 Nano 30B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.FAST,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=70.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+            name="Nemotron 3 Nano Omni 30B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.VISION,
+                TaskSpecialization.REASONING,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=45.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-nano-9b-v2",
+            name="Nemotron Nano 9B v2 (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=90.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="nvidia/llama-3.1-nemotron-70b-instruct",
+            name="Nemotron 70B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-mini-4b-instruct",
+            name="Nemotron Mini 4B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CLASSIFICATION,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=100.0,
+            backend="nvidia",
+        ),
+        # Kimi / Moonshot new
+        ModelInfo(
+            id="moonshotai/kimi-k2.6",
+            name="Kimi K2.6 (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=45.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="moonshotai/kimi-k2.5",
+            name="Kimi K2.5 (NIM)",
+            context_length=262144,
+            priority=8,
+            specializations=[
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.LARGE_CONTEXT,
+                TaskSpecialization.VISION,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=40.0,
+            backend="nvidia",
+        ),
+        # DeepSeek V4 Pro
+        ModelInfo(
+            id="deepseek-ai/deepseek-v4-pro",
+            name="DeepSeek V4 Pro (NIM)",
+            context_length=1048576,
+            priority=8,
+            specializations=[
+                TaskSpecialization.REASONING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.CODING,
+                TaskSpecialization.LARGE_CONTEXT,
+            ],
+            cost_tier=4,
+            estimated_tokens_per_second=40.0,
+            backend="nvidia",
+        ),
+        # Google Gemma 4
+        ModelInfo(
+            id="google/gemma-4-31b-it",
+            name="Gemma 4 31B (NIM)",
+            context_length=262144,
+            priority=8,
+            specializations=[
+                TaskSpecialization.VISION,
+                TaskSpecialization.REASONING,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=50.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="google/gemma-4-26b-a4b-it",
+            name="Gemma 4 26B MoE (NIM)",
+            context_length=262144,
+            priority=8,
+            specializations=[
+                TaskSpecialization.VISION,
+                TaskSpecialization.REASONING,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.FAST,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=60.0,
+            backend="nvidia",
+        ),
+        # Microsoft Phi
+        ModelInfo(
+            id="microsoft/phi-4",
+            name="Phi 4 (NIM)",
+            context_length=16384,
+            priority=8,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.REASONING,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=80.0,
+            backend="nvidia",
+        ),
+        # Qwen Coder variants
+        ModelInfo(
+            id="qwen/qwen3-coder-plus",
+            name="Qwen3 Coder Plus (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=50.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="qwen/qwen3-coder-next",
+            name="Qwen3 Coder Next (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.REASONING,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=45.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="qwen/qwen3-coder-flash",
+            name="Qwen3 Coder Flash (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.FAST,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=70.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="qwen/qwen3-coder-30b-a3b-instruct",
+            name="Qwen3 Coder 30B MoE (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=65.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="qwen/qwen3-next-80b-a3b-thinking",
+            name="Qwen3 Next 80B Thinking (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.REASONING,
+                TaskSpecialization.CODING,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=45.0,
+            backend="nvidia",
+        ),
+        # Qwen 3.5 variants
+        ModelInfo(
+            id="qwen/qwen3.5-35b-a3b",
+            name="Qwen 3.5 35B MoE (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.REASONING,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="qwen/qwen3.5-27b",
+            name="Qwen 3.5 27B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=60.0,
+            backend="nvidia",
+        ),
+        ModelInfo(
+            id="qwen/qwen3.5-9b",
+            name="Qwen 3.5 9B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=75.0,
+            backend="nvidia",
+        ),
+        # Qwen 3.5 Plus
+        ModelInfo(
+            id="qwen/qwen3.5-plus-20260420",
+            name="Qwen 3.5 Plus (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=50.0,
+            backend="nvidia",
+        ),
+        # OpenRouter
+        ModelInfo(
+            id="openrouter/owl-alpha",
+            name="Owl Alpha (OpenRouter)",
+            context_length=262144,
+            priority=6,
+            specializations=[
+                TaskSpecialization.REASONING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.LARGE_CONTEXT,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=40.0,
+            backend="openrouter",
+        ),
+        # OpenAI GPT-OSS 20B
+        ModelInfo(
+            id="openai/gpt-oss-20b",
+            name="GPT-OSS 20B (NIM)",
+            context_length=131072,
+            priority=8,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=1,
+            estimated_tokens_per_second=75.0,
+            backend="nvidia",
         ),
     ]
     return models
