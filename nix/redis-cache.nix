@@ -3,9 +3,11 @@
   lib,
   ...
 }:
-with lib; let
+with lib;
+let
   cfg = config.services.redis.servers.searxng;
-in {
+in
+{
   options.services.redis.servers.searxng = {
     enable = mkEnableOption "Redis server for SearXNG caching";
 
@@ -36,10 +38,16 @@ in {
 
   config = mkIf cfg.enable {
     services.redis.servers.searxng = {
-      inherit (cfg) enable bind port maxmemory maxmemoryPolicy;
+      inherit (cfg)
+        enable
+        bind
+        port
+        maxmemory
+        maxmemoryPolicy
+        ;
 
       databases = 1;
-      save = [];
+      save = [ ];
       appendonly = false;
 
       requirePass = false;

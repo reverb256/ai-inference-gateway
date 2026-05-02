@@ -3,7 +3,8 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.services.ai-inference;
   inherit (lib) mkIf;
 
@@ -160,12 +161,13 @@
     '';
     executable = true;
   };
-in {
+in
+{
   config = mkIf (cfg.enable && cfg.monitoring.enable) {
     systemd.services.ai-inference-monitor = {
       description = "AI Inference Metrics Monitor";
-      after = ["network.target"];
-      wantedBy = ["multi-user.target"];
+      after = [ "network.target" ];
+      wantedBy = [ "multi-user.target" ];
 
       environment = {
         BACKEND_URL = cfg.backend.url;

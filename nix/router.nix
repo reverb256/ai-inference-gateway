@@ -3,10 +3,10 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.services.ai-inference;
   inherit (lib) mkIf;
-
 
   tokenEstimator = pkgs.symlinkJoin {
     name = "token-estimator";
@@ -54,9 +54,10 @@
       '')
     ];
   };
-in {
+in
+{
   config = mkIf (cfg.enable && cfg.routing.enable) {
-    environment.systemPackages = [tokenEstimator];
+    environment.systemPackages = [ tokenEstimator ];
 
   };
 }

@@ -70,7 +70,10 @@
         propagatedBuildInputs = gatewayDeps;
         # Disable cmake/ninja hooks pulled in by transitive deps (torch, etc.)
         dontUseCmakeConfigure = true;
-        build-system = with python3.pkgs; [ setuptools wheel ];
+        build-system = with python3.pkgs; [
+          setuptools
+          wheel
+        ];
         # No tests in the package build (run separately via devShell)
         doCheck = false;
       };

@@ -771,7 +771,10 @@ in
       };
 
       embeddingDevice = mkOption {
-        type = types.enum [ "cpu" "cuda" ];
+        type = types.enum [
+          "cpu"
+          "cuda"
+        ];
         default = "cpu";
         description = "Device for embedding inference (cpu recommended when GPU is mining)";
       };

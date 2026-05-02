@@ -3,10 +3,12 @@
   lib,
   pkgs,
   ...
-}: let
+}:
+let
   cfg = config.services.ai-inference.health-monitor;
   inherit (lib) mkEnableOption mkIf types;
-in {
+in
+{
   options.services.ai-inference.health-monitor = {
     enable = mkEnableOption "AI Inference Gateway health monitoring for OpenCode";
 
@@ -38,7 +40,7 @@ in {
 
       timers.opencode-gateway-health = {
         description = "OpenCode Gateway Health Check Timer";
-        wantedBy = ["timers.target"];
+        wantedBy = [ "timers.target" ];
         timerConfig = {
           OnBootSec = "1min";
           OnUnitActiveSec = cfg.interval;
@@ -57,13 +59,11 @@ in {
       };
     };
 
-    system.activationScripts.updateOpenCodeConfig =
-      lib.stringAfter ["users"]
-      ''
-        if [ -f /home/j_kro/.config/opencode/opencode.json ]; then
-          echo "OpenCode configuration exists at /home/j_kro/.config/opencode/opencode.json"
-          echo "Run 'opencode-gateway-health check' to verify gateway status"
-        fi
-      '';
+    system.activationScripts.updateOpenCodeConfig = lib.stringAfter [ "users" ] ''
+      if [ -f /home/j_kro/.config/opencode/opencode.json ]; then
+        echo "OpenCode configuration exists at /home/j_kro/.config/opencode/opencode.json"
+        echo "Run 'opencode-gateway-health check' to verify gateway status"
+      fi
+    '';
   };
 }
