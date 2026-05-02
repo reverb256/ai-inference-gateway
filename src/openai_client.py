@@ -258,6 +258,8 @@ class OpenAIClientWrapper:
             "thinking_enabled", # Qwen thinking mode
             "supports_thinking_toggle", # Qwen capability flag
             "backend",        # Gateway routing parameter (not for SDK)
+            "reasoning",      # Claude Code sends this - causes 1210 on GLM-5.1
+            "reasoning_effort", # OpenRouter models reject this for non-reasoning models
         ]
         for param in unsupported_params:
             kwargs.pop(param, None)
@@ -273,7 +275,7 @@ class OpenAIClientWrapper:
             is_local = backend and (backend.startswith("llama-") or backend == "llama-cpp")
             is_zai = backend == "zai"
             if not is_local and not is_zai:
-                for _k in ("think", "enable_thinking", "chat_template_kwargs"):
+                for _k in ("think", "enable_thinking", "chat_template_kwargs", "reasoning", "reasoning_effort"):
                     extra_body.pop(_k, None)
             if extra_body:
                 kwargs["extra_body"] = extra_body
