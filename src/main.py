@@ -345,7 +345,11 @@ async def check_backend_health(
             headers["Authorization"] = f"Bearer {api_key}"
 
         async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(f"{url}/v1/models", headers=headers)
+            # ZAI uses /v4/models, not /v1/models
+            if "api.z.ai" in url or backend_type == "zai":
+                response = await client.get(f"{url}/models", headers=headers)
+            else:
+                response = await client.get(f"{url}/v1/models", headers=headers)
             return response.status_code == 200
     except Exception:
         return False
@@ -558,7 +562,7 @@ async def lifespan(app: FastAPI):
         )
         logger.info("Router initialized with %d models", len(state.router.models))
     except Exception as e:
-        logger.warning(f"Router initialization failed: {e}")
+        logger.error(f"Router initialization failed: {e}", exc_info=True)
         state.router = None
 
     _log("8/14: MCP broker")
