@@ -64,6 +64,14 @@ model_time_to_first_token_seconds = Histogram(
     buckets=[0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 5, 10, 15, 30],
 )
 
+# Time per output token (TPOT) per model - measure of generation speed
+model_time_per_output_token_seconds = Histogram(
+    "gateway_model_time_per_output_token_seconds",
+    "Time per output token (TPOT) per model - lower is faster",
+    ["model", "backend"],
+    buckets=[0.01, 0.025, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1, 2],
+)
+
 # Throughput (tokens/sec) per model
 model_tokens_per_second = Gauge(
     "gateway_model_tokens_per_second",
@@ -274,6 +282,7 @@ class ModelMetricsTracker:
         total_tokens: int,
         latency_ms: float,
         model: Optional[str] = None,
+        tpot_ms: Optional[float] = None,
     ):
         """Record successful request."""
         model = model or self.model
@@ -311,6 +320,12 @@ class ModelMetricsTracker:
             model_time_to_first_token_seconds.labels(
                 model=model, backend=self.backend
             ).observe(ttft / 1000.0)
+
+        # Record TPOT (Time Per Output Token) if provided
+        if tpot_ms is not None and tpot_ms > 0:
+            model_time_per_output_token_seconds.labels(
+                model=model, backend=self.backend
+            ).observe(tpot_ms / 1000.0)
 
         # Calculate and record throughput
         if latency_ms > 0:
@@ -555,6 +570,7 @@ __all__ = [
     "model_tokens_total",
     "model_request_duration_seconds",
     "model_time_to_first_token_seconds",
+    "model_time_per_output_token_seconds",
     "model_tokens_per_second",
     "model_errors_total",
     "model_error_rate",

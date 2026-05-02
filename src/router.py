@@ -295,6 +295,9 @@ class TaskSpecialization(Enum):
     FAST = "fast"
     LARGE_CONTEXT = "large_context"
     VISION = "vision"
+    REASONING = "reasoning"
+    CLASSIFICATION = "classification"
+    ROUTING = "routing"
 
 
 @dataclass
@@ -1465,6 +1468,31 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
         model_discovery: Optional ModelDiscovery instance for auto-discovering local models
         cloud_discovery: Optional CloudModelRegistry for auto-discovering cloud models
     """
+    # Mapping from string specializations (from cloud API) to TaskSpecialization enum
+    _SPECIALIZATION_MAP = {
+        "coding": TaskSpecialization.CODING,
+        "agentic": TaskSpecialization.AGENTIC,
+        "general": TaskSpecialization.GENERAL,
+        "fast": TaskSpecialization.FAST,
+        "large_context": TaskSpecialization.LARGE_CONTEXT,
+        "vision": TaskSpecialization.VISION,
+        "reasoning": TaskSpecialization.REASONING,
+        "classification": TaskSpecialization.CLASSIFICATION,
+        "routing": TaskSpecialization.ROUTING,
+    }
+
+    def _map_specializations(specializations: List[str]) -> List[TaskSpecialization]:
+        """Convert cloud model specialization strings to TaskSpecialization enum values."""
+        result = []
+        for spec in specializations:
+            enum_val = _SPECIALIZATION_MAP.get(spec.lower())
+            if enum_val:
+                result.append(enum_val)
+            else:
+                logger.debug(f"Unknown specialization '{spec}' from cloud model, using GENERAL")
+                result.append(TaskSpecialization.GENERAL)
+        return result if result else [TaskSpecialization.GENERAL]
+
     # If model discovery is available, use it to dynamically discover models
     # Otherwise, fall back to hardcoded model list
     if model_discovery:
@@ -1526,7 +1554,7 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
                 name=cloud_model.name,
                 context_length=cloud_model.context_length,
                 priority=cloud_model.priority,
-                specializations=[TaskSpecialization.GENERAL],  # TODO: map from cloud_model.specializations
+                specializations=_map_specializations(cloud_model.specializations),
                 cost_tier=cloud_model.cost_tier,
                 estimated_tokens_per_second=80.0,  # Cloud models are fast
                 backend=backend,

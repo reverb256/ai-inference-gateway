@@ -5183,11 +5183,20 @@ async def stream_backend_response(
             import time
 
             latency_ms = (time.time() - metrics_tracker.start_time) * 1000
+            # Calculate TPOT (Time Per Output Token)
+            tpot_ms = None
+            if (
+                output_tokens > 1
+                and metrics_tracker.first_token_time is not None
+            ):
+                ttft_ms = (metrics_tracker.first_token_time - metrics_tracker.start_time) * 1000
+                tpot_ms = (latency_ms - ttft_ms) / (output_tokens - 1)
             metrics_tracker.record_success(
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 total_tokens=total_tokens,
                 latency_ms=latency_ms,
+                tpot_ms=tpot_ms,
             )
 
         # Notify circuit breaker of success
