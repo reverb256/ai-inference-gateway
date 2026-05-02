@@ -478,6 +478,7 @@ class GatewayConfig(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",  # Ignore extra env vars
+        env_nested_delimiter="__",
     )
 
     # Core settings with validation
