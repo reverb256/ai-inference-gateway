@@ -303,6 +303,8 @@ from ai_inference_gateway.middleware.concurrency_limiter import ConcurrencyLimit
 from ai_inference_gateway.middleware.observability import ObservabilityMiddleware  # noqa: E402
 from ai_inference_gateway.middleware.rate_limiter import RateLimiterMiddleware  # noqa: E402
 from ai_inference_gateway.middleware.security_filter import SecurityFilterMiddleware  # noqa: E402
+from ai_inference_gateway.middleware.auth import JWTAuthMiddleware  # noqa: E402
+from ai_inference_gateway.middleware.scope_enforcer import ScopeEnforcerMiddleware  # noqa: E402
 
 # Try to import prometheus_client for metrics endpoint
 try:
@@ -954,7 +956,21 @@ def build_middleware_pipeline(config: GatewayConfig, redis_client: Optional[Redi
     import os
 
     env_enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__ENABLED", "NOT_SET")
-    # Add observability middleware (should always be first)
+    env_enabled = os.environ.get("MIDDLEWARE__KNOWLEDGE_FABRIC__ENABLED", "NOT_SET")
+    # Add JWT authentication + scope enforcement (before observability)
+    if config.middleware.jwt_auth.enabled:
+        jwt_mw = JWTAuthMiddleware(config.middleware.jwt_auth)
+        pipeline.add(jwt_mw)
+        pipeline.add(ScopeEnforcerMiddleware())
+        logger.info("Added JWTAuthMiddleware + ScopeEnforcerMiddleware")
+
+    # Add Casbin policy enforcement (after JWT auth)
+    if getattr(config.middleware.jwt_auth, "casbin_enabled", False):
+        from ai_inference_gateway.middleware.casbin_enforcer import CasbinEnforcerMiddleware
+
+        pipeline.add(CasbinEnforcerMiddleware(api_url=config.middleware.jwt_auth.casbin_api_url))
+        logger.info("Added CasbinEnforcerMiddleware")
+
     if config.middleware.observability.enabled:
         pipeline.add(ObservabilityMiddleware(config.middleware.observability))
         logger.info("Added ObservabilityMiddleware")
@@ -1133,6 +1149,10 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
     messages = body.get("messages", [])
     headers = dict(request.headers)
     query_params = dict(request.query_params)
+
+    if state.router is None:
+        logger.error("Router not initialized in _dispatch")
+        raise HTTPException(status_code=503, detail="Gateway router not initialized.")
 
     # Route with the pre-injected model
     requested_model = body.get("model")
@@ -1873,6 +1893,21 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         headers = dict(request.headers)
         query_params = dict(request.query_params)
 
+        # Ensure router is initialized before using it
+        if state.router is None:
+            logger.error("Router not initialized - attempting to recreate")
+            try:
+                state.router = create_default_router(
+                    model_discovery=state.model_discovery,
+                    cloud_discovery=state.cloud_discovery,
+                )
+                if state.router is None:
+                    raise RuntimeError("Router recreation returned None")
+                logger.info("Router recreated successfully with %d models", len(state.router.models))
+            except Exception as e:
+                logger.error(f"Failed to recreate router: {e}")
+                raise HTTPException(status_code=503, detail="Gateway router not initialized. Please retry.")
+
         # Use router to select best model
         requested_model = body.get("model", None)
         route_decision: RouteDecision = await state.router.route(
@@ -2285,6 +2320,9 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         # Extract headers and query params for category-based routing (oh-my-opencode style)
         headers = dict(request.headers)
         query_params = dict(request.query_params)
+
+        if state.router is None:
+            raise HTTPException(status_code=503, detail="Gateway router not initialized.")
 
         route_decision: RouteDecision = await state.router.route(
             messages=messages,
@@ -4288,6 +4326,8 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             route_messages = []
 
         # Get routing decision
+        if state.router is None:
+            return {"error": "Router not initialized", "status": 503}
         route_decision = await state.router.route(
             messages=route_messages,
             requested_model=None,

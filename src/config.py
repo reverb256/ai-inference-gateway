@@ -308,6 +308,18 @@ class PrivacyFilterConfig(BaseModel):
     input_sanitization: bool = Field(default=True, description="Sanitize user input before LLM")
 
 
+class JWTAuthConfig(BaseModel):
+    """JWT authentication configuration (JWKS + Casbin)."""
+
+    enabled: bool = Field(default=False, description="Enable JWT authentication from Casdoor")
+    jwks_url: str = Field(default="https://auth.lan/.well-known/jwks", description="JWKS endpoint URL")
+    issuer: str = Field(default="https://auth.lan", description="Expected JWT issuer")
+    audience: str = Field(default="3a331eeb195880d68d9a", description="Expected JWT audience (Casdoor client ID)")
+    refresh_interval: int = Field(default=300, ge=60, description="JWKS cache refresh interval in seconds")
+    casbin_api_url: str = Field(default="https://auth.lan/api/enforce", description="Casbin enforcement API URL")
+    casbin_enabled: bool = Field(default=False, description="Enable Casbin policy enforcement")
+
+
 class MiddlewareConfig(BaseSettings):
     """Complete middleware configuration - inherits BaseSettings for env var support"""
 
@@ -342,6 +354,8 @@ class MiddlewareConfig(BaseSettings):
     privacy_filter: PrivacyFilterConfig = Field(
         default_factory=PrivacyFilterConfig, description="Privacy Filter ML service configuration"
     )
+
+    jwt_auth: JWTAuthConfig = Field(default_factory=JWTAuthConfig, description="JWT authentication configuration")
 
     mcp: MCPConfig = Field(default_factory=MCPConfig, description="MCP broker configuration")
 

@@ -32,6 +32,8 @@ import logging
 import os
 from typing import Annotated
 
+import httpx
+
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -58,6 +60,13 @@ SERVER_VERSION = "1.0.0"
 # Default: Kubernetes service DNS
 SEARXNG_URL = os.getenv("SEARXNG_URL", "http://10.4.98.141:7777")
 SEARXNG_CACHE_TTL = int(os.getenv("SEARXNG_CACHE_TTL", "300"))
+
+# Vane (Perplexica fork) configuration
+VANE_URL = os.getenv("VANE_URL", "http://vane.search.svc.cluster.local:30900")
+VANE_CHAT_MODEL_PROVIDER = os.getenv("VANE_CHAT_MODEL_PROVIDER", "local-gateway")
+VANE_CHAT_MODEL_KEY = os.getenv("VANE_CHAT_MODEL_KEY", "qwen3.5-2b-awq")
+VANE_EMBEDDING_MODEL_PROVIDER = os.getenv("VANE_EMBEDDING_MODEL_PROVIDER", "local-gateway")
+VANE_EMBEDDING_MODEL_KEY = os.getenv("VANE_EMBEDDING_MODEL_KEY", "BAAI/bge-m3")
 
 
 # ============================================================================
@@ -107,8 +116,28 @@ class WebSearchParams(BaseModel):
     ]
 
 
+class VaneSearchParams(BaseModel):
+    """Parameters for Vane AI-summarized search."""
+
+    query: Annotated[str, Field(description="Search query to summarize")]
+    sources: Annotated[
+        list[str],
+        Field(
+            default=["web"],
+            description="Sources to search (web, academic, youtube, reddit, etc.)",
+        ),
+    ]
+    optimization_mode: Annotated[
+        str,
+        Field(
+            default="speed",
+            description="Optimization mode: speed, balanced, or quality",
+        ),
+    ]
+
+
 class EmptyParams(BaseModel):
-    """Empty parameters for stats/cache operations."""
+    """Parameters for stats/cache operations."""
     pass
 
 
@@ -269,11 +298,22 @@ TOOLS: list[Tool] = [
     ),
     Tool(
         name="ping_searxng",
-        description=(
-            "Check if SearXNG service is accessible and healthy. "
-            "Returns status and connection information."
-        ),
+        description="Check if SearXNG service is accessible and healthy. Returns status and connection information.",
         inputSchema=EmptyParams.model_json_schema(),
+    ),
+
+    # ========================================================================
+    # VANE AI-POWERED SEARCH SUMMARIZATION
+    # ========================================================================
+    Tool(
+        name="vane_summarize",
+        description=(
+            "AI-powered search summarization via Vane (Perplexica fork). "
+            "Searches the web using SearXNG and generates an AI-summarized answer with citations. "
+            "Use when you need a concise, synthesized answer to a question rather than raw search results. "
+            "Supports multiple sources: web, academic, youtube, reddit."
+        ),
+        inputSchema=VaneSearchParams.model_json_schema(),
     ),
 ]
 
@@ -551,6 +591,70 @@ async def main():
                     return [TextContent(
                         type="text",
                         text=f"SearXNG unreachable: {type(e).__name__}: {str(e)}"
+                    )]
+
+            elif name == "vane_summarize":
+                params = VaneSearchParams(**arguments)
+                try:
+                    payload = {
+                        "query": params.query,
+                        "sources": params.sources,
+                        "optimizationMode": params.optimization_mode,
+                        "history": [],
+                        "stream": False,
+                        "chatModel": {
+                            "providerId": VANE_CHAT_MODEL_PROVIDER,
+                            "key": VANE_CHAT_MODEL_KEY,
+                        },
+                        "embeddingModel": {
+                            "providerId": VANE_EMBEDDING_MODEL_PROVIDER,
+                            "key": VANE_EMBEDDING_MODEL_KEY,
+                        },
+                    }
+
+                    async with httpx.AsyncClient(timeout=60.0) as client:
+                        resp = await client.post(
+                            f"{VANE_URL}/api/search",
+                            json=payload,
+                        )
+                        resp.raise_for_status()
+                        data = resp.json()
+
+                    message = data.get("message", "")
+                    sources = data.get("sources", [])
+
+                    lines = [f"# Vane Summary: {params.query}", ""]
+
+                    if message:
+                        lines.append(message)
+
+                    if sources:
+                        lines.append("")
+                        lines.append("## Sources")
+                        for i, src in enumerate(sources[:10], 1):
+                            title = src.get("title", "Untitled") if isinstance(src, dict) else str(src)
+                            url = src.get("url", "") if isinstance(src, dict) else ""
+                            if url:
+                                lines.append(f"{i}. [{title}]({url})")
+                            else:
+                                lines.append(f"{i}. {title}")
+
+                    return [TextContent(type="text", text="\n".join(lines))]
+
+                except httpx.HTTPStatusError as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Vane HTTP error {e.response.status_code}: {e.response.text[:500]}"
+                    )]
+                except httpx.TimeoutException:
+                    return [TextContent(
+                        type="text",
+                        text=f"Vane request timed out after 60s for query: {params.query}"
+                    )]
+                except Exception as e:
+                    return [TextContent(
+                        type="text",
+                        text=f"Vane error: {type(e).__name__}: {str(e)}"
                     )]
 
             else:

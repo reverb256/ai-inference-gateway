@@ -41,6 +41,8 @@ dependencies = [
     "beautifulsoup4>=4.12.0",
     "redis>=5.0.0",
     "mcp>=1.0.0",
+    "pyjwt>=2.8.0",
+    "cryptography>=41.0.0",
 ]
 
 [project.optional-dependencies]
@@ -56,8 +58,6 @@ full = [
     "scikit-learn>=1.3.0",
     "aiohttp>=3.9.0",
     "psutil>=5.9.0",
-    "pyjwt>=2.8.0",
-    "cryptography>=41.0.0",
     "lxml>=4.9.0",
     "einops>=0.7.0",
     "soundfile>=0.12.0",
@@ -85,8 +85,6 @@ monitoring = [
 ]
 # Auth
 auth = [
-    "pyjwt>=2.8.0",
-    "cryptography>=41.0.0",
 ]
 # Testing
 dev = [
