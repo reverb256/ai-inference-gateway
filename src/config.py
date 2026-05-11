@@ -644,4 +644,3 @@ class GatewayConfig(BaseSettings):
 
         return None
 
-            try:
