@@ -63,6 +63,9 @@ class ResponseSanitizer:
         """Apply regex-based PII redaction."""
         if not text:
             return text
+        import re
+        text = re.sub(r'<tool_call>.*?</tool_call>', '', text, flags=re.DOTALL)
+        text = re.sub(r'<function=[^>]*>', '', text)
         return self.pii_redactor.redact(text)
 
     async def _apply_ml(self, text: str) -> str:

@@ -2025,15 +2025,16 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                 logger.warning(f"Failed to apply Qwen optimal params: {qwen_error}")
                 # Continue without Qwen params - not critical
 
-        # Thinking mode control — OFF by default, ON only when explicitly requested.
-        # This prevents reasoning tokens from eating output budget for simple tasks
-        # (structured output, JSON parsing, Vane search, etc).
+        # Thinking mode control — ON by default for chat, OFF for tool requests.
+        # Reasoning tokens eat output budget (structured output, JSON, function calls),
+        # so we disable thinking when tools are present. Explicit enable_thinking
+        # params in the request body always take precedence.
         #
         # Per-model API:
         #   llama.cpp (Qwen3.5, Gemma 4): chat_template_kwargs: {"enable_thinking": bool}
         #   ZAI GLM-5.1:                   enable_thinking: bool  (top-level)
         #
-        # Enable thinking by passing in the request body:
+        # Control thinking by passing in the request body:
         #   {"chat_template_kwargs": {"enable_thinking": true}, ...}   (for llama.cpp)
         #   {"enable_thinking": true, ...}                              (for ZAI/GLM)
         #   {"thinking": {"type": "enabled"}, ...}                      (OpenAI reasoning style)
@@ -2042,41 +2043,50 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
             is_thinking_model = "qwen" in model_lower or "gemma" in model_lower or "glm" in model_lower
 
             if is_thinking_model:
-                # Check if caller explicitly wants thinking ON
-                explicit_thinking = False
+                # Detect tool requests — disable thinking automatically for tool calls
+                has_tools = bool(body.get("tools")) or bool(body.get("tool_choice"))
+
+                # Check if caller explicitly wants to override thinking
+                explicit_override = None
 
                 # Check chat_template_kwargs.enable_thinking (llama.cpp standard)
                 ctk = body.get("chat_template_kwargs", {})
                 if isinstance(ctk, dict) and "enable_thinking" in ctk:
-                    explicit_thinking = bool(ctk["enable_thinking"])
+                    explicit_override = bool(ctk["enable_thinking"])
 
                 # Check top-level enable_thinking (ZAI/Alibaba Cloud standard)
-                if "enable_thinking" in body:
-                    explicit_thinking = explicit_thinking or bool(body["enable_thinking"])
+                # Only if not already set by ctk
+                if explicit_override is None and "enable_thinking" in body:
+                    explicit_override = bool(body["enable_thinking"])
 
                 # Check OpenAI reasoning style: {"thinking": {"type": "enabled"}}
-                thinking_cfg = body.get("thinking")
-                if isinstance(thinking_cfg, dict):
-                    if thinking_cfg.get("type") == "enabled" or thinking_cfg.get("enable_thinking"):
-                        explicit_thinking = True
-                elif isinstance(thinking_cfg, bool):
-                    explicit_thinking = explicit_thinking or thinking_cfg
+                if explicit_override is None:
+                    thinking_cfg = body.get("thinking")
+                    if isinstance(thinking_cfg, dict):
+                        if thinking_cfg.get("type") == "enabled" or thinking_cfg.get("enable_thinking"):
+                            explicit_override = True
+                    elif isinstance(thinking_cfg, bool):
+                        explicit_override = bool(thinking_cfg)
 
-                # Apply thinking OFF for llama.cpp backends (Qwen, Gemma)
+                # Default: ON for chat, OFF for tools (explicit_override takes precedence)
+                explicit_thinking = explicit_override if explicit_override is not None else not has_tools
+
+                # Apply thinking for llama.cpp backends (Qwen, Gemma)
                 if "qwen" in model_lower or "gemma" in model_lower:
                     if "chat_template_kwargs" not in body:
                         body["chat_template_kwargs"] = {}
                     if "enable_thinking" not in body["chat_template_kwargs"]:
                         body["chat_template_kwargs"]["enable_thinking"] = explicit_thinking
 
-                # Apply thinking OFF for ZAI GLM backends
+                # Apply thinking for ZAI GLM backends
                 # Only inject if not already set by caller
                 if "glm" in model_lower and "enable_thinking" not in body:
                     body["enable_thinking"] = explicit_thinking
 
                 logger.info(
                     f"Thinking control: enable_thinking={explicit_thinking} "
-                    f"(model={route_decision.model}, backend={route_decision.backend})"
+                    f"(model={route_decision.model}, backend={route_decision.backend}, "
+                    f"tools={'yes' if has_tools else 'no'})"
                 )
         except Exception as think_err:
             logger.warning(f"Failed to apply thinking control: {think_err}")
