@@ -1075,6 +1075,22 @@ def is_reasoning_model(model_id: str) -> bool:
     return any(indicator in model_lower for indicator in reasoning_indicators)
 
 
+import re
+
+
+def clean_reasoning_content(content: str) -> str:
+    """Strip leaked tool_call XML fragments from reasoning_content."""
+    if not content:
+        return content
+    # Remove <tool_call>...</tool_call> blocks
+    content = re.sub(r'<tool_call>.*?</tool_call>', '', content, flags=re.DOTALL)
+    # Remove standalone <function=...> tags
+    content = re.sub(r'<function=[^>]*>.*?</function>', '', content, flags=re.DOTALL)
+    # Remove any remaining <function=...> self-closing tags
+    content = re.sub(r'<function=[^>]*/?>', '', content)
+    return content.strip()
+
+
 def translate_openai_to_anthropic(openai_response: dict, original_model: str) -> dict:
     """
     Translate OpenAI chat/completions response to Anthropic messages format.
@@ -1085,8 +1101,9 @@ def translate_openai_to_anthropic(openai_response: dict, original_model: str) ->
     choice = openai_response.get("choices", [{}])[0]
     message = choice.get("message", {})
 
-    # Extract content from OpenAI response
-    reasoning_content = message.get("reasoning_content", "")
+    # Extract and clean reasoning_content from OpenAI response
+    raw_reasoning = message.get("reasoning_content", "")
+    reasoning_content = clean_reasoning_content(raw_reasoning)
     content_text = message.get("content", "")
 
     # Build Anthropic content blocks
