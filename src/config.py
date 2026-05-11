@@ -578,8 +578,6 @@ class GatewayConfig(BaseSettings):
     zai_api_key: Optional[SecretStr] = Field(default=None, repr=False, exclude=True, description="ZAI API key")
     zai_api_key_file: Optional[str] = Field(default=None, description="Path to file containing ZAI API key")
 
-    openrouter_api_key: Optional[SecretStr] = Field(default=None, repr=False, exclude=True, description="OpenRouter API key")
-    openrouter_api_key_file: Optional[str] = Field(default=None, description="Path to file containing OpenRouter API key")
 
     pollinations_api_key: Optional[SecretStr] = Field(
         default=None, repr=False, exclude=True, description="Pollinations API key"
@@ -646,60 +644,4 @@ class GatewayConfig(BaseSettings):
 
         return None
 
-    def get_openrouter_api_key(self) -> Optional[str]:
-        """Get OpenRouter API key from file or direct value."""
-        if self.openrouter_api_key_file:
             try:
-                with open(self.openrouter_api_key_file, "r") as f:
-                    return f.read().strip()
-            except Exception:
-                return None
-        if self.openrouter_api_key:
-            return self.openrouter_api_key.get_secret_value()
-        return None
-
-    def get_pollinations_api_key(self) -> Optional[str]:
-        """
-        Get Pollinations API key value.
-
-        Priority:
-        1. Environment variable POLLINATIONS_API_KEY
-        2. File specified in POLLINATIONS_API_KEY_FILE
-        """
-        # Try secret field first (but not empty strings)
-        if self.pollinations_api_key:
-            value = self.pollinations_api_key.get_secret_value()
-            if value and value.strip():
-                return value
-
-        # Try file
-        if self.pollinations_api_key_file:
-            try:
-                with open(self.pollinations_api_key_file, "r") as f:
-                    return f.read().strip()
-            except Exception:
-                return None
-
-        return None
-
-    def get_kilo_api_key(self) -> Optional[str]:
-        """
-        Get KILO AI API key value.
-
-        Priority:
-        1. Environment variable KILO_API_KEY
-        2. File specified in KILO_API_KEY_FILE
-        """
-        if self.kilo_api_key:
-            value = self.kilo_api_key.get_secret_value()
-            if value and value.strip():
-                return value
-
-        if self.kilo_api_key_file:
-            try:
-                with open(self.kilo_api_key_file, "r") as f:
-                    return f.read().strip()
-            except Exception:
-                return None
-
-        return None

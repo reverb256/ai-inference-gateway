@@ -68,7 +68,7 @@ class CloudModelInfo:
 # We control priority, cost_tier, and specializations here.
 
 # Provider prefixes that indicate "cloud" (vs local llama-servers)
-CLOUD_PROVIDERS = {"openrouter", "nim", "zai"}
+CLOUD_PROVIDERS = {"nim", "zai"}
 
 # Models to EXCLUDE from auto-discovery (dead, deprecated, duplicates)
 EXCLUDED_MODELS: Set[str] = {
@@ -155,55 +155,6 @@ def _apply_curation(model_id: str) -> dict:
         if model_id.startswith(prefix) or (prefix == ":free" and ":free" in model_id):
             defaults.update(overrides)
     return defaults
-
-
-async def fetch_openrouter_models(api_key: str) -> List[CloudModelInfo]:
-    """Fetch available models from OpenRouter /api/v1/models."""
-    models = []
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.get(
-                "https://openrouter.ai/api/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-
-            for m in data.get("data", []):
-                mid = m.get("id", "")
-                if mid in EXCLUDED_MODELS:
-                    continue
-                if not _match_patterns(mid, INCLUDE_PATTERNS):
-                    # Also check free models
-                    pricing = m.get("pricing", {})
-                    is_free = pricing.get("prompt", "1") == "0"
-                    if not is_free:
-                        continue
-
-                pricing = m.get("pricing", {})
-                is_free = pricing.get("prompt", "1") == "0"
-                curation = _apply_curation(mid)
-                if is_free:
-                    curation.update({"cost_tier": 1, "priority": 8, "free": True})
-                # Don't duplicate 'free' — set via curation
-                curation["free"] = is_free if not curation.get("free") else True
-
-                models.append(CloudModelInfo(
-                    id=mid,
-                    name=m.get("name", mid),
-                    provider="openrouter",
-                    context_length=m.get("context_length", 8192),
-                    pricing={
-                        "prompt_per_1m": float(pricing.get("prompt", 0) or 0),
-                        "completion_per_1m": float(pricing.get("completion", 0) or 0),
-                    },
-                    **{k: v for k, v in curation.items() if k != "free"},
-                    free=curation["free"],
-                ))
-            logger.info(f"OpenRouter: discovered {len(models)} curated models")
-    except Exception as e:
-        logger.error(f"OpenRouter discovery failed: {e}")
-    return models
 
 
 async def fetch_nim_models(api_key: str) -> List[CloudModelInfo]:
@@ -317,7 +268,7 @@ class CloudModelRegistry:
     async def refresh(self):
         """Fetch models from all configured providers and merge."""
         tasks = []
-        if self.openrouter_key:
+        if False:  # OpenRouter removed
             tasks.append(fetch_openrouter_models(self.openrouter_key))
         if self.nim_key:
             tasks.append(fetch_nim_models(self.nim_key))
@@ -335,7 +286,7 @@ class CloudModelRegistry:
         new_registry: Dict[str, CloudModelInfo] = {}
 
         # Priority: zai > openrouter > nim (for same model_id)
-        provider_order = {"nim": 0, "openrouter": 1, "zai": 2}
+        provider_order = {"nim": 0, "zai": 2}
 
         for result in results:
             if isinstance(result, Exception):
@@ -408,7 +359,7 @@ class CloudModelRegistry:
             "total": len(self.models),
             "providers": {
                 p: len([m for m in self.models.values() if m.provider == p])
-                for p in {"openrouter", "nim", "zai"}
+                for p in {"nim", "zai"}
             },
             "free_count": len([m for m in self.models.values() if m.free]),
             "models": {k: v.to_dict() for k, v in sorted(self.models.items())},
