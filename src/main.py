@@ -2068,6 +2068,17 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
                     elif isinstance(thinking_cfg, bool):
                         explicit_override = bool(thinking_cfg)
 
+                # Check reasoning_effort (OpenAI standard — Hermes sends reasoning_effort=none|low|medium|high)
+                # Lower precedence than explicit enable_thinking/thinking params,
+                # higher than the auto-tools heuristic.
+                if explicit_override is None:
+                    reasoning_effort = body.pop("reasoning_effort", None)
+                    if reasoning_effort is not None:
+                        if reasoning_effort == "none":
+                            explicit_override = False
+                        else:
+                            explicit_override = True
+
                 # Default: ON for chat, OFF for tools (explicit_override takes precedence)
                 explicit_thinking = explicit_override if explicit_override is not None else not has_tools
 

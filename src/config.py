@@ -593,6 +593,13 @@ class GatewayConfig(BaseSettings):
         default=None, description="Path to file containing KILO AI API key"
     )
 
+    openrouter_api_key: Optional[SecretStr] = Field(
+        default=None, repr=False, exclude=True, description="OpenRouter API key"
+    )
+    openrouter_api_key_file: Optional[str] = Field(
+        default=None, description="Path to file containing OpenRouter API key"
+    )
+
     # Middleware configuration
     middleware: MiddlewareConfig = Field(default=MiddlewareConfig(), description="Middleware configuration")
 
@@ -644,3 +651,50 @@ class GatewayConfig(BaseSettings):
 
         return None
 
+    def get_openrouter_api_key(self) -> Optional[str]:
+        """Get OpenRouter API key value.
+
+        Priority:
+        1. Environment variable OPENROUTER_API_KEY
+        2. Secret field
+        3. File specified in openrouter_api_key_file
+        """
+        import os
+        env_key = os.environ.get("OPENROUTER_API_KEY")
+        if env_key:
+            return env_key
+        if self.openrouter_api_key:
+            value = self.openrouter_api_key.get_secret_value()
+            if value and value.strip():
+                return value
+        if self.openrouter_api_key_file:
+            try:
+                with open(self.openrouter_api_key_file, "r") as f:
+                    return f.read().strip()
+            except Exception:
+                return None
+        return None
+
+    def get_kilo_api_key(self) -> Optional[str]:
+        """Get KILO AI API key value.
+
+        Priority:
+        1. Environment variable KILO_API_KEY
+        2. Secret field
+        3. File specified in kilo_api_key_file
+        """
+        import os
+        env_key = os.environ.get("KILO_API_KEY")
+        if env_key:
+            return env_key
+        if self.kilo_api_key:
+            value = self.kilo_api_key.get_secret_value()
+            if value and value.strip():
+                return value
+        if self.kilo_api_key_file:
+            try:
+                with open(self.kilo_api_key_file, "r") as f:
+                    return f.read().strip()
+            except Exception:
+                return None
+        return None

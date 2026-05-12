@@ -260,7 +260,7 @@ class OpenAIClientWrapper:
             "supports_thinking_toggle", # Qwen capability flag
             "backend",        # Gateway routing parameter (not for SDK)
             "reasoning",      # Claude Code sends this - causes 1210 on GLM-5.1
-            "reasoning_effort", # OpenRouter models reject this for non-reasoning models
+            # reasoning_effort is consumed upstream by main.py's thinking control block
         ]
         for param in unsupported_params:
             kwargs.pop(param, None)
