@@ -64,7 +64,7 @@
       # Install the gateway source as a Python package
       gatewaySrcPkg = python3.pkgs.buildPythonPackage {
         pname = "ai-inference-gateway";
-        version = "2.4.14";
+        version = "2.4.15";
         src = ./.;
         pyproject = true;
         propagatedBuildInputs = gatewayDeps;
@@ -84,7 +84,7 @@
       # Container image
       gatewayContainerImage = pkgs.dockerTools.buildLayeredImage {
         name = "ai-inference-gateway";
-        tag = "2.4.14";
+        tag = "2.4.15";
         extraCommands = ''
           mkdir -p home/ai-gateway
           mkdir -p var/cache/ai-inference
