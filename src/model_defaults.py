@@ -413,14 +413,9 @@ def apply_model_defaults(
         if "max_tokens" not in result:
             result["max_tokens"] = defaults["max_tokens"]
 
-    # For small Qwen models, add enable_thinking to thinking dict if needed
-    if is_qwen and thinking_enabled:
-        if "thinking" not in result:
-            result["thinking"] = {}
-        if isinstance(result["thinking"], dict):
-            # Ensure enable_thinking is set for small models
-            if "enable_thinking" not in result["thinking"]:
-                result["thinking"]["enable_thinking"] = True
+    # Thinking mode is handled by main.py's thinking control block
+    # which has full context (tools, reasoning_effort, etc.)
+    # No need to pre-set thinking.enable_thinking here.
 
     # Log what we're using
     log_parts = [
