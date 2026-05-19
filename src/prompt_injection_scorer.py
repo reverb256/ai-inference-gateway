@@ -136,7 +136,7 @@ class PromptInjectionScorer:
 
     # ---- public API ------------------------------------------------------
 
-    async def score(self, text: str) -> InjectionRisk:
+    def score(self, text: str) -> InjectionRisk:
         """Full scoring pipeline: regex + heuristics -> InjectionRisk."""
 
         t0 = time.perf_counter();
