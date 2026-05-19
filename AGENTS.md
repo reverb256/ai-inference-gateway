@@ -1,4 +1,5 @@
 # AGENTS.md — AI Inference Gateway
+# Kelos test - 2026-05-18 - pipeline verified
 
 # Kelos test - 2026-05-18 - pipeline verified
 
