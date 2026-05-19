@@ -62,6 +62,56 @@ class BenchmarkResult:
 
 
 @dataclass
+class ModelPricing:
+    """Pricing information for a model."""
+    model_id: str
+    input_per_1k: float = 0.0  # USD per 1K input tokens
+    output_per_1k: float = 0.0  # USD per 1K output tokens
+
+    @property
+    def blended_per_1k(self) -> float:
+        """Average blended cost (input + output) per 1K tokens."""
+        return (self.input_per_1k + self.output_per_1k) / 2
+
+    def tokens_per_dollar(self, estimated_input_tokens: int = 1000, estimated_output_tokens: int = 1000) -> float:
+        """Calculate how many total tokens you get per dollar."""
+        total_tokens = estimated_input_tokens + estimated_output_tokens
+        if total_tokens == 0:
+            return 0.0
+        cost = (estimated_input_tokens / 1000) * self.input_per_1k + \
+               (estimated_output_tokens / 1000) * self.output_per_1k
+        if cost <= 0:
+            return float('inf')
+        return total_tokens / cost
+
+
+# Known model pricing (USD per 1K tokens)
+# Updated periodically; benchmarks override these if measured
+MODEL_PRICING_REGISTRY: Dict[str, ModelPricing] = {
+    "glm-5.1": ModelPricing("glm-5.1", input_per_1k=0.005, output_per_1k=0.02),
+    "glm-5-turbo": ModelPricing("glm-5-turbo", input_per_1k=0.003, output_per_1k=0.012),
+    "glm-5": ModelPricing("glm-5", input_per_1k=0.005, output_per_1k=0.02),
+    "glm-4.7": ModelPricing("glm-4.7", input_per_1k=0.001, output_per_1k=0.004),
+    "glm-4.6": ModelPricing("glm-4.6", input_per_1k=0.0005, output_per_1k=0.002),
+    "glm-4.5": ModelPricing("glm-4.5", input_per_1k=0.0005, output_per_1k=0.002),
+    "glm-4.5-flash": ModelPricing("glm-4.5-flash", input_per_1k=0.0001, output_per_1k=0.0004),
+    "glm-4.5-air": ModelPricing("glm-4.5-air", input_per_1k=0.0003, output_per_1k=0.001),
+    "deepseek-ai/deepseek-v4": ModelPricing("deepseek-ai/deepseek-v4", input_per_1k=0.0005, output_per_1k=0.002),
+    "meta/llama-3.1-405b": ModelPricing("meta/llama-3.1-405b", input_per_1k=0.003, output_per_1k=0.012),
+    "meta/llama-3.3-70b": ModelPricing("meta/llama-3.3-70b", input_per_1k=0.001, output_per_1k=0.004),
+    "qwen/qwen3-coder": ModelPricing("qwen/qwen3-coder", input_per_1k=0.0005, output_per_1k=0.002),
+    "qwen/qwen3.5": ModelPricing("qwen/qwen3.5", input_per_1k=0.001, output_per_1k=0.004),
+    "qwen/qwen3-next": ModelPricing("qwen/qwen3-next", input_per_1k=0.001, output_per_1k=0.004),
+    "moonshotai/kimi": ModelPricing("moonshotai/kimi", input_per_1k=0.001, output_per_1k=0.004),
+    "mistralai/mistral-large": ModelPricing("mistralai/mistral-large", input_per_1k=0.002, output_per_1k=0.008),
+    "mistralai/mistral-small": ModelPricing("mistralai/mistral-small", input_per_1k=0.0005, output_per_1k=0.002),
+    "google/gemma-3-27b": ModelPricing("google/gemma-3-27b", input_per_1k=0.0003, output_per_1k=0.001),
+    "google/gemma-4": ModelPricing("google/gemma-4", input_per_1k=0.0005, output_per_1k=0.002),
+    "openai/gpt-oss": ModelPricing("openai/gpt-oss", input_per_1k=0.0, output_per_1k=0.0),  # Free
+}
+
+
+@dataclass
 class ModelRanking:
     """Ranked model with score and reasoning."""
     model_id: str
@@ -71,6 +121,7 @@ class ModelRanking:
     weaknesses: List[str] = field(default_factory=list)
     best_for: List[str] = field(default_factory=list)  # Use cases
     cost_per_1k_tokens: float = 0.0
+    tokens_per_dollar: float = 0.0
     avg_ttft_ms: float = 0.0
     avg_throughput_tps: float = 0.0
     actual_context_window: int = 0
@@ -432,6 +483,18 @@ class ModelBenchmark:
         elif concurrency > 4:
             score += 5
 
+        # Cost scoring (lower is better)
+        cost_per_1k = metrics.get(MetricType.COST_PER_1K_TOKENS, 0.0)
+        pricing = MODEL_PRICING_REGISTRY.get(model_id)
+        if pricing:
+            cost_per_1k = pricing.blended_per_1k
+        if cost_per_1k <= 0:
+            score += 15  # Free model bonus
+        elif cost_per_1k < 0.001:
+            score += 10
+        elif cost_per_1k < 0.005:
+            score += 5
+
         # Apply requirements filter
         if requirements:
             if "min_context" in requirements:
@@ -441,6 +504,10 @@ class ModelBenchmark:
             if "max_ttft_ms" in requirements:
                 if ttft > requirements["max_ttft_ms"]:
                     score *= 0.5  # Penalty
+
+            if "max_cost_per_1k" in requirements:
+                if cost_per_1k > requirements["max_cost_per_1k"]:
+                    score = 0  # Too expensive
 
         # Build strengths/weaknesses
         strengths = []
@@ -477,6 +544,11 @@ class ModelBenchmark:
         if score > 70:
             best_for.append("general-purpose")
 
+        # Calculate tokens per dollar
+        est_input = requirements.get("estimated_input_tokens", 1000) if requirements else 1000
+        est_output = requirements.get("estimated_output_tokens", 1000) if requirements else 1000
+        tokens_per_dollar = pricing.tokens_per_dollar(int(est_input), int(est_output)) if pricing else 0.0
+
         return ModelRanking(
             model_id=model_id,
             rank=0,  # Will be set when comparing all models
@@ -484,6 +556,8 @@ class ModelBenchmark:
             strengths=strengths,
             weaknesses=weaknesses,
             best_for=best_for,
+            cost_per_1k_tokens=cost_per_1k,
+            tokens_per_dollar=tokens_per_dollar,
             avg_ttft_ms=ttft,
             avg_throughput_tps=throughput,
             actual_context_window=context,
@@ -627,19 +701,30 @@ class AutonomousModelSelector:
         # Score remaining candidates
         best_model = None
         best_score = -1
+        best_cost = float('inf')
 
         for model_id in candidates:
             ranking = self.benchmark.get_model_ranking(model_id, requirements)
             if ranking:
-                # Apply cost optimization (prefer cheaper if scores are close)
                 score = ranking.score
+                cost = ranking.cost_per_1k_tokens
+
                 if best_score > 0 and abs(score - best_score) < 10:
-                    # Scores are close, prefer cheaper
-                    # TODO: Add cost comparison
-                    pass
+                    # Scores are close (<10 points), prefer cheaper model
+                    if cost < best_cost:
+                        logger.info(
+                            f"Scores close ({score:.1f} vs {best_score:.1f}), "
+                            f"preferring cheaper: {model_id} (${cost:.4f}/1k) over "
+                            f"{best_model} (${best_cost:.4f}/1k)"
+                        )
+                        best_score = score
+                        best_cost = cost
+                        best_model = model_id
+                    continue
 
                 if score > best_score:
                     best_score = score
+                    best_cost = cost
                     best_model = model_id
 
         # Track selection

@@ -253,8 +253,6 @@ class SecurityFilterMiddleware(Middleware):
             for message in messages:
                 content = message.get("content", "")
                 if isinstance(content, str):
-                    is_blocked, risk = self._detect_injection(content)
-                    context["injection_risk"] = risk
 
                     if is_blocked:
                         error = HTTPException(
