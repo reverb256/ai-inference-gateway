@@ -4,45 +4,36 @@
 [![Nix Flake](https://img.shields.io/badge/Nix-Flake-5277C3?logo=nixos&logoColor=white)](flake.nix)
 [![Built with Nix](https://img.shields.io/badge/Built%20with-Nix-5277C3?logo=nixos)](https://nixos.org)
 
-
-OpenAI-compatible API gateway with intelligent routing, circuit breaker failover, security proxy, RAG, and MCP brokerage.
+OpenAI-compatible API gateway with intelligent routing, circuit breaker failover, security proxy, RAG, and MCP brokerage. Designed for sovereign Canadian AI stack on NixOS/K3s.
 
 ## Architecture
 
 ```
-┌─────────────┐     ┌──────────────────────────────────────────┐
-│   Client    │────▶│         AI Gateway v2 (Port 8080)        │
-└─────────────┘     │  ┌─────────────────────────────────────┐ │
-                    │  │  Security Layer                     │ │
-                    │  │  - Rate limiting                    │ │
-                    │  │  - Input sanitization               │ │
-                    │  │  - PII redaction                    │ │
-                    │  └──────────────┬──────────────────────┘ │
-                    │                 │                         │
-                    │  ┌──────────────▼──────────────────────┐ │
-                    │  │  Intelligent Router                 │ │
-                    │  │  - Model specialization             │ │
-                    │  │  - Latency-aware routing            │ │
-                    │  │  - Claude model mapping             │ │
-                    │  └──────────────┬──────────────────────┘ │
-                    │                 │                         │
-                    │  ┌──────────────▼──────────────────────┐ │
-                    │  │  Middleware Pipeline                 │ │
-                    │  │  - Observability                    │ │
-                    │  │  - Circuit breaker                  │ │
-                    │  │  - Load balancer                    │ │
-                    │  │  - Knowledge fabric                 │ │
-                    │  └──────────────┬──────────────────────┘ │
-                    │                 │                         │
-                    │  ┌──────────────▼──────────────────────┐ │
-                    │  │  Backend Pool                       │ │
-                    │  │  - LM Studio / llama-cpp (local)    │ │
-                    │  │  - ZAI (Zhipu AI cloud)             │ │
-                    │  │  - NVIDIA NIM                       │ │
-                    │  │  - Pollinations AI                  │ │
-                    │  └─────────────────────────────────────┘ │
-                    └──────────────────────────────────────────┘
+Client ("model": "auto") → Gateway (Port 8080)
+  ├── detect_specialization(messages)
+  │   ├── detect_vision_content() → Nemotron Omni 30B
+  │   ├── detect_code_patterns() → Nemotron Super 120B
+  │   └── default → Nemotron Omni 30B
+  ├── Security Layer (rate limit, PII, injection scoring)
+  ├── Intelligent Router (model ranking, cost awareness)
+  ├── MCP Broker (SearXNG, MapleSpike)
+  ├── RAG Engine (Qdrant + Redis cache)
+  └── Backend Pool (NIM, llama-cpp, vLLM, ZAI, Pollinations)
 ```
+
+All AI traffic flows through circuit breakers and observability. **Never bypass the gateway.**
+
+## Intelligent Model Routing
+
+Clients send `"model": "auto"` and the gateway selects the best backend per-request.
+
+| Request content | Routed to | Why |
+|----------------|-----------|-----|
+| Contains images/audio | Nemotron Omni 30B | Vision/multimodal |
+| Code, agentic patterns | Nemotron Super 120B | Complex reasoning |
+| General queries | Nemotron Omni 30B | Efficient & capable |
+
+**Do not hardcode model names in client configs** — use `"model": "auto"` to let the gateway optimize routing.
 
 ## Features
 
@@ -52,49 +43,50 @@ OpenAI-compatible API gateway with intelligent routing, circuit breaker failover
 | **Anthropic API** | `/v1/messages` with Claude model mapping | ✅ |
 | **Ollama-Compatible** | `/api/chat` for Spacebot integration | ✅ |
 | **Intelligent Router** | Model specialization, latency-aware routing | ✅ |
+| **Auto Model Selection** | `"model": "auto"` routes by content type | ✅ |
 | **Circuit Breaker** | Prevents cascading failures, auto-recovery | ✅ |
 | **Load Balancer** | Weighted round-robin backend selection | ✅ |
-| **Security Filter** | Rate limiting, PII redaction, input sanitization | ✅ |
+| **Security Filter** | Rate limiting, PII redaction, injection scoring | ✅ |
 | **Semantic Caching** | Redis + Qdrant vector cache for deduplication | ✅ |
 | **RAG** | Qdrant vector DB with hybrid search (vector + BM25) | ✅ |
 | **MCP Broker** | Tool aggregation from multiple MCP servers | ✅ |
-| **Knowledge Fabric** | Multi-source knowledge synthesis middleware | ✅ |
+| **MCP Servers** | SearXNG search, MapleSpike AI Ask & briefs | ✅ |
 | **Prometheus Metrics** | Full observability with Grafana dashboards | ✅ |
 | **Content Moderation** | Jailbreak, violence, self-harm detection | ✅ |
 | **JSON Schema Mode** | OpenAI JSON mode compatibility | ✅ |
 | **Container Image** | Nix-built Docker container | ✅ |
 | **NixOS Module** | Full NixOS service configuration | ✅ |
 
+## Permanent Principles
+
+### Nix-native
+NixOS modules in `nix/` are the single source of truth for all deployment config. Do not edit k8s YAML, wrapper scripts, or other derivative files directly — CI/CD generates them from Nix.
+
+### Gateway routing
+All AI backend traffic routes through the gateway — circuit breakers, rate limiting, observability, and MCP brokerage depend on it. If a backend format is incompatible, fix the gateway's request transformation layer, not the routing.
+
+### Clean long-term solutions
+Fix root causes, not symptoms. No workarounds, no TODOs, no "fix it later" debt.
+
 ## Quick Start
 
 ### Run with Python
-
 ```bash
-# Install dependencies
 pip install -e ".[dev]"
-
-# Run the gateway
 python -m uvicorn ai_inference_gateway.main:app --host 0.0.0.0 --port 8080
 ```
 
 ### Run with Nix
-
 ```bash
-# Dev shell with all dependencies
-nix develop
-
-# Build the package
-nix build
-
-# Build container image
-nix build .#container
+nix develop   # Dev shell with all dependencies
+nix build     # Build the package
+nix build .#container  # Build container image
 ```
 
 ### Run as NixOS Service
-
 ```nix
 {
-  inputs.ai-inference-gateway.url = "path:/data/projects/own/ai-inference-gateway";
+  inputs.ai-inference-gateway.url = "github:reverb256/ai-inference-gateway";
 
   outputs = { nixpkgs, ai-inference-gateway, ... }: {
     nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
@@ -103,15 +95,9 @@ nix build .#container
         {
           services.ai-inference = {
             enable = true;
-            backend = {
-              url = "http://127.0.0.1:1234";
-              type = "llama-cpp";
-            };
-            gateway = {
-              enable = true;
-              host = "127.0.0.1";
-              port = 8080;
-            };
+            backend.url = "http://127.0.0.1:1234";
+            backend.type = "llama-cpp";
+            gateway = { enable = true; host = "127.0.0.1"; port = 8080; };
           };
         }
       ];
@@ -122,12 +108,12 @@ nix build .#container
 
 ## API Endpoints
 
-### Chat Completions (OpenAI-compatible)
+### Chat Completions (use `"model": "auto"` for intelligent routing)
 ```bash
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "qwen3.5-4b",
+    "model": "auto",
     "messages": [{"role": "user", "content": "Hello!"}]
   }'
 ```
@@ -162,25 +148,18 @@ curl -X POST http://127.0.0.1:8080/mcp/call \
 
 ## Configuration
 
-Configuration is via environment variables:
+Core config via environment variables. Full options in `nix/options.nix`.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `BACKEND_URL` | `http://127.0.0.1:1234` | Primary backend API URL |
-| `BACKEND_TYPE` | `llama-cpp` | Backend type (llama-cpp, vllm, sglang, zai, pollinations) |
+| `BACKEND_TYPE` | `llama-cpp` | Backend type |
 | `GATEWAY_HOST` | `127.0.0.1` | Listen address |
 | `GATEWAY_PORT` | `8080` | Listen port |
 | `RAG_ENABLED` | `false` | Enable RAG with Qdrant |
 | `QDRANT_URL` | `http://127.0.0.1:6333` | Qdrant URL |
-| `RATE_LIMIT_ENABLED` | `false` | Enable rate limiting |
-| `CIRCUIT_BREAKER_ENABLED` | `true` | Enable circuit breaker |
-| `SECURITY_ENABLED` | `true` | Enable security filter |
-| `PII_REDACTION` | `true` | Enable PII redaction |
-
-For full NixOS configuration options, see `nix/options.nix`.
 
 ## Python Client
-
 ```python
 from openai import OpenAI
 
@@ -190,62 +169,43 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="qwen3.5-4b",
+    model="auto",
     messages=[{"role": "user", "content": "Explain NixOS in one sentence."}]
 )
 print(response.choices[0].message.content)
 ```
 
 ## Testing
-
 ```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=ai_inference_gateway --cov-report=term-missing
-
-# Run specific test
-pytest tests/test_circuit_breaker.py -v
-
-# Run only unit tests
-pytest -m unit
+pytest                              # All tests
+pytest --cov --cov-report=term-missing  # With coverage
+pytest tests/test_circuit_breaker.py -v  # Specific test
 ```
 
 ## Project Structure
+```
+├── src/                    # Python source
+│   ├── main.py             # FastAPI entry point
+│   ├── router.py           # Intelligent routing (model: auto)
+│   ├── pipeline.py         # Middleware pipeline
+│   ├── middleware/         # Security, rate-limit, PII, knowledge fabric
+│   ├── routes/             # API route handlers
+│   ├── rag/                # Qdrant + hybrid search
+│   ├── mcp_servers/        # SearXNG, MapleSpike MCP servers
+│   └── services/           # Backend adapters (NIM, vLLM, ZAI, etc.)
+├── tests/                  # Test suite
+├── nix/                    # NixOS module — source of truth
+│   ├── options.nix         # All config options
+│   ├── gateway.nix         # Systemd service
+│   └── qdrant.nix          # Qdrant service
+├── pyproject.toml
+├── flake.nix
+└── AGENTS.md               # Agent guidelines & routing docs
+```
 
-```
-├── src/                          # Python source (ai_inference_gateway package)
-│   ├── main.py                   # FastAPI app entry point
-│   ├── config.py                 # Configuration management
-│   ├── router.py                 # Intelligent model routing
-│   ├── pipeline.py               # Middleware pipeline
-│   ├── middleware/                # Middleware components
-│   │   ├── circuit_breaker.py
-│   │   ├── load_balancer.py
-│   │   ├── rate_limiter.py
-│   │   ├── security_filter.py
-│   │   ├── observability.py
-│   │   └── knowledge_fabric/     # Multi-source knowledge synthesis
-│   ├── routes/                   # API route handlers
-│   ├── rag/                      # RAG engine (Qdrant, embeddings, search)
-│   ├── services/                 # Business logic (Anthropic, virtual keys, cost tracking)
-│   ├── mcp_servers/              # MCP server implementations
-│   └── utils/                    # Shared utilities
-├── tests/                        # Test suite
-├── nix/                          # NixOS module files
-│   ├── default.nix               # Module entry point
-│   ├── options.nix               # Configuration options
-│   ├── gateway.nix               # Gateway systemd service
-│   ├── router.nix                # Token estimator
-│   ├── qdrant.nix                # Qdrant service
-│   ├── redis-cache.nix           # Redis cache
-│   └── auth/                     # Authentication (Tailscale, API keys)
-├── pyproject.toml                # Python package metadata
-├── flake.nix                     # Nix flake (package, NixOS module, dev shell)
-└── pytest.ini                    # Test configuration
-```
+## Related Repositories
+- [reverb256/maplespike](https://github.com/reverb256/maplespike) — AI Ask & Engine briefs
+- [reverb256/nixos-config](https://github.com/reverb256/nixos-config) — Cluster deployment
 
 ## License
-
 MIT
