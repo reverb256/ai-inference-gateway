@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: MapleSpike Integration
+    url: https://github.com/reverb256/maplespike/issues
+    about: Issues related to MapleSpike AI Ask, Engine briefs, or data pipeline.
+  - name: Cluster Infrastructure
+    url: https://github.com/reverb256/nixos-config/issues
+    about: Issues related to NixOS cluster deployment, K3s, or hardware.
