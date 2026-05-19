@@ -17,6 +17,26 @@ Agents **must** fix root causes, not apply workarounds. Every change should be t
 ### Gateway routing
 All AI backend traffic routes through the gateway — circuit breakers, rate limiting, observability (Prometheus), and MCP brokerage depend on it. Never route a client directly to a backend (NIM, llama-cpp, vLLM, etc.). If a backend format is incompatible (e.g. NIM tool-call message format), fix the gateway's request transformation layer, not the routing.
 
+## Intelligent Model Routing (`"model": "auto"`)
+
+Clients should send `"model": "auto"` in chat completion requests. The gateway handles per-request model selection via `detect_specialization()`:
+
+| Request content | Routed to | Why |
+|----------------|-----------|-----|
+| Contains image_url or audio | Nemotron Omni 30B | Vision/multimodal support |
+| Code, agentic patterns | Nemotron Super 120B | Complex reasoning |
+| General queries | Nemotron Omni 30B | Efficient & capable |
+
+The routing flow:
+1. Gateway receives `"model": "auto"`
+2. `auto` isn't found in any model list → triggers `detect_specialization(messages)`
+3. `detect_vision_content()` checks for image/audio content
+4. `detect_code_patterns()` checks for code/agentic indicators
+5. `_generate_candidates()` + `_rank_candidates()` produces a `RouteDecision`
+6. Request is forwarded to the selected backend with proper format
+
+**Do not hardcode model names in client configs** — use `"model": "auto"` to let the gateway optimize routing.
+
 ## Tech Stack
 
 - **Language:** Python 3.11+ (developed on 3.13)
@@ -43,9 +63,12 @@ All AI backend traffic routes through the gateway — circuit breakers, rate lim
 ## Backend Architecture
 
 ```
-Agent/Client → Gateway (src/main.py)
+Client ("model": "auto") → Gateway (src/main.py)
+  ├── detect_specialization(messages)
+  │   ├── detect_vision_content() → Omni 30B
+  │   ├── detect_code_patterns() → Super 120B
+  │   └── default → Omni 30B
   ├── Middleware pipeline (security → PII → rate-limit → knowledge fabric)
-  ├── Router (src/router.py) — model selection + cost awareness
   ├── MCP Broker (src/mcp_broker.py)
   │   ├── SearXNG MCP (search)
   │   └── MapleSpike MCP (AI Ask, engine briefs)
