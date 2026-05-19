@@ -1,5 +1,7 @@
 # AGENTS.md — AI Inference Gateway
 
+# Kelos test - 2026-05-18 - pipeline verified
+
 ## Project Overview
 
 Python FastAPI gateway providing OpenAI/Anthropic/Ollama-compatible API endpoints with intelligent routing, circuit breaker, RAG, MCP brokerage, and multi-backend support.
