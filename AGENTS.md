@@ -11,11 +11,11 @@ Python FastAPI gateway providing OpenAI/Anthropic/Ollama-compatible API endpoint
 ### Nix-native
 NixOS modules in `nix/` are the **single source of truth** for all deployment config. Do not edit k8s YAML, wrapper scripts, or other derivative files directly — CI/CD generates them from Nix. If you need to change how the gateway is deployed, change the module.
 
-### Gateway routing
-All AI backend traffic routes through the gateway — circuit breakers, rate limiting, observability (Prometheus), and MCP brokerage depend on it. Never route a client directly to a backend (NIM, llama-cpp, vLLM, etc.). If a backend format is incompatible (e.g. NIM tool-call message format), fix the gateway's request transformation layer, not the routing.
-
 ### Clean long-term solutions
 Agents **must** fix root causes, not apply workarounds. Every change should be the cleanest solution that lasts — no TODOs, no half-measures, no "fix it later" debt. If a task seems to require a workaround, stop and fix the underlying problem instead.
+
+### Gateway routing
+All AI backend traffic routes through the gateway — circuit breakers, rate limiting, observability (Prometheus), and MCP brokerage depend on it. Never route a client directly to a backend (NIM, llama-cpp, vLLM, etc.). If a backend format is incompatible (e.g. NIM tool-call message format), fix the gateway's request transformation layer, not the routing.
 
 ## Tech Stack
 
@@ -110,6 +110,20 @@ Key modules:
 ## Environment Variables
 
 Core config via env vars: `BACKEND_URL`, `BACKEND_TYPE`, `GATEWAY_HOST`, `GATEWAY_PORT`, `RAG_ENABLED`, `QDRANT_URL`. Full list in `src/config.py` and `nix/options.nix`.
+
+## MCP Integration
+
+The gateway runs an MCP broker that manages connections to upstream MCP servers.
+Currently connected servers:
+- `searxng` (local): Web search via SearXNG metasearch
+- `maplespike` (remote): MapleSpike AI Ask + Engine brief + pipeline status
+
+### Health Checks
+
+```bash
+curl http://localhost:8080/mcp/health/searxng
+curl http://localhost:8080/mcp/health/maplespike
+```
 
 ## Test Markers
 
