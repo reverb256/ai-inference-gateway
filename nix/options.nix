@@ -662,6 +662,12 @@ in
               SEARXNG_CACHE_TTL = "300";
             };
           };
+          maplespike = {
+            type = "remote";
+            url = "http://maplespike.maplespike.svc.cluster.local:3000/mcp";
+            headers = { };
+            enabled = true;
+          };
         };
         description = "MCP servers to connect to";
       };

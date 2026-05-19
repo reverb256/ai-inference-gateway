@@ -1,68 +1,63 @@
-# AGENTS.md — AI Inference Gateway
-# Kelos test - 2026-05-18 - pipeline verified
+# AGENTS.md — AI Agent Guidelines for ai-inference-gateway
 
-# Kelos test - 2026-05-18 - pipeline verified
+## Project Context
 
-## Project Overview
+OpenAI-compatible API gateway with:
+- Circuit breakers and latency-aware load balancing
+- RAG via Qdrant + semantic cache (Redis)
+- MCP brokerage (connects to external MCP servers like SearXNG, MapleSpike)
+- Security middleware (PII redaction, prompt injection scoring, rate limiting)
+- NixOS module + K8s deployment
+- Multiple backend support (llama-cpp, vLLM, SGLang, NIM, ZAI, Pollinations)
 
-Python FastAPI gateway providing OpenAI/Anthropic/Ollama-compatible API endpoints with intelligent routing, circuit breaker, RAG, MCP brokerage, and multi-backend support.
+## Architecture
 
-Extracted from `/etc/nixos/modules/services/ai-inference/` into a standalone project.
+```
+src/
+├── ai_inference_gateway/
+│   ├── main.py                          # FastAPI app + HTTP routes
+│   ├── router.py                        # Intelligent model routing
+│   ├── pipeline.py                      # Observability + circuit breaker
+│   ├── config.py                        # Configuration management
+│   ├── middleware/                      # Security, rate-limit, PII
+│   ├── rag/                            # Qdrant hybrid search
+│   ├── mcp_servers/                    # Local MCP server modules
+│   │   ├── searxng_server.py           # SearXNG search MCP
+│   │   └── maplespike_server.py        # MapleSpike AI Ask MCP
+│   └── services/                       # Backend integrations
+nix/                                    # NixOS module (options, gateway)
+kubernetes/                             # K8s deployment manifests
+tests/                                  # pytest suite
+```
 
-## Tech Stack
+## Kelos Pipeline Verification
 
-- **Language:** Python 3.11+ (developed on 3.13)
-- **Framework:** FastAPI + Uvicorn
-- **Package Manager:** pip/setuptools (pyproject.toml) or Nix (flake.nix)
-- **Testing:** pytest, pytest-asyncio, pytest-cov
-- **Linting:** ruff
+- Kelos test — 2026-05-18 — pipeline verified
+- Kelos test — 2026-05-18 — pipeline verified (via PR #8)
 
-## Key Directories
+## MCP Integration
 
-| Path | Purpose |
-|------|---------|
-| `src/` | Python package `ai_inference_gateway` |
-| `src/main.py` | FastAPI app + entry point |
-| `src/middleware/` | Middleware pipeline components |
-| `src/middleware/knowledge_fabric/` | Multi-source knowledge synthesis |
-| `src/rag/` | RAG engine (Qdrant, embeddings, hybrid search) |
-| `src/routes/` | API route handlers (admin, virtual keys) |
-| `src/services/` | Business logic (Anthropic service, cost tracker, virtual keys) |
-| `src/mcp_servers/` | MCP server implementations (SearXNG) |
-| `tests/` | Test suite |
-| `nix/` | NixOS module files (systemd services, options) |
+The gateway runs an MCP broker that manages connections to upstream MCP servers.
+Currently connected servers:
+- `searxng` (local): Web search via SearXNG metasearch
+- `maplespike` (remote): MapleSpike AI Ask + Engine brief + pipeline status
 
-## Running
+## Test Markers
+
+- `test_security_filter.py`: Security middleware tests (PII, injection)
+- `test_mlsec_phase2.py`: ML security Phase 2 tests (scorer, validation)
+- `test_security_filter_concurrent_injection_detection`: Concurrent injection detection
+
+## Quick Commands
 
 ```bash
-# Dev shell
-nix develop
+# Run tests
+pytest -v tests/
 
-# Direct
-PYTHONPATH=src python -m uvicorn ai_inference_gateway.main:app --port 8080
+# Start dev server
+uv run python -m ai_inference_gateway.main
 
-# Tests
-pytest tests/
+# Check MCP server health
+curl http://localhost:8080/mcp/health/searxng
+curl http://localhost:8080/mcp/health/maplespike
 ```
-
-## Environment Variables
-
-Core config via env vars: `BACKEND_URL`, `BACKEND_TYPE`, `GATEWAY_HOST`, `GATEWAY_PORT`, `RAG_ENABLED`, `QDRANT_URL`.
-
-Full list in `src/config.py` and `nix/options.nix`.
-
-## NixOS Integration
-
-The `nix/` directory contains NixOS module files for deploying as a systemd service. Import via `flake.nix`:
-
-```nix
-inputs.ai-inference-gateway.url = "path:/data/projects/own/ai-inference-gateway";
-# Then use: ai-inference-gateway.nixosModules.default
-```
-
-## Important Notes
-
-- **Extracted** from `/etc/nixos/modules/services/ai-inference/` into standalone project. Wired as `ai-gateway` flake input in `/etc/nixos/flake.nix`.
-- **112 Python files** across middleware, routing, RAG, services, and MCP.
-- **Docker container** buildable via `nix build .#container`.
-- Tests require Redis and Qdrant for integration tests (marked `requires_redis`, `requires_qdrant`).
