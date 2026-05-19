@@ -157,7 +157,7 @@ class SecurityFilterMiddleware(Middleware):
                 return True
         return False
 
-    async def _detect_injection(self, text: str) -> Tuple[bool, InjectionRisk]:
+    def _detect_injection(self, text: str) -> Tuple[bool, InjectionRisk]:
         """
         Detect prompt injection attempts in text using the tiered scorer.
 
@@ -167,7 +167,7 @@ class SecurityFilterMiddleware(Middleware):
         Returns:
             Tuple of (is_blocked, InjectionRisk)
         """
-        risk = await self._scorer.score(text)
+        risk = self._scorer.score(text)
 
         if risk.score >= 0.8:
             logger.warning(
@@ -253,7 +253,7 @@ class SecurityFilterMiddleware(Middleware):
             for message in messages:
                 content = message.get("content", "")
                 if isinstance(content, str):
-                    is_blocked, risk = False, None  # Disabled: await self._detect_injection(content)  # TODO: fix event loop issue
+                    is_blocked, risk = self._detect_injection(content)
                     context["injection_risk"] = risk;
 
                     if is_blocked:
