@@ -524,7 +524,21 @@ async def lifespan(app: FastAPI):
             except (json.JSONDecodeError, KeyError) as e:
                 logger.warning(f"Failed to parse DISCOVERY_BACKENDS: {e}")
 
-        state.model_discovery = ModelDiscovery(refresh_interval=300, extra_backends=extra_backends)
+        disabled_models = set()
+        if state.config.disabled_models:
+            import json
+            try:
+                disabled_list = json.loads(state.config.disabled_models)
+                disabled_models = set(disabled_list)
+                logger.info(f"Loaded {len(disabled_models)} disabled model(s) from config")
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.warning(f"Failed to parse DISABLED_MODELS: {e}")
+
+        state.model_discovery = ModelDiscovery(
+            refresh_interval=300,
+            extra_backends=extra_backends,
+            disabled_models=disabled_models,
+        )
         # Inject into openai_client for dynamic backend routing
         if state.openai_client:
             state.openai_client.model_discovery = state.model_discovery

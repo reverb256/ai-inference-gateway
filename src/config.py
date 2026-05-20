@@ -520,6 +520,11 @@ class GatewayConfig(BaseSettings):
     # Backends with the same name override defaults.
     discovery_backends: str = Field(default="", description="Additional discovery backends as JSON array")
 
+    # Model blocklist (JSON array of model IDs to exclude from discovery)
+    # Models in this list are discovered but then removed from the registry.
+    # Useful for models that appear in /v1/models but don't actually serve.
+    disabled_models: str = Field(default="[]", description="JSON array of model IDs to exclude from discovery")
+
     # NVIDIA NIM backend
     nvidia_nim_base_url: str = Field(
         default="https://integrate.api.nvidia.com/v1", description="NVIDIA NIM API base URL"

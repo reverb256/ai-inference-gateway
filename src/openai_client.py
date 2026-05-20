@@ -399,6 +399,9 @@ class OpenAIClientWrapper:
                 error_str = str(e)
                 if "429" in error_str or "rate" in error_str.lower():
                     await record_provider_429("kilo")
+                if "401" in error_str or "PAID" in error_str or "paid" in error_str.lower():
+                    logger.warning(f"KILO paid model blocked: {model} - {error_str[:100]}")
+                    raise OpenAIBackendError(f"KILO model requires paid auth: {model}")
                 logger.error(f"KILO backend failed: {error_str}")
                 raise OpenAIBackendError(f"KILO backend error: {error_str}")
         elif backend == "pollinations":

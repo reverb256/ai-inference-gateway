@@ -76,6 +76,7 @@ EXCLUDED_MODELS: Set[str] = {
     "glm-4.7-flashx",       # 429 on coding plan
     "glm-4.5-flash",        # 504 timeout on ZAI API — inference endpoint broken
     "glm-4.7-flash",        # 504 timeout on ZAI API — inference endpoint broken
+    "qwen/qwen3.5-flash",   # 401 paid model on Kilo — free tier doesn't include it
 }
 
 # Family-level curation — applied when a model matches a prefix
