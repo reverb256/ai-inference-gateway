@@ -1170,6 +1170,13 @@ async def _dispatch_chat_completions(state: GatewayState, body: dict, request: R
 
     # Route with the pre-injected model
     requested_model = body.get("model")
+
+    # Strip openai/ provider prefix from model names (OpenCode prepends it)
+    if requested_model and requested_model.startswith("openai/"):
+        stripped = requested_model[7:]  # Remove "openai/" prefix
+        logger.info(f"Stripped openai/ prefix: {requested_model} -> {stripped}")
+        requested_model = stripped
+
     route_decision: RouteDecision = await state.router.route(
         messages=messages,
         requested_model=requested_model,
