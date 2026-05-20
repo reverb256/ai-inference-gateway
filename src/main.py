@@ -1348,7 +1348,24 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         logger.warning(f"Virtual keys routes not available: {e}")
 
     # Add health endpoint
-    @app.get("/health")
+    @app.get("/v1/{provider}/models")
+async def get_filtered_models(provider: str):
+    """
+    Return only models belonging to a specific provider.
+    Used by clients like Hermes to organize model categories.
+    """
+    state: GatewayState = app.state.gateway
+    if state.router is None:
+        raise HTTPException(status_code=503, detail="Router not initialized")
+    
+    filtered_models = [
+        {"id": m.id, "name": m.name, "context_length": m.context_length}
+        for m in state.router.get_models_by_provider(provider)
+    ]
+    
+    return {"data": filtered_models}
+
+@app.get("/health")
     async def health_check():
         """
         Health check endpoint with actual backend health status.

@@ -425,6 +425,9 @@ class Router:
         self._backend_health_check_time: Dict[str, float] = {}
         self._health_check_ttl: float = 10.0  # Check health every 10 seconds
 
+    def get_models_by_provider(self, provider: str) -> List[ModelInfo]:
+        return [m for m in self.models.values() if m.backend == provider]
+
     # Backend health check — uses configured BACKEND_URL from env
     BACKEND_PORTS = {
         "llama-cpp": 1235,  # Updated: local llama-cpp on 3060 Ti
