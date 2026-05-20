@@ -588,6 +588,17 @@ async def lifespan(app: FastAPI):
         state.mcp_broker = await create_mcp_broker_from_config(state.config)
         if state.mcp_broker:
             logger.info("MCP broker initialized")
+            await state.mcp_broker.start_discovery_loop()
+        else:
+            logger.warning("MCP broker creation returned None")
+    except Exception as e:
+        logger.error(f"MCP broker initialization failed: {e}", exc_info=True)
+        state.mcp_broker = None
+
+    try:
+        state.mcp_broker = await create_mcp_broker_from_config(state.config)
+        if state.mcp_broker:
+            logger.info("MCP broker initialized")
         else:
             logger.warning("MCP broker creation returned None")
     except Exception as e:
@@ -891,9 +902,13 @@ async def lifespan(app: FastAPI):
 
     # Shutdown cleanup
     logger.info("Shutting down gateway")
+    
+    if state.mcp_broker:
+        await state.mcp_broker.stop_discovery_loop()
 
     # Flush self-improvement memory buffers
     if SELF_IMPROVEMENT_AVAILABLE:
+
         try:
             from ai_inference_gateway.self_improvement import shutdown_self_improvement
 
