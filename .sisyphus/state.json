@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "last_updated": 0,
+  "orchestration_state": "initialized",
+  "current_plan": null,
+  "active_agents": [],
+  "global_context": {}
+}

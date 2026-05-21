@@ -411,13 +411,6 @@ in
           };
         };
       };
-        skillContext = {
-          enable = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Enable Skill Context middleware for skill-aware orchestration";
-          };
-        };
     };
 
     routing = {

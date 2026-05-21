@@ -255,6 +255,10 @@ in
         MIDDLEWARE__KNOWLEDGE_FABRIC__BRAIN_WIKI_PATH =
           cfg.gateway.middleware.knowledgeFabric.brain_wiki_path;
       };
+       // Skill Context middleware
+       lib.optionalAttrs cfg.gateway.middleware.skillContext.enable {
+         MIDDLEWARE__SKILL_CONTEXT__ENABLED = "true";
+       };
 
       serviceConfig = {
         Type = "simple";

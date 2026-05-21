@@ -50,3 +50,10 @@ try:
     __all__.append("ConcurrencyLimiter")
 except ImportError:
     pass
+
+try:
+    from .skill_context import SkillContextMiddleware  # noqa: F401
+
+    __all__.append("SkillContextMiddleware")
+except ImportError:
+    pass
