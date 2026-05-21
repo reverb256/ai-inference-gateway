@@ -3890,6 +3890,284 @@ def create_app(config: Optional[GatewayConfig] = None) -> FastAPI:
         }
 
     # ============================================================================
+    # V1 RESPONSES ENDPOINT (OpenAI Responses API → /v1/chat/completions proxy)
+    # ============================================================================
+    @app.post("/v1/responses")
+    async def responses(request: Request):
+        """
+        OpenAI Responses API compatibility endpoint.
+
+        Translates OpenAI Responses API requests to the internal Chat Completions
+        format. This allows clients using the newer Responses API (e.g. OpenCode
+        v1.14.x with @ai-sdk/openai-compatible Responses fork) to route through
+        the gateway seamlessly.
+
+        Supports both streaming and non-streaming responses.
+        """
+        import uuid
+
+        state: GatewayState = app.state.gateway
+        body = await request.json()
+
+        chat_body = _responses_to_chat_completions(body)
+        is_stream = body.get("stream", False)
+
+        response = await _dispatch_chat_completions(state, chat_body, request)
+
+        if is_stream:
+            original_iterator = response.body_iterator
+
+            async def _responses_stream_wrapper():
+                msg_id = f"msg_{uuid.uuid4().hex}"
+                resp_id = f"resp_{uuid.uuid4().hex}"
+                full_text = ""
+
+                # Emit initial output_item.added SSE event
+                add_event = {
+                    "type": "response.output_item.added",
+                    "item": {
+                        "id": msg_id,
+                        "type": "message",
+                        "role": "assistant",
+                        "content": [],
+                    },
+                }
+                yield f"event: response.output_item.added\ndata: {json.dumps(add_event)}\n\n"
+
+                async for chunk in original_iterator:
+                    if isinstance(chunk, bytes):
+                        chunk_str = chunk.decode("utf-8")
+                    else:
+                        chunk_str = chunk
+
+                    for line in chunk_str.split("\n"):
+                        if line.startswith("data: "):
+                            data_str = line[6:].strip()
+                            if data_str == "[DONE]":
+                                continue
+                            try:
+                                cc_data = json.loads(data_str)
+                                for choice in cc_data.get("choices", []):
+                                    delta = choice.get("delta", {})
+                                    content = delta.get("content", "")
+                                    if content:
+                                        full_text += content
+                                        delta_event = {
+                                            "type": "response.output_text.delta",
+                                            "delta": content,
+                                            "item_id": msg_id,
+                                        }
+                                        yield f"event: response.output_text.delta\ndata: {json.dumps(delta_event)}\n\n"
+
+                                    finish_reason = choice.get("finish_reason")
+                                    if finish_reason:
+                                        done_event = {
+                                            "type": "response.output_text.done",
+                                            "text": full_text,
+                                            "item_id": msg_id,
+                                        }
+                                        yield f"event: response.output_text.done\ndata: {json.dumps(done_event)}\n\n"
+
+                                        output_item = {
+                                            "id": msg_id,
+                                            "type": "message",
+                                            "role": "assistant",
+                                            "status": "completed",
+                                            "content": [
+                                                {
+                                                    "type": "output_text",
+                                                    "text": full_text,
+                                                    "annotations": [],
+                                                }
+                                            ],
+                                        }
+                                        item_done = {"type": "response.output_item.done", "item": output_item}
+                                        yield f"event: response.output_item.done\ndata: {json.dumps(item_done)}\n\n"
+                            except json.JSONDecodeError:
+                                continue
+
+                # Emit final response.done event
+                done = {"type": "response.done", "response": {"id": resp_id, "object": "response"}}
+                yield f"event: response.done\ndata: {json.dumps(done)}\n\n"
+
+            return StreamingResponse(
+                _responses_stream_wrapper(),
+                media_type="text/event-stream",
+                headers={k: v for k, v in response.headers.items() if k.lower() not in ("content-length",)},
+            )
+        else:
+            response_data = json.loads(response.body)
+            responses_result = _chat_completions_to_responses(response_data)
+            return JSONResponse(content=responses_result, status_code=response.status_code)
+
+    def _responses_to_chat_completions(body: dict) -> dict:
+        """
+        Convert OpenAI Responses API request body to Chat Completions format.
+        """
+        chat_body = {
+            "model": body.get("model", ""),
+            "messages": [],
+        }
+
+        for key in (
+            "stream",
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "tools",
+            "tool_choice",
+            "metadata",
+            "user",
+            "frequency_penalty",
+            "presence_penalty",
+            "seed",
+            "response_format",
+            "n",
+            "logit_bias",
+        ):
+            if key in body:
+                chat_body[key] = body[key]
+
+        if "max_output_tokens" in body and "max_tokens" not in chat_body:
+            chat_body["max_tokens"] = body["max_output_tokens"]
+
+        if "reasoning" in body:
+            chat_body["thinking"] = body["reasoning"]
+
+        instructions = body.get("instructions")
+        if instructions:
+            chat_body["messages"].append({"role": "system", "content": instructions})
+
+        raw_input = body.get("input", "")
+        if isinstance(raw_input, str):
+            chat_body["messages"].append({"role": "user", "content": raw_input})
+        elif isinstance(raw_input, list):
+            for item in raw_input:
+                msg = _responses_item_to_message(item)
+                if msg:
+                    chat_body["messages"].append(msg)
+
+        return chat_body
+
+    def _responses_item_to_message(item: dict) -> dict | None:
+        """Convert a single Responses API input item to a Chat Completions message."""
+        role = item.get("role", "")
+        content = item.get("content", "")
+
+        if role in ("system", "developer"):
+            text = content if isinstance(content, str) else str(content) if content else ""
+            return {"role": "system", "content": text}
+
+        if role == "user":
+            text = _extract_text_from_content_blocks(content)
+            return {"role": "user", "content": text}
+
+        if role == "assistant":
+            text = _extract_text_from_content_blocks(content)
+            return {"role": "assistant", "content": text}
+
+        if role == "tool":
+            return {
+                "role": "tool",
+                "tool_call_id": item.get("call_id", ""),
+                "content": _extract_text_from_content_blocks(content) or item.get("output", ""),
+            }
+
+        item_type = item.get("type", "")
+        if item_type == "function_call":
+            return {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": item.get("call_id", ""),
+                        "type": "function",
+                        "function": {
+                            "name": item.get("name", ""),
+                            "arguments": item.get("arguments", "{}"),
+                        },
+                    }
+                ],
+            }
+
+        if item_type == "function_call_output":
+            return {
+                "role": "tool",
+                "tool_call_id": item.get("call_id", ""),
+                "content": item.get("output", ""),
+            }
+
+        return None
+
+    def _extract_text_from_content_blocks(content) -> str:
+        """
+        Extract text from Responses API content blocks array.
+
+        Content blocks in Responses API look like:
+          [{"type": "input_text", "text": "..."},
+           {"type": "output_text", "text": "..."}]
+        """
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            texts = []
+            for block in content:
+                if isinstance(block, dict):
+                    block_type = block.get("type", "")
+                    if block_type in ("input_text", "output_text", "text"):
+                        texts.append(block.get("text", ""))
+            return "\n".join(texts)
+        if content is None:
+            return ""
+        return str(content)
+
+    def _chat_completions_to_responses(response_data: dict) -> dict:
+        """
+        Convert a Chat Completions response dict to OpenAI Responses API format.
+        """
+        import uuid
+
+        resp_id = f"resp_{uuid.uuid4().hex}"
+        choices = response_data.get("choices", [])
+        usage = response_data.get("usage", {})
+        created = response_data.get("created", 0)
+
+        output = []
+        for choice in choices:
+            message = choice.get("message", {})
+            msg_id = f"msg_{uuid.uuid4().hex}"
+            content_text = message.get("content") or ""
+
+            output_item = {
+                "id": msg_id,
+                "type": "message",
+                "role": "assistant",
+                "status": "completed",
+                "content": [
+                    {
+                        "type": "output_text",
+                        "text": content_text,
+                        "annotations": [],
+                    }
+                ],
+            }
+            output.append(output_item)
+
+        return {
+            "id": resp_id,
+            "object": "response",
+            "created": created,
+            "model": response_data.get("model", ""),
+            "output": output,
+            "usage": {
+                "input_tokens": usage.get("prompt_tokens", 0),
+                "output_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0),
+            },
+        }
+
+    # ============================================================================
     # V1 CHAT ROLE ROUTES (thin wrappers over /v1/chat/completions)
     # ============================================================================
     @app.post("/v1/chat/smol")
