@@ -5916,6 +5916,12 @@ async def try_backends_with_failover(
     Raises:
         httpx.HTTPError: If all backends fail
     """
+    import os
+    import copy
+
+    # Check if NIM extra field stripping is enabled
+    nim_allow_extra_fields = os.getenv("NIM_ALLOW_EXTRA_FIELDS", "true").lower() == "true"
+
     # Build list of backends to try with inferred types
     backends_to_try = [("primary", config.backend_url, config.backend_type)]
 
@@ -5932,6 +5938,27 @@ async def try_backends_with_failover(
     for backend_type_name, backend_url, backend_api_type in backends_to_try:
         try:
             logger.info(f"Attempting {backend_type_name} backend: {backend_url}")
+
+            # NIM compatibility: Strip extra fields from tool messages
+            request_content = content
+            if backend_api_type == "nvidia-nim" and nim_allow_extra_fields and content:
+                request_content = copy.deepcopy(content)
+                messages = request_content.get("messages", [])
+                stripped_count = 0
+                for msg in messages:
+                    if msg.get("role") == "tool":
+                        # Remove fields not supported by NIM's Pydantic schema
+                        if "tool_name" in msg:
+                            del msg["tool_name"]
+                            stripped_count += 1
+                        if "name" in msg:
+                            del msg["name"]
+                            stripped_count += 1
+                if stripped_count > 0:
+                    logger.warning(
+                        f"NIM compatibility: Stripped {stripped_count} extra field(s) from tool messages "
+                        f"(NIM_ALLOW_EXTRA_FIELDS={nim_allow_extra_fields})"
+                    )
 
             # Build headers for this backend, preserving User-Agent
             headers = {
@@ -5991,11 +6018,11 @@ async def try_backends_with_failover(
 
                     # ZAI doesn't understand chat_template_kwargs — strip it
                     # and ensure enable_thinking is set as top-level param
-                    if isinstance(content, dict):
-                        content.pop("chat_template_kwargs", None)
+                    if isinstance(request_content, dict):
+                        request_content.pop("chat_template_kwargs", None)
                         # If enable_thinking not already set, default to false
-                        if "enable_thinking" not in content:
-                            content["enable_thinking"] = False
+                        if "enable_thinking" not in request_content:
+                            request_content["enable_thinking"] = False
                 else:
                     url = f"{backend_url}{endpoint}"
 
@@ -6003,7 +6030,7 @@ async def try_backends_with_failover(
                 if backend_api_type == "zai" and logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"ZAI URL: {url}")
                     logger.debug(f"ZAI Headers: Authorization={headers.get('Authorization', 'MISSING')[:30]}...")
-                    logger.debug(f"ZAI Body model: {content.get('model', 'NO_MODEL')}")
+                    logger.debug(f"ZAI Body model: {request_content.get('model', 'NO_MODEL')}")
 
                 # Debug logging for Pollinations (only at DEBUG level)
                 if backend_api_type == "pollinations" and logger.isEnabledFor(logging.DEBUG):
@@ -6016,7 +6043,7 @@ async def try_backends_with_failover(
                 if method.upper() == "POST":
                     response = await client.post(
                         url,
-                        json=content,
+                        json=request_content,
                         headers=headers,
                     )
                 else:  # GET
