@@ -1,7 +1,5 @@
 # AGENTS.md — AI Inference Gateway
 
-# Kelos test - 2026-05-18 - pipeline verified
-
 ## Project Overview
 
 Python FastAPI gateway providing OpenAI/Anthropic/Ollama-compatible API endpoints with intelligent routing, circuit breaker failover, RAG (Qdrant), MCP brokerage, security proxy, and multi-backend support. Designed for sovereign Canadian AI stack on NixOS/K3s.
@@ -12,30 +10,123 @@ Python FastAPI gateway providing OpenAI/Anthropic/Ollama-compatible API endpoint
 NixOS modules in `nix/` are the **single source of truth** for all deployment config. Do not edit k8s YAML, wrapper scripts, or other derivative files directly — CI/CD generates them from Nix. If you need to change how the gateway is deployed, change the module.
 
 ### Clean long-term solutions
-Agents **must** fix root causes, not apply workarounds. Every change should be the cleanest solution that lasts — no TODOs, no half-measures, no "fix it later" debt. If a task seems to require a workaround, stop and fix the underlying problem instead.
+Agents **must** fix root causes, not apply workarounds. Every change should be the cleanest solution that lasts — no TODOs, no half-measures, no "fix it later" debt.
 
 ### Gateway routing
-All AI backend traffic routes through the gateway — circuit breakers, rate limiting, observability (Prometheus), and MCP brokerage depend on it. Never route a client directly to a backend (NIM, llama-cpp, vLLM, etc.). If a backend format is incompatible (e.g. NIM tool-call message format), fix the gateway's request transformation layer, not the routing.
+All AI backend traffic routes through the gateway — circuit breakers, rate limiting, observability (Prometheus), and MCP brokerage depend on it. Never route a client directly to a backend (NIM, llama-cpp, vLLM, etc.).
 
-## Intelligent Model Routing (`"model": "auto"`)
+## Model Routing
 
-Clients should send `"model": "auto"` in chat completion requests. The gateway handles per-request model selection via `detect_specialization()`:
+### Per-Request Routing (`"model": "auto"`)
+
+Clients should send `"model": "auto"` in chat completion requests. The gateway handles per-request model selection:
 
 | Request content | Routed to | Why |
 |----------------|-----------|-----|
-| Contains image_url or audio | Nemotron Omni 30B | Vision/multimodal support |
+| Contains image or audio | Nemotron Omni 30B | Vision/multimodal support |
 | Code, agentic patterns | Nemotron Super 120B | Complex reasoning |
 | General queries | Nemotron Omni 30B | Efficient & capable |
 
-The routing flow:
-1. Gateway receives `"model": "auto"`
-2. `auto` isn't found in any model list → triggers `detect_specialization(messages)`
-3. `detect_vision_content()` checks for image/audio content
-4. `detect_code_patterns()` checks for code/agentic indicators
-5. `_generate_candidates()` + `_rank_candidates()` produces a `RouteDecision`
-6. Request is forwarded to the selected backend with proper format
+Routing flow: `detect_specialization()` → `_generate_candidates()` → `_rank_candidates()` → `RouteDecision`
 
 **Do not hardcode model names in client configs** — use `"model": "auto"` to let the gateway optimize routing.
+
+### Kelos/TaskSpawner Routing (`model-routing-controller`)
+
+For Kelos agent tasks, models are assigned per-task-type via the `kelos-model-routing` ConfigMap (namespace: `kelos-system`):
+
+| Task Type | Primary Model | Fallback | Reliability |
+|-----------|--------------|----------|-------------|
+| default | Nemotron Nano 30B | Qwen 3 Coder 480B | gold |
+| coding | Nemotron Super 120B | Qwen 3 Coder 480B | silver |
+| analysis | Nemotron Nano 30B | Llama 3.3 70B | gold |
+| reasoning | Nemotron Omni 30B | Super 120B | silver |
+| batch | Nemotron Nano 30B | Qwen 3 Coder 480B | gold |
+| urgent | Nemotron Super 120B | Nano 30B | silver |
+| vision | Nemotron Omni 30B | Super 120B | bronze |
+| documentation | Qwen 3 Coder 480B | Nano 30B | silver |
+| ultra_context | Best 1M+ model | — | varies |
+| emergency | vLLM qwen3.5-2b-awq (local) | llama.cpp 4B (local) | no-cloud |
+
+**Components:**
+
+| Component | What it does | Schedule |
+|-----------|-------------|----------|
+| `kelos-model-routing` ConfigMap | Routing rules per task type | Updated by controller + benchmark |
+| `model-routing-controller` CronJob | Reads ConfigMap, patches TaskSpawner `taskTemplate.model` | Every 15min |
+| Circuit breaker | Exponential backoff (15m/1h/6h/24h per model) | Persistent in ConfigMap |
+| `model-benchmark-eval` CronJob | Benchmarks all 174 gateway models, auto-expands routing | Every 6h |
+
+**Graceful degradation (7 layers):**
+
+```
+L1 Gateway:    DISCOVERY_BACKENDS + cloud fallback + overload detection
+L2 Controller: Health-check models before assigning, degrade if missing
+L3 Controller: Circuit breaker with exponential backoff
+L4 Pod boot:   Verify MODEL exists in gateway, try fallback chain
+L5 opencode:   All routing models in provider for auto-fallback
+L6 env chain:  KELOS_MODEL → KELOS_MODEL_FALLBACKS → hardcoded default
+L7 tiers:      gold > silver > bronze > degraded > emergency
+```
+
+**Circuit breaker states:**
+
+| State | Meaning | Action |
+|-------|---------|--------|
+| CLOSED | Model healthy | Normal routing |
+| HALF-OPEN | Cooldown expired | Try model once more |
+| OPEN | Model failing repeatedly | Use fallback, exponential backoff |
+
+Backoff: 1-2 failures → 15min, 3-5 → 1hr, 6-9 → 6hr, 10+ → 24hr
+
+### Error Classification (benchmark v2)
+
+The benchmark classifies each model failure:
+
+| Type | Meaning | Circuit Breaker |
+|------|---------|----------------|
+| quota | 429/503 rate limited | Retry 1hr (resets) |
+| auth | 401/403 invalid key | Retry 24hr (credential) |
+| unavailable | 404 not found | Retry 24hr (removed) |
+| timeout | >25s no response | Retry 1hr (transient) |
+| error | 400/500/connection | Retry 6hr |
+
+### Benchmark Data
+
+Per-model results stored in `kelos-model-routing` ConfigMap `__benchmarks__`:
+
+```json
+{
+  "model_id": {
+    "avg_tok_s": 24.7,
+    "std_tok_s": 4.4,
+    "avg_lat_s": 4.0,
+    "avg_ttft_ms": 350,
+    "health": 61.9,
+    "ctx": 262144
+  }
+}
+```
+
+Access: `kubectl get cm kelos-model-routing -n kelos-system -o json | jq '.__benchmarks__'`
+
+### Anthropic API Support
+
+The gateway has a `/v1/messages` endpoint (Anthropic Messages API format) with:
+- Model mapping: Claude model names → gateway model IDs
+- Thinking effort levels: low(5K), medium(15K), high(50K) budget_tokens
+- PII/injection sanitization via MLSEC
+- Routing through the same intelligent router
+
+Current Claude → model mapping (hardcoded in `router.py`):
+
+| Claude model | Routes to |
+|-------------|-----------|
+| claude-haiku-4 | qwen3.5-0.8b-distilled (local) |
+| claude-sonnet-4 | qwen3.5-9b-distilled (local) |
+| claude-opus-4 | qwen3.5-35b-a3b (local) |
+
+To route Claude Code through NIM cloud models, update `claude_model_mapping` in `router.py`.
 
 ## Tech Stack
 
@@ -53,11 +144,10 @@ The routing flow:
 | `src/main.py` | FastAPI app + entry point |
 | `src/middleware/` | Middleware pipeline (security, PII, rate-limit, knowledge fabric) |
 | `src/rag/` | RAG engine (Qdrant, embeddings, hybrid search, semantic cache) |
-| `src/mcp_servers/` | MCP server implementations (SearXNG, MapleSpike) |
+| `src/mcp_servers/` | MCP server implementations |
 | `src/services/` | Backend integrations (llama-cpp, vLLM, NIM, ZAI, etc.) |
 | `tests/` | Test suite |
 | `nix/` | NixOS module files — **source of truth for deployment** |
-| `kubernetes/` | Generated output — do not edit directly |
 | `docs/` | Documentation |
 
 ## Backend Architecture
@@ -70,91 +160,71 @@ Client ("model": "auto") → Gateway (src/main.py)
   │   └── default → Omni 30B
   ├── Middleware pipeline (security → PII → rate-limit → knowledge fabric)
   ├── MCP Broker (src/mcp_broker.py)
-  │   ├── SearXNG MCP (search)
-  │   └── MapleSpike MCP (AI Ask, engine briefs)
   ├── RAG Engine (Qdrant + Redis cache)
   └── Backend adapters (src/services/)
-      ├── llama-cpp / vLLM / SGLang (local GPU)
+      ├── llama-cpp / vLLM (local GPU)
       ├── NIM (NVIDIA cloud)
-      ├── ZAI / Pollinations (cloud fallback)
+      ├── Z.AI / Kilo (cloud fallback)
       └── Ollama (local CPU/GPU)
 ```
 
-All traffic flows through the gateway's circuit breakers and observability pipeline. **Never bypass the gateway.**
+All traffic flows through circuit breakers and observability. **Never bypass the gateway.**
+
+## Kelos Integration
+
+The gateway's model routing and benchmark data feed into the Kelos task orchestration pipeline:
+
+```
+Kelos Issues → TaskSpawner (#38 routing) → Agent Pod → Gateway → Backend
+                                                    ↓
+                                              PR Created
+                                                    ↓
+                                        model-benchmark-eval (Phase 1)
+                                        tok/s + TTFT + health scoring
+                                                    ↓
+                                        LLM-as-Judge eval (Phase 2, planned)
+                                        PR quality scoring
+                                                    ↓
+                                        Routing optimizer (Phase 3, planned)
+                                        Auto-adjust routing based on quality
+```
+
+See issue #60 (Code quality evaluation pipeline) for the full roadmap.
 
 ## Running
 
 ```bash
-# Dev shell
 nix develop
-
-# Direct (no Nix)
 PYTHONPATH=src python -m uvicorn ai_inference_gateway.main:app --port 8080
-
-# Tests
 pytest tests/ -v
-
-# Build container
 nix build .#container
 ```
 
-## NixOS Integration
-
-The `nix/` directory contains NixOS module files. Import via `flake.nix`:
-
-```nix
-inputs.ai-inference-gateway.url = "github:reverb256/ai-inference-gateway";
-```
-
-Key modules:
-- `nix/options.nix` — All config options (MCP servers, backends, security, RAG)
-- `nix/gateway.nix` — Systemd service definition
-- `nix/qdrant.nix` — Qdrant vector DB module
-- `nix/config-assertions.nix` — Validation of option combinations
-
-## Common Tasks for Agents
-
-### Adding a new MCP server
-1. Add the server module to `src/mcp_servers/`
-2. Register it in `nix/options.nix` under `mcp.servers` default
-3. No wrapper scripts — use `type = "remote"` if connecting via HTTP
-4. Update `mcp_servers/__init__.py` to export the main function
-
-### Adding a new backend
-1. Create backend adapter in `src/services/`
-2. Add model config in `nix/options.nix` under the provider's option
-3. If the API format differs from OpenAI, add request transformation in the adapter
-4. Update AGENTS.md with the new backend's requirements
-
-### Fixing a backend compatibility issue
-- The gateway is the transformation layer — fix message formatting here, not in clients
-- Example: NIM expects `tool` role content as `[{type: "text", text: "..."}]` arrays, some clients send strings. Convert in the NIM service adapter, not by routing around it.
-
-## Environment Variables
-
-Core config via env vars: `BACKEND_URL`, `BACKEND_TYPE`, `GATEWAY_HOST`, `GATEWAY_PORT`, `RAG_ENABLED`, `QDRANT_URL`. Full list in `src/config.py` and `nix/options.nix`.
-
 ## MCP Integration
 
-The gateway runs an MCP broker that manages connections to upstream MCP servers.
-Currently connected servers:
-- `searxng` (local): Web search via SearXNG metasearch
-- `maplespike` (remote): MapleSpike AI Ask + Engine brief + pipeline status
+The gateway runs an MCP broker managing connections to upstream MCP servers.
+Currently connected: `searxng` (search), `maplespike` (AI Ask + Engine brief).
 
 ### Health Checks
-
 ```bash
 curl http://localhost:8080/mcp/health/searxng
 curl http://localhost:8080/mcp/health/maplespike
 ```
 
-## Test Markers
+## Environment Variables
 
-- `test_security_filter.py` — Security middleware tests (PII, injection)
-- `test_mlsec_phase2.py` — ML security Phase 2 (scorer, validation)
-- `test_concurrent` — Concurrent request tests
-- `requires_redis` / `requires_qdrant` — Integration tests requiring external services
+Core config: `BACKEND_URL`, `BACKEND_TYPE`, `GATEWAY_HOST`, `GATEWAY_PORT`, `RAG_ENABLED`, `QDRANT_URL`.
+Full list in `src/config.py` and `nix/options.nix`.
+
+## Related Issues
+
+| # | Title | Status |
+|---|-------|--------|
+| #38 | Dynamic model routing for Kelos | ✅ Implemented |
+| #60 | Code quality evaluation pipeline | Phase 1 deployed |
+| #41 | EPIC: NIM Model Optimization Loop | In progress |
 
 ## Related Repositories
 
-- [reverb256/maplespike](https://github.com/reverb256/maplespike) — Consumer of this gateway for AI Ask and Engine briefs
+- [reverb256/maplespike](https://github.com/reverb256/maplespike) — Consumer for AI Ask and Engine briefs
+- [reverb256/nixos-config](https://github.com/reverb256/nixos-config) — NixOS cluster config (kelos.nix module)
