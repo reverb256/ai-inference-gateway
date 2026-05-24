@@ -158,7 +158,7 @@ class OpenAIClientWrapper:
 
         # Initialize KILO client if configured
         self.kilo_client: Optional[AsyncOpenAI] = None
-        self.kilo_url: Optional[str] = None
+        self.kilo_url = kilo_url
         if kilo_api_key:
             self.kilo_url = kilo_url or "https://api.kilo.ai/api/gateway"
             self.kilo_client = AsyncOpenAI(
@@ -167,6 +167,30 @@ class OpenAIClientWrapper:
                 timeout=timeout,
             )
             logger.info(f"Initialized KILO client: {self.kilo_url}")
+
+        # Initialize OpenCode Go client if configured
+        self.opencode_go_client: Optional[AsyncOpenAI] = None
+        self.opencode_go_url: Optional[str] = None
+        if openrouter_api_key:  # Uses same key as OpenRouter
+            self.opencode_go_url = "https://api.opencode.go/v1"
+            self.opencode_go_client = AsyncOpenAI(
+                base_url=self.opencode_go_url,
+                api_key=openrouter_api_key,
+                timeout=timeout,
+            )
+            logger.info(f"Initialized OpenCode Go client: {self.opencode_go_url}")
+
+        # Initialize OpenCode Zen client if configured
+        self.opencode_zen_client: Optional[AsyncOpenAI] = None
+        self.opencode_zen_url: Optional[str] = None
+        if openrouter_api_key:  # Uses same key as OpenRouter
+            self.opencode_zen_url = "https://api.opencode.go/v1"
+            self.opencode_zen_client = AsyncOpenAI(
+                base_url=self.opencode_zen_url,
+                api_key=openrouter_api_key,
+                timeout=timeout,
+            )
+            logger.info(f"Initialized OpenCode Zen client: {self.opencode_zen_url}")
 
         # Initialize local backend client (e.g., sentry ROCm) if configured
         self.local_client: Optional[AsyncOpenAI] = None
@@ -383,6 +407,64 @@ class OpenAIClientWrapper:
                 raise OpenAIBackendError(f"OpenRouter backend error: {error_str}")
         elif backend == "kilo" and self.kilo_client:
             allowed, cooldown = await check_provider_limit("kilo", model)
+            if not allowed:
+                raise OpenAIBackendError(f"KILO backend rate limited (cooldown: {cooldown:.0f}s)")
+            logger.info(f"Using KILO backend for model: {model}")
+            try:
+                response = await self.kilo_client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **kwargs,
+                )
+                logger.info(f"KILO backend succeeded with model: {model}")
+                return response
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("kilo")
+                logger.error(f"KILO backend failed: {error_str}")
+                raise OpenAIBackendError(f"KILO backend error: {error_str}")
+        elif backend == "opencode-go" and self.opencode_go_client:
+            allowed, cooldown = await check_provider_limit("opencode-go", model)
+            if not allowed:
+                raise OpenAIBackendError(f"OpenCode Go backend rate limited (cooldown: {cooldown:.0f}s)")
+            logger.info(f"Using OpenCode Go backend for model: {model}")
+            try:
+                response = await self.opencode_go_client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **kwargs,
+                )
+                logger.info(f"OpenCode Go backend succeeded with model: {model}")
+                return response
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("opencode-go")
+                logger.error(f"OpenCode Go backend failed: {error_str}")
+                raise OpenAIBackendError(f"OpenCode Go backend error: {error_str}")
+        elif backend == "opencode-zen" and self.opencode_zen_client:
+            allowed, cooldown = await check_provider_limit("opencode-zen", model)
+            if not allowed:
+                raise OpenAIBackendError(f"OpenCode Zen backend rate limited (cooldown: {cooldown:.0f}s)")
+            logger.info(f"Using OpenCode Zen backend for model: {model}")
+            try:
+                response = await self.opencode_zen_client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **kwargs,
+                )
+                logger.info(f"OpenCode Zen backend succeeded with model: {model}")
+                return response
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    await record_provider_429("opencode-zen")
+                logger.error(f"OpenCode Zen backend failed: {error_str}")
+                raise OpenAIBackendError(f"OpenCode Zen backend error: {error_str}")
             if not allowed:
                 raise OpenAIBackendError(f"KILO backend rate limited (cooldown: {cooldown:.0f}s)")
             logger.info(f"Using KILO backend for model: {model}")
@@ -680,6 +762,12 @@ class OpenAIClientWrapper:
             await self.nvidia_client.close()
         if self.openrouter_client:
             await self.openrouter_client.close()
+        if self.kilo_client:
+            await self.kilo_client.close()
+        if self.opencode_go_client:
+            await self.opencode_go_client.close()
+        if self.opencode_zen_client:
+            await self.opencode_zen_client.close()
         if self.local_client:
             await self.local_client.close()
         if self.secondary_client:

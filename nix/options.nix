@@ -167,33 +167,47 @@ in
           description = "Path to NVIDIA NIM API key file";
         };
 
-        models = mkOption {
-          type = types.attrs;
-          default = {
-            "nvidia/nemotron-3-super-120b-a12b" = {
-              name = "Nemotron 3 Super 120B (1M ctx)";
-            };
-            "deepseek-ai/deepseek-v3.1" = {
-              name = "DeepSeek V3.1 (131K ctx)";
-            };
-            "moonshotai/kimi-k2.5" = {
-              name = "Kimi K2.5 1T (262K ctx)";
-            };
-            "minimaxai/minimax-m2.5" = {
-              name = "MiniMax M2.5 230B (1M ctx)";
-            };
-            "z-ai/glm5" = {
-              name = "GLM-5 744B (205K ctx)";
-            };
-            "openai/gpt-oss-120b" = {
-              name = "GPT-OSS 120B (131K ctx)";
-            };
-            "qwen/qwen3-coder-480b-a35b-instruct" = {
-              name = "Qwen3 Coder 480B (1M ctx)";
-            };
-          };
-          description = "Available NVIDIA NIM models";
-        };
+ models = mkOption {
+ type = types.attrs;
+ default = {
+   # Nemotron 3 models (3 total)
+   "nvidia/nemotron-3-super-120b-a12b" = {
+     name = "Nemotron 3 Super 120B (1M ctx)";
+   };
+   "nvidia/nemotron-3-nano-30b-a3b" = {
+     name = "Nemotron 3 Nano 30B";
+   };
+   "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning" = {
+     name = "Nemotron 3 Nano Omni 30B Reasoning";
+   };
+   # Qwen models (4)
+   "qwen/qwen3.5-122b-a10b" = {
+     name = "Qwen3.5 122B";
+   };
+   "qwen/qwen3.5-397b-a17b" = {
+     name = "Qwen3.5 397B";
+   };
+   "qwen/qwen3-next-80b-a3b-instruct" = {
+     name = "Qwen3 Next 80B Instruct";
+   };
+   "qwen/qwen3-coder-480b-a35b-instruct" = {
+     name = "Qwen3 Coder 480B (1M ctx)";
+   };
+   # Kimi (1)
+   "moonshotai/kimi-k2.6" = {
+     name = "Kimi K2.6";
+   };
+   # MiniMax (1)
+   "minimaxai/minimax-m2.7" = {
+     name = "MiniMax M2.7";
+   };
+   # GLM (1)
+   "z-ai/glm-5.1" = {
+     name = "GLM-5.1 (200K ctx)";
+   };
+ };
+ description = "Available NVIDIA NIM models";
+ };
       };
 
       local = {

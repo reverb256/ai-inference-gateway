@@ -421,6 +421,8 @@ class Router:
             "nvidia": True,
             "kilo": True,
             "openrouter": True,
+            "opencode-go": True,
+            "opencode-zen": True,
         }
         self._backend_health_check_time: Dict[str, float] = {}
         self._health_check_ttl: float = 10.0  # Check health every 10 seconds
@@ -835,19 +837,19 @@ class Router:
         Cloud fallback chain (when Local backend down/capacity): NIM → OpenRouter
         """
         return {
-            # Haiku tier → Local 0.8B Opus reasoning distilled (fastest)
-            "claude-haiku-4": "qwen3.5-0.8b-claude-4.6-opus-reasoning-distilled",
-            "claude-haiku-4-20250514": "qwen3.5-0.8b-claude-4.6-opus-reasoning-distilled",
-            # Sonnet tier → Local 9B Opus reasoning distilled
-            "claude-sonnet-4-20250514": "qwen3.5-9b-claude-4.6-opus-reasoning-distilled",
-            "claude-sonnet-4": "qwen3.5-9b-claude-4.6-opus-reasoning-distilled",
-            # Sonnet extended context variant (same underlying model)
-            "claude-sonnet-4-20250514-1m": "qwen3.5-9b-claude-4.6-opus-reasoning-distilled",
-            # Opus tier → Local 35B (best quality local)
-            "claude-opus-4-20250514": "qwen3.5-35b-a3b",
-            "claude-opus-4": "qwen3.5-35b-a3b",
-            # Opus extended context variant (same underlying model)
-            "claude-opus-4-20250514-1m": "qwen3.5-35b-a3b",
+            # Haiku tier → NIM Nano 30B (fastest reliable NIM model)
+            "claude-haiku-4": "nvidia/nemotron-3-nano-30b-a3b",
+            "claude-haiku-4-20250514": "nvidia/nemotron-3-nano-30b-a3b",
+            # Sonnet tier → NIM Super 120B (balanced, primary coding model)
+            "claude-sonnet-4-20250514": "nvidia/nemotron-3-super-120b-a12b",
+            "claude-sonnet-4": "nvidia/nemotron-3-super-120b-a12b",
+            # Sonnet extended context variant
+            "claude-sonnet-4-20250514-1m": "nvidia/nemotron-3-super-120b-a12b",
+            # Opus tier → Mistral Large 3 675B (best quality NIM model)
+            "claude-opus-4-20250514": "mistralai/mistral-large-3-675b-instruct-2512",
+            "claude-opus-4": "mistralai/mistral-large-3-675b-instruct-2512",
+            # Opus extended context variant
+            "claude-opus-4-20250514-1m": "mistralai/mistral-large-3-675b-instruct-2512",
         }
 
     # ========================================================================
@@ -1292,6 +1294,8 @@ class Router:
                 if cloud_model:
                     backend_map = {
                         "openrouter": "openrouter",
+                        "opencode-go": "opencode-go",
+                        "opencode-zen": "opencode-zen",
                         "nim": "nvidia",
                         "zai": "zai",
                     }
@@ -1544,6 +1548,8 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
             # Map provider to backend name
             backend_map = {
                 "openrouter": "openrouter",
+                "opencode-go": "opencode-go",
+                "opencode-zen": "opencode-zen",
                 "nim": "nvidia",
                 "zai": "zai",
             }
@@ -1573,7 +1579,7 @@ def create_default_router(model_discovery=None, cloud_discovery=None) -> Router:
             existing_ids = {m.id for m in models}
             # Replace cloud-discovered models with hardcoded ones (better backend mapping)
             models = [m for m in models if m.id not in {h.id for h in hardcoded}]
-            cloud_models = [m for m in hardcoded if m.backend in ("nvidia", "zai", "openrouter", "kilo")]
+            cloud_models = [m for m in hardcoded if m.backend in ("nvidia", "zai", "openrouter", "kilo", "opencode-go", "opencode-zen")]
             models.extend(cloud_models)
             if cloud_models:
                 logger.warning(f"Added {len(cloud_models)} hardcoded cloud models, total: {len(models)}")
@@ -2224,6 +2230,81 @@ def _get_hardcoded_models() -> List[ModelInfo]:
             cost_tier=0,
             estimated_tokens_per_second=45.0,
             backend="kilo",
+        ),
+        # ========================================================================
+        # OpenCode Go models (subscription, 5h+ weekly cap)
+        # ========================================================================
+        ModelInfo(
+            id="opencode/deepseek-v4-flash",
+            name="DeepSeek V4 Flash (OpenCode Go)",
+            context_length=1000000,
+            priority=7,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=2,
+            estimated_tokens_per_second=55.0,
+            backend="opencode-go",
+        ),
+        ModelInfo(
+            id="opencode/nemotron-3-super-120b-a12b",
+            name="Nemotron 3 Super (OpenCode Go)",
+            context_length=1000000,
+            priority=7,
+            specializations=[
+                TaskSpecialization.REASONING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.CODING,
+            ],
+            cost_tier=3,
+            estimated_tokens_per_second=40.0,
+            backend="opencode-go",
+        ),
+        # ========================================================================
+        # OpenCode Zen models (free, daily quota 7PM reset)
+        # ========================================================================
+        ModelInfo(
+            id="deepseek-v4-flash",
+            name="DeepSeek V4 Flash (OpenCode Zen Free)",
+            context_length=1000000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.CODING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=50.0,
+            backend="opencode-zen",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-3-super-120b-a12b:free",
+            name="Nemotron 3 Super (OpenCode Zen Free, 128K)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.REASONING,
+                TaskSpecialization.AGENTIC,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=35.0,
+            backend="opencode-zen",
+        ),
+        ModelInfo(
+            id="nvidia/nemotron-3-nano-30b-a3b:free",
+            name="Nemotron 3 Nano (OpenCode Zen Free, 128K)",
+            context_length=128000,
+            priority=6,
+            specializations=[
+                TaskSpecialization.FAST,
+                TaskSpecialization.GENERAL,
+            ],
+            cost_tier=0,
+            estimated_tokens_per_second=65.0,
+            backend="opencode-zen",
         ),
         # ========================================================================
         # Additional NIM models (2026-05-02 — new from /v1/models discovery)
