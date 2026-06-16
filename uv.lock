@@ -28,10 +28,11 @@ wheels = [
 
 [[package]]
 name = "ai-inference-gateway"
-version = "2.4.6"
+version = "2.4.15"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "mcp" },
@@ -40,6 +41,7 @@ dependencies = [
     { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pyjwt" },
     { name = "python-multipart" },
     { name = "qdrant-client" },
     { name = "rank-bm25" },
@@ -49,10 +51,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-auth = [
-    { name = "cryptography" },
-    { name = "pyjwt" },
-]
 dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -64,14 +62,12 @@ full = [
     { name = "accelerate" },
     { name = "aiohttp" },
     { name = "anthropic" },
-    { name = "cryptography" },
     { name = "einops" },
     { name = "librosa" },
     { name = "lxml" },
     { name = "pillow" },
     { name = "psutil" },
     { name = "pydub" },
-    { name = "pyjwt" },
     { name = "scikit-learn" },
     { name = "sentry-sdk" },
     { name = "soundfile" },
@@ -103,8 +99,7 @@ requires-dist = [
     { name = "aiohttp", marker = "extra == 'full'", specifier = ">=3.9.0" },
     { name = "anthropic", marker = "extra == 'full'", specifier = ">=0.18.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
-    { name = "cryptography", marker = "extra == 'auth'", specifier = ">=41.0.0" },
-    { name = "cryptography", marker = "extra == 'full'", specifier = ">=41.0.0" },
+    { name = "cryptography", specifier = ">=41.0.0" },
     { name = "einops", marker = "extra == 'full'", specifier = ">=0.7.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", specifier = ">=0.25.0" },
@@ -123,13 +118,12 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pydub", marker = "extra == 'full'", specifier = ">=0.25.0" },
     { name = "pydub", marker = "extra == 'tts'", specifier = ">=0.25.0" },
-    { name = "pyjwt", marker = "extra == 'auth'", specifier = ">=2.8.0" },
-    { name = "pyjwt", marker = "extra == 'full'", specifier = ">=2.8.0" },
+    { name = "pyjwt", specifier = ">=2.8.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
-    { name = "python-multipart", specifier = ">=0.0.27" },
+    { name = "python-multipart", specifier = ">=0.0.31" },
     { name = "qdrant-client", specifier = ">=1.7.0" },
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "redis", specifier = ">=5.0.0" },
@@ -2683,11 +2677,11 @@ wheels = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.27"
+version = "0.0.31"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/69/9b/f23807317a113dc36e74e75eb265a02dd1a4d9082abc3c1064acd22997c4/python_multipart-0.0.27.tar.gz", hash = "sha256:9870a6a8c5a20a5bf4f07c017bd1489006ff8836cff097b6933355ee2b49b602", size = 44043, upload-time = "2026-04-27T10:51:26.649Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/7e/9b35ad8f3d9ca680f7c87a88f19612fdd8da9796c4d3b46e560ac79dcc4a/python_multipart-0.0.31.tar.gz", hash = "sha256:fc631183bb13e56db3158a4909908dfb2e23565286744e798241e63750e5d680", size = 46689, upload-time = "2026-06-04T08:27:49.014Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/99/78/4126abcbdbd3c559d43e0db7f7b9173fc6befe45d39a2856cc0b8ec2a5a6/python_multipart-0.0.27-py3-none-any.whl", hash = "sha256:6fccfad17a27334bd0193681b369f476eda3409f17381a2d65aa7df3f7275645", size = 29254, upload-time = "2026-04-27T10:51:24.997Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/1e/7f7f299527a5a8ad90acd5f2f78dfa6c8495c6301a3205106ea68a84de96/python_multipart-0.0.31-py3-none-any.whl", hash = "sha256:8408153d68a9773291fc1da39a8b85a50044bddbabd2dd72e9229776b7b15e28", size = 29996, upload-time = "2026-06-04T08:27:47.804Z" },
 ]
 
 [[package]]
