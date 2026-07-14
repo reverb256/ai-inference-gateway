@@ -110,28 +110,19 @@ FAMILY_DEFAULTS = {
     "z-ai/glm": {"cost_tier": 3, "priority": 5, "specializations": ["coding"]},
 }
 
-# Which models to INCLUDE from auto-discovery.
-# If non-empty, ONLY these patterns are included. If empty, include all (minus EXCLUDED).
+# Models to INCLUDE from auto-discovery for NIM.
+# This is a curated allowlist: only these model IDs/prefixes are routed.
 INCLUDE_PATTERNS: List[str] = [
-    # All ZAI coding plan models
-    "glm-5.1", "glm-5-turbo", "glm-5", "glm-4.7", "glm-4.7-flash",
-    "glm-4.6", "glm-4.6v", "glm-4.5", "glm-4.5-flash", "glm-4.5-air",
-    # NIM models we use
-    "deepseek-ai/deepseek-v4",
-    "meta/llama-3.1-405b", "meta/llama-3.3-70b", "meta/llama-4-maverick",
-    "meta/llama-3.2-90b",
-    "qwen/qwen3-coder", "qwen/qwen3.5", "qwen/qwen3-next",
-    "moonshotai/kimi",
-    "mistralai/mistral-large", "mistralai/devstral", "mistralai/mistral-small",
-    "nvidia/nemotron", "nvidia/nvidia-nemotron", "nvidia/llama-3",
-    "minimaxai/minimax",
-    "openai/gpt-oss",
-    "z-ai/glm",
-    "google/gemma-3-27b", "google/gemma-4",
-    "microsoft/phi-4",
-    "stepfun-ai/", "bytedance/", "stockmark/",
-    # Free models from OpenRouter
-    ":free",
+    # NVIDIA NIM — user's selected models
+    "minimaxai/minimax",          # MiniMax M3
+    "moonshotai/kimi",            # Kimi K2.7
+    "glm-5.2",                    # GLM-5.2
+    "nvidia/nemotron",            # Nemotron 3 family
+    "google/gemma-4",             # Gemma 4
+    "deepseek-ai/deepseek-v4",    # DeepSeek V4 Pro / Flash
+    # OpenCode providers — filtered at routing time
+    "opencode-go/deepseek-v4-flash",
+    "opencode-zen/free",
 ]
 
 

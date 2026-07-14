@@ -171,11 +171,12 @@ class OpenAIClientWrapper:
         # Initialize OpenCode Go client if configured
         self.opencode_go_client: Optional[AsyncOpenAI] = None
         self.opencode_go_url: Optional[str] = None
-        if openrouter_api_key:  # Uses same key as OpenRouter
-            self.opencode_go_url = "https://api.opencode.go/v1"
+        opencode_go_key = os.environ.get("OPENCODE_GO_API_KEY")
+        if opencode_go_key:
+            self.opencode_go_url = "https://opencode.ai/zen/go/v1"
             self.opencode_go_client = AsyncOpenAI(
                 base_url=self.opencode_go_url,
-                api_key=openrouter_api_key,
+                api_key=opencode_go_key,
                 timeout=timeout,
             )
             logger.info(f"Initialized OpenCode Go client: {self.opencode_go_url}")
@@ -183,11 +184,12 @@ class OpenAIClientWrapper:
         # Initialize OpenCode Zen client if configured
         self.opencode_zen_client: Optional[AsyncOpenAI] = None
         self.opencode_zen_url: Optional[str] = None
-        if openrouter_api_key:  # Uses same key as OpenRouter
-            self.opencode_zen_url = "https://api.opencode.go/v1"
+        opencode_zen_key = os.environ.get("OPENCODE_API_KEY")
+        if opencode_zen_key:
+            self.opencode_zen_url = "https://opencode.ai/zen/v1"
             self.opencode_zen_client = AsyncOpenAI(
                 base_url=self.opencode_zen_url,
-                api_key=openrouter_api_key,
+                api_key=opencode_zen_key,
                 timeout=timeout,
             )
             logger.info(f"Initialized OpenCode Zen client: {self.opencode_zen_url}")
