@@ -427,6 +427,9 @@ class Router:
         self._backend_health_check_time: Dict[str, float] = {}
         self._health_check_ttl: float = 10.0  # Check health every 10 seconds
 
+    def get_models_by_provider(self, provider: str) -> List[ModelInfo]:
+        return [m for m in self.models.values() if m.backend == provider]
+
     # Backend health check — uses configured BACKEND_URL from env
     BACKEND_PORTS = {
         "llama-cpp": 1235,  # Updated: local llama-cpp on 3060 Ti
@@ -1199,47 +1202,47 @@ class Router:
         # Check if llama.cpp is busy with streaming requests
         local_backend_load = await self.get_backend_load("llama-cpp")
 
-        # If llama.cpp is at capacity (processing streams), route to ZAI
+        # If llama.cpp is at capacity (processing streams), route to cloud fallback
         if local_backend_load["at_capacity"] and local_backend_load["is_streaming"]:
             logger.info(
                 f"Local backend busy ({local_backend_load['active_requests']} active requests, "
-                f"streaming: {local_backend_load['is_streaming']}), auto-offloading to ZAI"
+                f"streaming: {local_backend_load['is_streaming']}), auto-offloading to cloud fallback"
             )
-            # Find best ZAI model for the request
+            # Find best cloud model for the request
             estimated_tokens = self.estimate_tokens(messages)
 
-            # If client requested a specific model, check if we can map it to ZAI
+            # If client requested a specific model, check if we can map it to a cloud provider
             if requested_model:
-                # Check if it's a Claude model that maps to ZAI
+                # Check if it's a Claude model that maps to a cloud provider
                 if requested_model in self.claude_model_mapping:
                     mapped_model = self.claude_model_mapping[requested_model]
                     model_info = self.models.get(mapped_model)
-                    if model_info and model_info.backend == "zai":
+                    if model_info and model_info.backend in ["nvidia", "zai", "openrouter"]:
                         return RouteDecision(
                             model=mapped_model,
                             confidence=1.0,
-                            reason=f"llama.cpp at capacity, using ZAI fallback for {requested_model}",
+                            reason=f"llama.cpp at capacity, using cloud fallback for {requested_model}",
                             estimated_tokens=estimated_tokens,
-                            backend="zai",
+                            backend=model_info.backend,
                             expected_latency_ms=model_info.estimated_tokens_per_second
                             * estimated_tokens
                             / 1000,
                         )
 
-            # Otherwise, find best ZAI model based on specialization
-            zai_models = [m for m in self.models.values() if m.backend == "zai"]
-            if zai_models:
+            # Otherwise, find best cloud model based on priority and specialization
+            cloud_models = [m for m in self.models.values() if m.backend in ["nvidia", "google", "zai"]]
+            if cloud_models:
                 # Sort by priority and pick the best one
-                best_zai = max(zai_models, key=lambda m: m.priority)
+                best_cloud = max(cloud_models, key=lambda m: m.priority)
                 specialization = self.detect_specialization(messages)
                 return RouteDecision(
-                    model=best_zai.id,
+                    model=best_cloud.id,
                     confidence=0.9,
-                    reason="llama.cpp at capacity (auto-failover to ZAI)",
+                    reason="llama.cpp at capacity (auto-failover to cloud)",
                     estimated_tokens=estimated_tokens,
-                    backend="zai",
+                    backend=best_cloud.backend,
                     specialization=specialization,
-                    expected_latency_ms=best_zai.estimated_tokens_per_second
+                    expected_latency_ms=best_cloud.estimated_tokens_per_second
                     * estimated_tokens
                     / 1000,
                 )
