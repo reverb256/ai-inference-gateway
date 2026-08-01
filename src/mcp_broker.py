@@ -11,15 +11,23 @@ This is a foundational implementation that can be extended with:
 - Health monitoring and circuit breaking
 """
 
-import asyncio
-import json
-import logging
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from enum import Enum
+import asyncio
 import httpx
+import logging
+import json
+from typing import Dict, List, Optional, Any
+
+try:
+    from kubernetes import client, config
+    K8S_AVAILABLE = True
+except ImportError:
+    K8S_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
 
 # Import tool schema caching
 try:
@@ -49,6 +57,7 @@ class MCPServer:
     headers: Dict[str, str] = None
     environment: Dict[str, str] = None
     process: Optional[asyncio.subprocess.Process] = None
+    last_seen: datetime = field(default_factory=datetime.now)
 
 
 class MCPBroker:
@@ -63,21 +72,13 @@ class MCPBroker:
         servers: List[MCPServer],
         cache_ttl_seconds: int = 300,
         enable_cache: bool = True,
+        discovery_interval: int = 300,
+        namespace: str = "ai-inference",
     ):
-        """
-        Initialize MCP broker.
-
-        Args:
-            servers: List of MCP server configurations
-            cache_ttl_seconds: TTL for cached tool schemas (default: 300s = 5 min)
-            enable_cache: Enable tool schema caching
-        """
         self.servers = {server.name: server for server in servers}
         self.active_connections: Dict[str, Any] = {}
-        # Track MCP server initialization state (MCP protocol requires initialize before tools/call)
         self._initialized_servers: Dict[str, bool] = {}
 
-        # Initialize tool schema cache
         self.enable_cache = enable_cache and CACHE_AVAILABLE
         if self.enable_cache:
             self.tool_cache = get_cache(ttl_seconds=cache_ttl_seconds)
@@ -91,7 +92,107 @@ class MCPBroker:
                 f"MCP Broker initialized with {len(servers)} servers (cache disabled)"
             )
 
-    async def _ensure_initialized(self, server: MCPServer) -> bool:
+        self.discovery_interval = discovery_interval
+        self.namespace = namespace
+        self._discovery_task: Optional[asyncio.Task] = None
+        self.k8s_client: Optional[client.CoreV1Api] = None
+
+        if K8S_AVAILABLE:
+            try:
+                config.load_incluster_config()
+                self.k8s_client = client.CoreV1Api()
+                logger.info("K8s client initialized for dynamic MCP discovery")
+            except Exception as e:
+                logger.warning(f"K8s discovery unavailable: {e}")
+
+
+    async def start_discovery_loop(self):
+        """Start the background K8s discovery task."""
+        if self._discovery_task and not self._discovery_task.done():
+            return
+
+        if not self.k8s_client:
+            logger.warning("K8s discovery skipped: client not initialized")
+            return
+
+        self._discovery_task = asyncio.create_task(self._discovery_loop())
+        logger.info(f"Started MCP discovery loop (interval={self.discovery_interval}s)")
+
+    async def stop_discovery_loop(self):
+        """Stop the background K8s discovery task."""
+        if self._discovery_task:
+            self._discovery_task.cancel()
+            try:
+                await self._discovery_task
+            except asyncio.CancelledError:
+                pass
+            self._discovery_task = None
+            logger.info("Stopped MCP discovery loop")
+
+    async def _discovery_loop(self):
+        """Background loop for K8s service discovery."""
+        while True:
+            try:
+                await self._discover_remote_mcp_servers()
+            except Exception as e:
+                logger.error(f"Error during MCP discovery loop: {e}")
+            
+            await asyncio.sleep(self.discovery_interval)
+
+    async def _discover_remote_mcp_servers(self):
+        """Scan K8s namespace for services with mcp-server label."""
+        if not self.k8s_client:
+            return
+
+        logger.debug(f"Running MCP service discovery in namespace: {self.namespace}")
+        
+        try:
+            label_selector = "ai-gateway/mcp-server=true"
+            services = self.k8s_client.list_namespaced_service(
+                namespace=self.namespace,
+                label_selector=label_selector
+            )
+
+            discovered_names = set()
+
+            for svc in services.items:
+                svc_name = svc.metadata.name
+                discovered_names.add(svc_name)
+                
+                if svc_name in self.servers:
+                    self.servers[svc_name].last_seen = datetime.now()
+                    continue
+
+                port = svc.spec.ports[0].port if svc.spec.ports else 8080
+                url = f"http://{svc_name}.{self.namespace}.svc.cluster.local:{port}/sse"
+                
+                new_server = MCPServer(
+                    name=svc_name,
+                    type=MCPServerType.REMOTE,
+                    url=url,
+                    last_seen=datetime.now()
+                )
+                
+                self.servers[svc_name] = new_server
+                logger.info(f"Discovered new remote MCP server: {svc_name} ({url})")
+
+            stale_threshold = self.discovery_interval * 2
+            to_remove = []
+            for name, server in self.servers.items():
+                if server.type == MCPServerType.REMOTE and name not in discovered_names:
+                    if datetime.now() - server.last_seen > timedelta(seconds=stale_threshold):
+                        to_remove.append(name)
+
+            for name in to_remove:
+                logger.info(f"Removing stale MCP server: {name}")
+                server = self.servers[name]
+                if server.type == MCPServerType.LOCAL and server.process:
+                    server.process.terminate()
+                del self.servers[name]
+
+        except Exception as e:
+            logger.error(f"K8s MCP discovery failed: {e}")
+
         """
         Ensure MCP server is initialized (required by MCP protocol).
 
