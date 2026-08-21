@@ -1,0 +1,72 @@
+{
+  "projectRoot": "/home/j_kro/Projects/ai-inference-gateway",
+  "batchFiles": [
+    {
+      "path": "src/middleware/knowledge_fabric/core.py",
+      "language": "python",
+      "sizeLines": 197,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/__init__.py",
+      "language": "python",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "language": "python",
+      "sizeLines": 296,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "language": "python",
+      "sizeLines": 345,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "language": "python",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "language": "python",
+      "sizeLines": 628,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "language": "python",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    }
+  ],
+  "batchImportData": {
+    "src/middleware/knowledge_fabric/core.py": [],
+    "src/middleware/knowledge_fabric/sources/__init__.py": [
+      "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "src/middleware/knowledge_fabric/sources/web_search_source.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/brain_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/code_search_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/rag_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/searxng_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/web_search_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ]
+  }
+}
