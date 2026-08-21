@@ -1,0 +1,2403 @@
+{
+  "scriptCompleted": true,
+  "filesAnalyzed": 7,
+  "filesSkipped": [],
+  "results": [
+    {
+      "path": "src/middleware/knowledge_fabric/core.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 197,
+      "nonEmptyLines": 164,
+      "classes": [
+        {
+          "name": "SourcePriority",
+          "startLine": 21,
+          "endLine": 26,
+          "methods": [],
+          "properties": []
+        },
+        {
+          "name": "SourceCapability",
+          "startLine": 29,
+          "endLine": 36,
+          "methods": [],
+          "properties": []
+        },
+        {
+          "name": "KnowledgeChunk",
+          "startLine": 40,
+          "endLine": 60,
+          "methods": [
+            "__post_init__"
+          ],
+          "properties": [
+            "content",
+            "source",
+            "score",
+            "metadata",
+            "capabilities"
+          ]
+        },
+        {
+          "name": "KnowledgeResult",
+          "startLine": 64,
+          "endLine": 87,
+          "methods": [
+            "total_chunks",
+            "has_results"
+          ],
+          "properties": [
+            "source_name",
+            "chunks",
+            "query",
+            "retrieval_time",
+            "metadata"
+          ]
+        },
+        {
+          "name": "FabricContext",
+          "startLine": 91,
+          "endLine": 125,
+          "methods": [
+            "total_sources_queried",
+            "total_chunks_retrieved"
+          ],
+          "properties": [
+            "query",
+            "query_type",
+            "results",
+            "fused_chunks",
+            "sources_used",
+            "total_retrieval_time",
+            "synthesis",
+            "timestamp",
+            "routing_reasoning"
+          ]
+        },
+        {
+          "name": "KnowledgeSource",
+          "startLine": 133,
+          "endLine": 197,
+          "methods": [
+            "retrieve",
+            "can_handle",
+            "__str__",
+            "__repr__"
+          ],
+          "properties": [
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "retrieve_func",
+            "config",
+            "enabled"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "SourcePriority",
+          "line": 21,
+          "isDefault": false
+        },
+        {
+          "name": "SourceCapability",
+          "line": 29,
+          "isDefault": false
+        },
+        {
+          "name": "KnowledgeChunk",
+          "line": 39,
+          "isDefault": false
+        },
+        {
+          "name": "KnowledgeResult",
+          "line": 63,
+          "isDefault": false
+        },
+        {
+          "name": "FabricContext",
+          "line": 90,
+          "isDefault": false
+        },
+        {
+          "name": "KnowledgeSource",
+          "line": 132,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "__post_init__",
+          "callee": "self.metadata.get",
+          "lineNumber": 60
+        },
+        {
+          "caller": "total_chunks",
+          "callee": "len",
+          "lineNumber": 83
+        },
+        {
+          "caller": "total_sources_queried",
+          "callee": "len",
+          "lineNumber": 121
+        },
+        {
+          "caller": "total_chunks_retrieved",
+          "callee": "sum",
+          "lineNumber": 125
+        },
+        {
+          "caller": "total_chunks_retrieved",
+          "callee": "self.results.values",
+          "lineNumber": 125
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 173
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self.retrieve_func",
+          "lineNumber": 175
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 176
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 180
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 184
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 185
+        },
+        {
+          "caller": "retrieve",
+          "callee": "type",
+          "lineNumber": 185
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 190
+        },
+        {
+          "caller": "__str__",
+          "callee": "\"+\".join",
+          "lineNumber": 193
+        }
+      ],
+      "metrics": {
+        "importCount": 0,
+        "exportCount": 6,
+        "functionCount": 0,
+        "classCount": 6
+      }
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/__init__.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 36,
+      "nonEmptyLines": 33,
+      "metrics": {
+        "importCount": 5,
+        "exportCount": 0,
+        "functionCount": 0,
+        "classCount": 0
+      }
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 296,
+      "nonEmptyLines": 242,
+      "functions": [
+        {
+          "name": "_parse_frontmatter",
+          "startLine": 32,
+          "endLine": 51,
+          "params": [
+            "content"
+          ]
+        },
+        {
+          "name": "_tokenize",
+          "startLine": 54,
+          "endLine": 56,
+          "params": [
+            "text"
+          ]
+        },
+        {
+          "name": "_score_relevance",
+          "startLine": 59,
+          "endLine": 70,
+          "params": [
+            "query_tokens",
+            "doc_tokens"
+          ]
+        },
+        {
+          "name": "create_brain_source",
+          "startLine": 286,
+          "endLine": 296,
+          "params": [
+            "brain_wiki_path",
+            "max_results"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "BrainWikiSource",
+          "startLine": 74,
+          "endLine": 283,
+          "methods": [
+            "__post_init__",
+            "_scan_wiki_files",
+            "_load_file",
+            "can_handle",
+            "retrieve"
+          ],
+          "properties": [
+            "brain_wiki_path",
+            "max_results",
+            "max_chunk_chars",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled",
+            "subdirs"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "_parse_frontmatter",
+          "line": 32,
+          "isDefault": false
+        },
+        {
+          "name": "_tokenize",
+          "line": 54,
+          "isDefault": false
+        },
+        {
+          "name": "_score_relevance",
+          "line": 59,
+          "isDefault": false
+        },
+        {
+          "name": "BrainWikiSource",
+          "line": 73,
+          "isDefault": false
+        },
+        {
+          "name": "create_brain_source",
+          "line": 286,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "re.match",
+          "lineNumber": 34
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "match.group",
+          "lineNumber": 38
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "raw.strip().split",
+          "lineNumber": 40
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "raw.strip",
+          "lineNumber": 40
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "line.partition",
+          "lineNumber": 42
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "key.strip().lower",
+          "lineNumber": 43
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "key.strip",
+          "lineNumber": 43
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "val.strip().strip('\"').strip",
+          "lineNumber": 44
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "val.strip().strip",
+          "lineNumber": 44
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "val.strip",
+          "lineNumber": 44
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "val.startswith",
+          "lineNumber": 46
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "val.endswith",
+          "lineNumber": 46
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "v.strip().strip",
+          "lineNumber": 47
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "v.strip",
+          "lineNumber": 47
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "val[1:-1].split",
+          "lineNumber": 47
+        },
+        {
+          "caller": "_parse_frontmatter",
+          "callee": "match.end",
+          "lineNumber": 50
+        },
+        {
+          "caller": "_tokenize",
+          "callee": "set",
+          "lineNumber": 56
+        },
+        {
+          "caller": "_tokenize",
+          "callee": "re.findall",
+          "lineNumber": 56
+        },
+        {
+          "caller": "_tokenize",
+          "callee": "text.lower",
+          "lineNumber": 56
+        },
+        {
+          "caller": "_score_relevance",
+          "callee": "len",
+          "lineNumber": 63
+        },
+        {
+          "caller": "_score_relevance",
+          "callee": "len",
+          "lineNumber": 67
+        },
+        {
+          "caller": "_score_relevance",
+          "callee": "len",
+          "lineNumber": 69
+        },
+        {
+          "caller": "_score_relevance",
+          "callee": "min",
+          "lineNumber": 70
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "Path",
+          "lineNumber": 118
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "wiki_path.exists",
+          "lineNumber": 119
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "logger.warning",
+          "lineNumber": 120
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "wiki_path.stat",
+          "lineNumber": 125
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "set",
+          "lineNumber": 136
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "target.exists",
+          "lineNumber": 141
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "target.glob",
+          "lineNumber": 144
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "seen.add",
+          "lineNumber": 147
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "f.stat",
+          "lineNumber": 149
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "files.append",
+          "lineNumber": 150
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "str",
+          "lineNumber": 150
+        },
+        {
+          "caller": "_scan_wiki_files",
+          "callee": "files.sort",
+          "lineNumber": 155
+        },
+        {
+          "caller": "_load_file",
+          "callee": "Path(filepath).stat",
+          "lineNumber": 164
+        },
+        {
+          "caller": "_load_file",
+          "callee": "Path",
+          "lineNumber": 164
+        },
+        {
+          "caller": "_load_file",
+          "callee": "self._cache.get",
+          "lineNumber": 168
+        },
+        {
+          "caller": "_load_file",
+          "callee": "Path(filepath).read_text",
+          "lineNumber": 173
+        },
+        {
+          "caller": "_load_file",
+          "callee": "Path",
+          "lineNumber": 173
+        },
+        {
+          "caller": "_load_file",
+          "callee": "_parse_frontmatter",
+          "lineNumber": 174
+        },
+        {
+          "caller": "_load_file",
+          "callee": "logger.debug",
+          "lineNumber": 178
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 183
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 198
+        },
+        {
+          "caller": "retrieve",
+          "callee": "_tokenize",
+          "lineNumber": 200
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._scan_wiki_files",
+          "lineNumber": 201
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._load_file",
+          "lineNumber": 206
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 213
+        },
+        {
+          "caller": "retrieve",
+          "callee": "Path",
+          "lineNumber": 213
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 214
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 215
+        },
+        {
+          "caller": "retrieve",
+          "callee": "\" \".join",
+          "lineNumber": 216
+        },
+        {
+          "caller": "retrieve",
+          "callee": "isinstance",
+          "lineNumber": 216
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 216
+        },
+        {
+          "caller": "retrieve",
+          "callee": "_tokenize",
+          "lineNumber": 219
+        },
+        {
+          "caller": "retrieve",
+          "callee": "_score_relevance",
+          "lineNumber": 221
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 224
+        },
+        {
+          "caller": "retrieve",
+          "callee": "max",
+          "lineNumber": 225
+        },
+        {
+          "caller": "retrieve",
+          "callee": "scored.append",
+          "lineNumber": 229
+        },
+        {
+          "caller": "retrieve",
+          "callee": "scored.sort",
+          "lineNumber": 232
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 237
+        },
+        {
+          "caller": "retrieve",
+          "callee": "Path",
+          "lineNumber": 237
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 238
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 242
+        },
+        {
+          "caller": "retrieve",
+          "callee": "os.path.relpath",
+          "lineNumber": 250
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 252
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 260
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 261
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 261
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 262
+        },
+        {
+          "caller": "retrieve",
+          "callee": "meta.get",
+          "lineNumber": 262
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 267
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 269
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 271
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 277
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 278
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 279
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 281
+        },
+        {
+          "caller": "create_brain_source",
+          "callee": "BrainWikiSource",
+          "lineNumber": 291
+        },
+        {
+          "caller": "create_brain_source",
+          "callee": "str",
+          "lineNumber": 292
+        },
+        {
+          "caller": "create_brain_source",
+          "callee": "Path.home",
+          "lineNumber": 293
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 5,
+        "functionCount": 4,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 346,
+      "nonEmptyLines": 281,
+      "functions": [
+        {
+          "name": "create_code_search_source",
+          "startLine": 211,
+          "endLine": 219,
+          "params": [
+            "searxng_url",
+            "max_results"
+          ]
+        },
+        {
+          "name": "create_code_search_source",
+          "startLine": 336,
+          "endLine": 346,
+          "params": [
+            "search_url",
+            "max_results",
+            "search_paths"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "CodeSearchKnowledgeSource",
+          "startLine": 25,
+          "endLine": 208,
+          "methods": [
+            "can_handle",
+            "_score_code_result",
+            "retrieve",
+            "_detect_language"
+          ],
+          "properties": [
+            "searxng_url",
+            "max_results",
+            "timeout",
+            "search_paths",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled",
+            "code_engines"
+          ]
+        },
+        {
+          "name": "CodeSearchKnowledgeSource",
+          "startLine": 225,
+          "endLine": 333,
+          "methods": [
+            "can_handle",
+            "_run_grep",
+            "retrieve"
+          ],
+          "properties": [
+            "search_url",
+            "max_results",
+            "timeout",
+            "search_paths",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "CodeSearchKnowledgeSource",
+          "line": 24,
+          "isDefault": false
+        },
+        {
+          "name": "create_code_search_source",
+          "line": 211,
+          "isDefault": false
+        },
+        {
+          "name": "CodeSearchKnowledgeSource",
+          "line": 224,
+          "isDefault": false
+        },
+        {
+          "name": "create_code_search_source",
+          "line": 336,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 51
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get(\"url\", \"\").lower",
+          "lineNumber": 56
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get",
+          "lineNumber": 56
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get(\"title\", \"\").lower",
+          "lineNumber": 57
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get",
+          "lineNumber": 57
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get(\"content\", result.get(\"snippet\", \"\")).lower",
+          "lineNumber": 58
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get",
+          "lineNumber": 58
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "result.get",
+          "lineNumber": 58
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "query.lower",
+          "lineNumber": 59
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "any",
+          "lineNumber": 65
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "query_lower.split",
+          "lineNumber": 68
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "len",
+          "lineNumber": 68
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "any",
+          "lineNumber": 69
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "any",
+          "lineNumber": 72
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "url.startswith",
+          "lineNumber": 75
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "len",
+          "lineNumber": 78
+        },
+        {
+          "caller": "_score_code_result",
+          "callee": "min",
+          "lineNumber": 81
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 90
+        },
+        {
+          "caller": "retrieve",
+          "callee": "\",\".join",
+          "lineNumber": 105
+        },
+        {
+          "caller": "retrieve",
+          "callee": "httpx.AsyncClient",
+          "lineNumber": 108
+        },
+        {
+          "caller": "retrieve",
+          "callee": "client.get",
+          "lineNumber": 109
+        },
+        {
+          "caller": "retrieve",
+          "callee": "response.json",
+          "lineNumber": 119
+        },
+        {
+          "caller": "retrieve",
+          "callee": "data.get",
+          "lineNumber": 121
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._score_code_result",
+          "lineNumber": 126
+        },
+        {
+          "caller": "retrieve",
+          "callee": "results.sort",
+          "lineNumber": 129
+        },
+        {
+          "caller": "retrieve",
+          "callee": "r.get",
+          "lineNumber": 129
+        },
+        {
+          "caller": "retrieve",
+          "callee": "enumerate",
+          "lineNumber": 132
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 133
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 134
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 134
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 135
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 136
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 140
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 147
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 148
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._detect_language",
+          "lineNumber": 149
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 153
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 155
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.warning",
+          "lineNumber": 163
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 168
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 173
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 176
+        },
+        {
+          "caller": "retrieve",
+          "callee": "type",
+          "lineNumber": 177
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.exception",
+          "lineNumber": 178
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 180
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 182
+        },
+        {
+          "caller": "_detect_language",
+          "callee": "url.lower",
+          "lineNumber": 192
+        },
+        {
+          "caller": "_detect_language",
+          "callee": "title.lower",
+          "lineNumber": 193
+        },
+        {
+          "caller": "_detect_language",
+          "callee": "lang_extensions.items",
+          "lineNumber": 204
+        },
+        {
+          "caller": "create_code_search_source",
+          "callee": "CodeSearchKnowledgeSource",
+          "lineNumber": 216
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 246
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "query.replace(\"'\", \"\\\\'\").replace",
+          "lineNumber": 251
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "query.replace",
+          "lineNumber": 251
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "' '.join",
+          "lineNumber": 255
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "' '.join",
+          "lineNumber": 257
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "asyncio.create_subprocess_shell",
+          "lineNumber": 260
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "asyncio.wait_for",
+          "lineNumber": 265
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "proc.communicate",
+          "lineNumber": 265
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "stdout.decode().strip().split",
+          "lineNumber": 267
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "stdout.decode().strip",
+          "lineNumber": 267
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "stdout.decode",
+          "lineNumber": 267
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "r.strip",
+          "lineNumber": 268
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "logger.warning",
+          "lineNumber": 270
+        },
+        {
+          "caller": "_run_grep",
+          "callee": "logger.warning",
+          "lineNumber": 273
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 283
+        },
+        {
+          "caller": "retrieve",
+          "callee": "any",
+          "lineNumber": 288
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._run_grep",
+          "lineNumber": 298
+        },
+        {
+          "caller": "retrieve",
+          "callee": "enumerate",
+          "lineNumber": 301
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.split",
+          "lineNumber": 303
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 304
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 309
+        },
+        {
+          "caller": "retrieve",
+          "callee": "content.strip",
+          "lineNumber": 310
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 316
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 317
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.info",
+          "lineNumber": 318
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 318
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 321
+        },
+        {
+          "caller": "retrieve",
+          "callee": "type",
+          "lineNumber": 322
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.exception",
+          "lineNumber": 323
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 325
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 327
+        },
+        {
+          "caller": "create_code_search_source",
+          "callee": "CodeSearchKnowledgeSource",
+          "lineNumber": 342
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 4,
+        "functionCount": 2,
+        "classCount": 2
+      }
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 159,
+      "nonEmptyLines": 136,
+      "functions": [
+        {
+          "name": "create_rag_source",
+          "startLine": 147,
+          "endLine": 159,
+          "params": [
+            "search_service",
+            "collection",
+            "max_chunks",
+            "**kwargs"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "RAGKnowledgeSource",
+          "startLine": 24,
+          "endLine": 144,
+          "methods": [
+            "__post_init__",
+            "can_handle",
+            "retrieve"
+          ],
+          "properties": [
+            "search_service",
+            "collection",
+            "max_chunks",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "RAGKnowledgeSource",
+          "line": 23,
+          "isDefault": false
+        },
+        {
+          "name": "create_rag_source",
+          "line": 147,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "__post_init__",
+          "callee": "ValueError",
+          "lineNumber": 45
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 51
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 58
+        },
+        {
+          "caller": "retrieve",
+          "callee": "kwargs.get",
+          "lineNumber": 61
+        },
+        {
+          "caller": "retrieve",
+          "callee": "kwargs.get",
+          "lineNumber": 62
+        },
+        {
+          "caller": "retrieve",
+          "callee": "kwargs.get",
+          "lineNumber": 63
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 67
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 71
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self.search_service.search",
+          "lineNumber": 79
+        },
+        {
+          "caller": "retrieve",
+          "callee": "search_result.get",
+          "lineNumber": 87
+        },
+        {
+          "caller": "retrieve",
+          "callee": "search_result.get",
+          "lineNumber": 88
+        },
+        {
+          "caller": "retrieve",
+          "callee": "search_result.get",
+          "lineNumber": 89
+        },
+        {
+          "caller": "retrieve",
+          "callee": "enumerate",
+          "lineNumber": 93
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 94
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 95
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 96
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 107
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 114
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 116
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 118
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 126
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 132
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logging.getLogger(__name__).error",
+          "lineNumber": 133
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logging.getLogger",
+          "lineNumber": 133
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 135
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 141
+        },
+        {
+          "caller": "retrieve",
+          "callee": "type",
+          "lineNumber": 142
+        },
+        {
+          "caller": "create_rag_source",
+          "callee": "RAGKnowledgeSource",
+          "lineNumber": 154
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 2,
+        "functionCount": 1,
+        "classCount": 1
+      }
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 628,
+      "nonEmptyLines": 531,
+      "functions": [
+        {
+          "name": "create_searxng_source",
+          "startLine": 304,
+          "endLine": 318,
+          "params": [
+            "searxng_url",
+            "max_results",
+            "enable_domain_routing",
+            "enable_quality_scoring",
+            "enable_rag_indexing"
+          ]
+        },
+        {
+          "name": "create_similarity_source",
+          "startLine": 605,
+          "endLine": 615,
+          "params": [
+            "searxng_url",
+            "max_results",
+            "similarity_threshold"
+          ]
+        },
+        {
+          "name": "create_clustering_source",
+          "startLine": 618,
+          "endLine": 628,
+          "params": [
+            "searxng_url",
+            "max_results",
+            "max_clusters"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "SearXNGKnowledgeSource",
+          "startLine": 38,
+          "endLine": 301,
+          "methods": [
+            "_get_domain_hint",
+            "_score_result_quality",
+            "can_handle",
+            "retrieve",
+            "_index_results"
+          ],
+          "properties": [
+            "searxng_url",
+            "max_results",
+            "timeout",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled",
+            "enable_domain_routing",
+            "enable_quality_scoring",
+            "enable_rag_indexing",
+            "min_quality_score",
+            "rag_collection",
+            "_rag_indexer",
+            "_searxng_client",
+            "_domain_hint"
+          ]
+        },
+        {
+          "name": "SearxngSimilarityKnowledgeSource",
+          "startLine": 326,
+          "endLine": 451,
+          "methods": [
+            "can_handle",
+            "retrieve"
+          ],
+          "properties": [
+            "searxng_url",
+            "max_results",
+            "similarity_threshold",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled",
+            "collection",
+            "_rag_indexer",
+            "_search_service"
+          ]
+        },
+        {
+          "name": "SearxngClusteringKnowledgeSource",
+          "startLine": 455,
+          "endLine": 602,
+          "methods": [
+            "can_handle",
+            "retrieve"
+          ],
+          "properties": [
+            "searxng_url",
+            "max_results",
+            "max_clusters",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled",
+            "_clusterer",
+            "_searxng_client"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "SearXNGKnowledgeSource",
+          "line": 37,
+          "isDefault": false
+        },
+        {
+          "name": "create_searxng_source",
+          "line": 304,
+          "isDefault": false
+        },
+        {
+          "name": "SearxngSimilarityKnowledgeSource",
+          "line": 325,
+          "isDefault": false
+        },
+        {
+          "name": "SearxngClusteringKnowledgeSource",
+          "line": 454,
+          "isDefault": false
+        },
+        {
+          "name": "create_similarity_source",
+          "line": 605,
+          "isDefault": false
+        },
+        {
+          "name": "create_clustering_source",
+          "line": 618,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "_get_domain_hint",
+          "callee": "query.lower",
+          "lineNumber": 79
+        },
+        {
+          "caller": "_get_domain_hint",
+          "callee": "domain_indicators.items",
+          "lineNumber": 88
+        },
+        {
+          "caller": "_get_domain_hint",
+          "callee": "any",
+          "lineNumber": 89
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "result.get(\"url\", \"\").lower",
+          "lineNumber": 97
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "result.get",
+          "lineNumber": 97
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "any",
+          "lineNumber": 108
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "trusted.get",
+          "lineNumber": 108
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "result.get",
+          "lineNumber": 112
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "result.get",
+          "lineNumber": 112
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "len",
+          "lineNumber": 113
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "url.startswith",
+          "lineNumber": 117
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "result.get(\"title\", \"\").lower",
+          "lineNumber": 121
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "result.get",
+          "lineNumber": 121
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "any",
+          "lineNumber": 122
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "domain.split",
+          "lineNumber": 122
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "len",
+          "lineNumber": 122
+        },
+        {
+          "caller": "_score_result_quality",
+          "callee": "min",
+          "lineNumber": 125
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 129
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 150
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._get_domain_hint",
+          "lineNumber": 155
+        },
+        {
+          "caller": "retrieve",
+          "callee": "domain_engines.get",
+          "lineNumber": 179
+        },
+        {
+          "caller": "retrieve",
+          "callee": "\",\".join",
+          "lineNumber": 181
+        },
+        {
+          "caller": "retrieve",
+          "callee": "httpx.AsyncClient",
+          "lineNumber": 184
+        },
+        {
+          "caller": "retrieve",
+          "callee": "client.get",
+          "lineNumber": 185
+        },
+        {
+          "caller": "retrieve",
+          "callee": "response.json",
+          "lineNumber": 195
+        },
+        {
+          "caller": "retrieve",
+          "callee": "data.get",
+          "lineNumber": 197
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._score_result_quality",
+          "lineNumber": 203
+        },
+        {
+          "caller": "retrieve",
+          "callee": "results.sort",
+          "lineNumber": 208
+        },
+        {
+          "caller": "retrieve",
+          "callee": "r.get",
+          "lineNumber": 209
+        },
+        {
+          "caller": "retrieve",
+          "callee": "r.get",
+          "lineNumber": 216
+        },
+        {
+          "caller": "retrieve",
+          "callee": "enumerate",
+          "lineNumber": 220
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 221
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 222
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 222
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 223
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 227
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 230
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 234
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 235
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 240
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 242
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._index_results",
+          "lineNumber": 247
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.warning",
+          "lineNumber": 251
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 256
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 261
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 264
+        },
+        {
+          "caller": "retrieve",
+          "callee": "type",
+          "lineNumber": 265
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.exception",
+          "lineNumber": 266
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 268
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 270
+        },
+        {
+          "caller": "_index_results",
+          "callee": "context.get",
+          "lineNumber": 287
+        },
+        {
+          "caller": "_index_results",
+          "callee": "self._rag_indexer.search_and_index",
+          "lineNumber": 291
+        },
+        {
+          "caller": "_index_results",
+          "callee": "len",
+          "lineNumber": 295
+        },
+        {
+          "caller": "_index_results",
+          "callee": "logger.debug",
+          "lineNumber": 298
+        },
+        {
+          "caller": "_index_results",
+          "callee": "len",
+          "lineNumber": 298
+        },
+        {
+          "caller": "_index_results",
+          "callee": "logger.error",
+          "lineNumber": 301
+        },
+        {
+          "caller": "create_searxng_source",
+          "callee": "SearXNGKnowledgeSource",
+          "lineNumber": 312
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 351
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 372
+        },
+        {
+          "caller": "retrieve",
+          "callee": "context.get",
+          "lineNumber": 383
+        },
+        {
+          "caller": "retrieve",
+          "callee": "context.get",
+          "lineNumber": 384
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._rag_indexer.search_similar_to_url",
+          "lineNumber": 387
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 396
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 397
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 398
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 399
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 401
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get(\"metadata\", {}).get",
+          "lineNumber": 403
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 403
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get(\"metadata\", {}).get",
+          "lineNumber": 404
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 404
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 411
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._rag_indexer.search_similar_to_text",
+          "lineNumber": 415
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 422
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 423
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 424
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 425
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 427
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get(\"metadata\", {}).get",
+          "lineNumber": 429
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 429
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get(\"metadata\", {}).get",
+          "lineNumber": 430
+        },
+        {
+          "caller": "retrieve",
+          "callee": "similar.get",
+          "lineNumber": 430
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 437
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 440
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 441
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 443
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 445
+        },
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 480
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 499
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 511
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 515
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._searxng_client.search_with_domain_routing",
+          "lineNumber": 522
+        },
+        {
+          "caller": "retrieve",
+          "callee": "search_result.get",
+          "lineNumber": 525
+        },
+        {
+          "caller": "retrieve",
+          "callee": "httpx.AsyncClient",
+          "lineNumber": 528
+        },
+        {
+          "caller": "retrieve",
+          "callee": "client.get",
+          "lineNumber": 530
+        },
+        {
+          "caller": "retrieve",
+          "callee": "response.json",
+          "lineNumber": 539
+        },
+        {
+          "caller": "retrieve",
+          "callee": "data.get",
+          "lineNumber": 540
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 544
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 548
+        },
+        {
+          "caller": "retrieve",
+          "callee": "self._clusterer.cluster_and_summarize",
+          "lineNumber": 553
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_summary.get",
+          "lineNumber": 558
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_data.get",
+          "lineNumber": 559
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_data.get",
+          "lineNumber": 560
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_data.get",
+          "lineNumber": 561
+        },
+        {
+          "caller": "retrieve",
+          "callee": "', '.join",
+          "lineNumber": 564
+        },
+        {
+          "caller": "retrieve",
+          "callee": "result.get",
+          "lineNumber": 566
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 568
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 569
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_data.get",
+          "lineNumber": 572
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_data.get",
+          "lineNumber": 576
+        },
+        {
+          "caller": "retrieve",
+          "callee": "metadata.update",
+          "lineNumber": 582
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_summary.get",
+          "lineNumber": 584
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_summary.get",
+          "lineNumber": 585
+        },
+        {
+          "caller": "retrieve",
+          "callee": "cluster_summary.get",
+          "lineNumber": 586
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 591
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 592
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 594
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 596
+        },
+        {
+          "caller": "create_similarity_source",
+          "callee": "SearxngSimilarityKnowledgeSource",
+          "lineNumber": 611
+        },
+        {
+          "caller": "create_clustering_source",
+          "callee": "SearxngClusteringKnowledgeSource",
+          "lineNumber": 624
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 6,
+        "functionCount": 3,
+        "classCount": 3
+      }
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "language": "python",
+      "fileCategory": "code",
+      "totalLines": 170,
+      "nonEmptyLines": 141,
+      "functions": [
+        {
+          "name": "create_web_search_source",
+          "startLine": 162,
+          "endLine": 170,
+          "params": [
+            "mcp_url",
+            "max_results"
+          ]
+        }
+      ],
+      "classes": [
+        {
+          "name": "WebSearchKnowledgeSource",
+          "startLine": 23,
+          "endLine": 159,
+          "methods": [
+            "can_handle",
+            "retrieve"
+          ],
+          "properties": [
+            "mcp_url",
+            "max_results",
+            "timeout",
+            "name",
+            "description",
+            "priority",
+            "capabilities",
+            "enabled"
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "name": "WebSearchKnowledgeSource",
+          "line": 22,
+          "isDefault": false
+        },
+        {
+          "name": "create_web_search_source",
+          "line": 162,
+          "isDefault": false
+        }
+      ],
+      "callGraph": [
+        {
+          "caller": "can_handle",
+          "callee": "bool",
+          "lineNumber": 41
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 50
+        },
+        {
+          "caller": "retrieve",
+          "callee": "httpx.AsyncClient",
+          "lineNumber": 81
+        },
+        {
+          "caller": "retrieve",
+          "callee": "client.post",
+          "lineNumber": 82
+        },
+        {
+          "caller": "retrieve",
+          "callee": "response.json",
+          "lineNumber": 90
+        },
+        {
+          "caller": "retrieve",
+          "callee": "data.get",
+          "lineNumber": 93
+        },
+        {
+          "caller": "retrieve",
+          "callee": "isinstance",
+          "lineNumber": 99
+        },
+        {
+          "caller": "retrieve",
+          "callee": "isinstance",
+          "lineNumber": 101
+        },
+        {
+          "caller": "retrieve",
+          "callee": "enumerate",
+          "lineNumber": 106
+        },
+        {
+          "caller": "retrieve",
+          "callee": "item.get",
+          "lineNumber": 107
+        },
+        {
+          "caller": "retrieve",
+          "callee": "item.get",
+          "lineNumber": 108
+        },
+        {
+          "caller": "retrieve",
+          "callee": "item.get",
+          "lineNumber": 108
+        },
+        {
+          "caller": "retrieve",
+          "callee": "item.get",
+          "lineNumber": 109
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeChunk",
+          "lineNumber": 113
+        },
+        {
+          "caller": "retrieve",
+          "callee": "chunks.append",
+          "lineNumber": 123
+        },
+        {
+          "caller": "retrieve",
+          "callee": "len",
+          "lineNumber": 125
+        },
+        {
+          "caller": "retrieve",
+          "callee": "data.get(\"error\", {}).get",
+          "lineNumber": 128
+        },
+        {
+          "caller": "retrieve",
+          "callee": "data.get",
+          "lineNumber": 128
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.warning",
+          "lineNumber": 130
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.warning",
+          "lineNumber": 133
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 139
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.error",
+          "lineNumber": 144
+        },
+        {
+          "caller": "retrieve",
+          "callee": "str",
+          "lineNumber": 147
+        },
+        {
+          "caller": "retrieve",
+          "callee": "type",
+          "lineNumber": 148
+        },
+        {
+          "caller": "retrieve",
+          "callee": "logger.exception",
+          "lineNumber": 149
+        },
+        {
+          "caller": "retrieve",
+          "callee": "time.time",
+          "lineNumber": 151
+        },
+        {
+          "caller": "retrieve",
+          "callee": "KnowledgeResult",
+          "lineNumber": 153
+        },
+        {
+          "caller": "create_web_search_source",
+          "callee": "WebSearchKnowledgeSource",
+          "lineNumber": 167
+        }
+      ],
+      "metrics": {
+        "importCount": 1,
+        "exportCount": 2,
+        "functionCount": 1,
+        "classCount": 1
+      }
+    }
+  ]
+}

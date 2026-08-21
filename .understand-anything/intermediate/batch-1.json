@@ -1,0 +1,1163 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/middleware/knowledge_fabric/core.py",
+      "type": "file",
+      "name": "core.py",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "python file (197 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "file:src/middleware/knowledge_fabric/sources/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "src/middleware/knowledge_fabric/sources/__init__.py",
+      "summary": "python file (36 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "type": "file",
+      "name": "brain_source.py",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "python file (296 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "type": "file",
+      "name": "code_search_source.py",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "python file (345 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "file:src/middleware/knowledge_fabric/sources/rag_source.py",
+      "type": "file",
+      "name": "rag_source.py",
+      "filePath": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "summary": "python file (159 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "type": "file",
+      "name": "searxng_source.py",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "python file (628 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "file:src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "type": "file",
+      "name": "web_search_source.py",
+      "filePath": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "summary": "python file (170 lines)",
+      "tags": [
+        "code",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/core.py:SourcePriority",
+      "type": "class",
+      "name": "SourcePriority",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Class SourcePriority (lines 21-26)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/core.py:SourceCapability",
+      "type": "class",
+      "name": "SourceCapability",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Class SourceCapability (lines 29-36)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/core.py:KnowledgeChunk",
+      "type": "class",
+      "name": "KnowledgeChunk",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Class KnowledgeChunk (lines 40-60)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeChunk.__post_init__",
+      "type": "function",
+      "name": "KnowledgeChunk.__post_init__",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeChunk.__post_init__",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/core.py:KnowledgeResult",
+      "type": "class",
+      "name": "KnowledgeResult",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Class KnowledgeResult (lines 64-87)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeResult.total_chunks",
+      "type": "function",
+      "name": "KnowledgeResult.total_chunks",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeResult.total_chunks",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeResult.has_results",
+      "type": "function",
+      "name": "KnowledgeResult.has_results",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeResult.has_results",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/core.py:FabricContext",
+      "type": "class",
+      "name": "FabricContext",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Class FabricContext (lines 91-125)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:FabricContext.total_sources_queried",
+      "type": "function",
+      "name": "FabricContext.total_sources_queried",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method FabricContext.total_sources_queried",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:FabricContext.total_chunks_retrieved",
+      "type": "function",
+      "name": "FabricContext.total_chunks_retrieved",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method FabricContext.total_chunks_retrieved",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/core.py:KnowledgeSource",
+      "type": "class",
+      "name": "KnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Class KnowledgeSource (lines 133-197)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.retrieve",
+      "type": "function",
+      "name": "KnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.can_handle",
+      "type": "function",
+      "name": "KnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.__str__",
+      "type": "function",
+      "name": "KnowledgeSource.__str__",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeSource.__str__",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.__repr__",
+      "type": "function",
+      "name": "KnowledgeSource.__repr__",
+      "filePath": "src/middleware/knowledge_fabric/core.py",
+      "summary": "Method KnowledgeSource.__repr__",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:_parse_frontmatter",
+      "type": "function",
+      "name": "_parse_frontmatter",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Function _parse_frontmatter (lines 32-51)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:_tokenize",
+      "type": "function",
+      "name": "_tokenize",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Function _tokenize (lines 54-56)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:_score_relevance",
+      "type": "function",
+      "name": "_score_relevance",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Function _score_relevance (lines 59-70)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:create_brain_source",
+      "type": "function",
+      "name": "create_brain_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Function create_brain_source (lines 286-296)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "type": "class",
+      "name": "BrainWikiSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Class BrainWikiSource (lines 74-283)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource.__post_init__",
+      "type": "function",
+      "name": "BrainWikiSource.__post_init__",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Method BrainWikiSource.__post_init__",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource._scan_wiki_files",
+      "type": "function",
+      "name": "BrainWikiSource._scan_wiki_files",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Method BrainWikiSource._scan_wiki_files",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource._load_file",
+      "type": "function",
+      "name": "BrainWikiSource._load_file",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Method BrainWikiSource._load_file",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource.can_handle",
+      "type": "function",
+      "name": "BrainWikiSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Method BrainWikiSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource.retrieve",
+      "type": "function",
+      "name": "BrainWikiSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "summary": "Method BrainWikiSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:create_code_search_source",
+      "type": "function",
+      "name": "create_code_search_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Function create_code_search_source (lines 211-219)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:create_code_search_source",
+      "type": "function",
+      "name": "create_code_search_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Function create_code_search_source (lines 336-346)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "type": "class",
+      "name": "CodeSearchKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Class CodeSearchKnowledgeSource (lines 25-208)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource._score_code_result",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource._score_code_result",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource._score_code_result",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource._detect_language",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource._detect_language",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource._detect_language",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "type": "class",
+      "name": "CodeSearchKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Class CodeSearchKnowledgeSource (lines 225-333)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource._run_grep",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource._run_grep",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource._run_grep",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "CodeSearchKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "summary": "Method CodeSearchKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/rag_source.py:create_rag_source",
+      "type": "function",
+      "name": "create_rag_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "summary": "Function create_rag_source (lines 147-159)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource",
+      "type": "class",
+      "name": "RAGKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "summary": "Class RAGKnowledgeSource (lines 24-144)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource.__post_init__",
+      "type": "function",
+      "name": "RAGKnowledgeSource.__post_init__",
+      "filePath": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "summary": "Method RAGKnowledgeSource.__post_init__",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "RAGKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "summary": "Method RAGKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "RAGKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "summary": "Method RAGKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:create_searxng_source",
+      "type": "function",
+      "name": "create_searxng_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Function create_searxng_source (lines 304-318)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:create_similarity_source",
+      "type": "function",
+      "name": "create_similarity_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Function create_similarity_source (lines 605-615)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:create_clustering_source",
+      "type": "function",
+      "name": "create_clustering_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Function create_clustering_source (lines 618-628)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "type": "class",
+      "name": "SearXNGKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Class SearXNGKnowledgeSource (lines 38-301)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource._get_domain_hint",
+      "type": "function",
+      "name": "SearXNGKnowledgeSource._get_domain_hint",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearXNGKnowledgeSource._get_domain_hint",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource._score_result_quality",
+      "type": "function",
+      "name": "SearXNGKnowledgeSource._score_result_quality",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearXNGKnowledgeSource._score_result_quality",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "SearXNGKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearXNGKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "SearXNGKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearXNGKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource._index_results",
+      "type": "function",
+      "name": "SearXNGKnowledgeSource._index_results",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearXNGKnowledgeSource._index_results",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource",
+      "type": "class",
+      "name": "SearxngSimilarityKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Class SearxngSimilarityKnowledgeSource (lines 326-451)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "SearxngSimilarityKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearxngSimilarityKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "SearxngSimilarityKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearxngSimilarityKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource",
+      "type": "class",
+      "name": "SearxngClusteringKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Class SearxngClusteringKnowledgeSource (lines 455-602)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "SearxngClusteringKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearxngClusteringKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "SearxngClusteringKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "summary": "Method SearxngClusteringKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/web_search_source.py:create_web_search_source",
+      "type": "function",
+      "name": "create_web_search_source",
+      "filePath": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "summary": "Function create_web_search_source (lines 162-170)",
+      "tags": [
+        "function",
+        "python"
+      ]
+    },
+    {
+      "id": "class:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource",
+      "type": "class",
+      "name": "WebSearchKnowledgeSource",
+      "filePath": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "summary": "Class WebSearchKnowledgeSource (lines 23-159)",
+      "tags": [
+        "class",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource.can_handle",
+      "type": "function",
+      "name": "WebSearchKnowledgeSource.can_handle",
+      "filePath": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "summary": "Method WebSearchKnowledgeSource.can_handle",
+      "tags": [
+        "method",
+        "python"
+      ]
+    },
+    {
+      "id": "function:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource.retrieve",
+      "type": "function",
+      "name": "WebSearchKnowledgeSource.retrieve",
+      "filePath": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "summary": "Method WebSearchKnowledgeSource.retrieve",
+      "tags": [
+        "method",
+        "python"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:src/middleware/knowledge_fabric/core.py",
+      "target": "class:src/middleware/knowledge_fabric/core.py:SourcePriority",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/core.py",
+      "target": "class:src/middleware/knowledge_fabric/core.py:SourceCapability",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/core.py",
+      "target": "class:src/middleware/knowledge_fabric/core.py:KnowledgeChunk",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeChunk",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeChunk.__post_init__",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/core.py",
+      "target": "class:src/middleware/knowledge_fabric/core.py:KnowledgeResult",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeResult",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeResult.total_chunks",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeResult",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeResult.has_results",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/core.py",
+      "target": "class:src/middleware/knowledge_fabric/core.py:FabricContext",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:FabricContext",
+      "target": "function:src/middleware/knowledge_fabric/core.py:FabricContext.total_sources_queried",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:FabricContext",
+      "target": "function:src/middleware/knowledge_fabric/core.py:FabricContext.total_chunks_retrieved",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/core.py",
+      "target": "class:src/middleware/knowledge_fabric/core.py:KnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.__str__",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/core.py:KnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/core.py:KnowledgeSource.__repr__",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/__init__.py",
+      "target": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/__init__.py",
+      "target": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/__init__.py",
+      "target": "file:src/middleware/knowledge_fabric/sources/rag_source.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/__init__.py",
+      "target": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/__init__.py",
+      "target": "file:src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:_parse_frontmatter",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:_tokenize",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:_score_relevance",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:create_brain_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource.__post_init__",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource._scan_wiki_files",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource._load_file",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/brain_source.py:BrainWikiSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/brain_source.py",
+      "target": "file:src/middleware/knowledge_fabric/core.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:create_code_search_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:create_code_search_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource._score_code_result",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource._detect_language",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource._run_grep",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/code_search_source.py:CodeSearchKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "target": "file:src/middleware/knowledge_fabric/core.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/rag_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/rag_source.py:create_rag_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/rag_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource.__post_init__",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/rag_source.py:RAGKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/rag_source.py",
+      "target": "file:src/middleware/knowledge_fabric/core.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:create_searxng_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:create_similarity_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:create_clustering_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource._get_domain_hint",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource._score_result_quality",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearXNGKnowledgeSource._index_results",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngSimilarityKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/searxng_source.py:SearxngClusteringKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "target": "file:src/middleware/knowledge_fabric/core.py",
+      "type": "imports",
+      "weight": 0.7
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "target": "function:src/middleware/knowledge_fabric/sources/web_search_source.py:create_web_search_source",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "target": "class:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource.can_handle",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "class:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource",
+      "target": "function:src/middleware/knowledge_fabric/sources/web_search_source.py:WebSearchKnowledgeSource.retrieve",
+      "type": "contains",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "target": "file:src/middleware/knowledge_fabric/core.py",
+      "type": "imports",
+      "weight": 0.7
+    }
+  ]
+}
