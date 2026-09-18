@@ -200,6 +200,16 @@ pytest tests/ -v
 nix build .#container
 ```
 
+> **Test environment note (verified 2026-07-16):** `uv run pytest` can import the agent
+> harness's own Nix Python site-packages (a broken `pydantic_core`) ahead of this project's
+> `.venv`, causing `ModuleNotFoundError: pydantic_core._pydantic_core`. Run the venv Python
+> with isolation instead:
+> `./.venv/bin/python -I -m pytest tests/ -v`
+> `tests/test_mlsec_phase2.py` had a corrupted `TestPromptInjectionScorer` class (truncated
+> method bodies, `IndentationError`); repaired against the real
+> `PromptInjectionScorer().score()` API — 6 tests pass. Pre-existing gap: PII sanitizer tests
+> still fail (private IPs like `192.168.1.100` are not redacted).
+
 ## MCP Integration
 
 The gateway runs an MCP broker managing connections to upstream MCP servers.

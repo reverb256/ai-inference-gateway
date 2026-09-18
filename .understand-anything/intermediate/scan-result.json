@@ -1,0 +1,1485 @@
+{
+  "scriptCompleted": true,
+  "files": [
+    {
+      "path": ".diff-scores.json",
+      "language": "json",
+      "sizeLines": 321,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/01-bug-report.md",
+      "language": "markdown",
+      "sizeLines": 50,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/02-feature-request.md",
+      "language": "markdown",
+      "sizeLines": 33,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/03-agent-task.md",
+      "language": "markdown",
+      "sizeLines": 53,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "language": "yaml",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "language": "markdown",
+      "sizeLines": 32,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".github/workflows/doc-rot-guard.yml",
+      "language": "yaml",
+      "sizeLines": 12,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".github/workflows/garnix.yml",
+      "language": "yaml",
+      "sizeLines": 26,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".pi-lens/cache/jscpd.json",
+      "language": "json",
+      "sizeLines": 6,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/jscpd.meta.json",
+      "language": "json",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/knip.json",
+      "language": "json",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/knip.meta.json",
+      "language": "json",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/turn-end-findings-last.json",
+      "language": "json",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/turn-end-findings-last.meta.json",
+      "language": "json",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/turn-end-findings.json",
+      "language": "json",
+      "sizeLines": 0,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/cache/turn-end-findings.meta.json",
+      "language": "json",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pi-lens/turn-state.json",
+      "language": "json",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "language": "yaml",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/.understandignore",
+      "language": "unknown",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "AGENTS.md",
+      "language": "markdown",
+      "sizeLines": 230,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "language": "markdown",
+      "sizeLines": 61,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "DOCS-MAINTENANCE.md",
+      "language": "markdown",
+      "sizeLines": 7,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/AUTONOMOUS_MODEL_SELECTION.md",
+      "language": "markdown",
+      "sizeLines": 163,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "flake.nix",
+      "language": "nix",
+      "sizeLines": 200,
+      "fileCategory": "code"
+    },
+    {
+      "path": "garnix.nix",
+      "language": "nix",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "kubernetes/module.nix",
+      "language": "nix",
+      "sizeLines": 436,
+      "fileCategory": "infra"
+    },
+    {
+      "path": "nix/auth/default.nix",
+      "language": "nix",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/auth/tailscale.nix",
+      "language": "nix",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/bin/opencode-searxng-mcp",
+      "language": "unknown",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/bin/searxng-mcp-wrapper",
+      "language": "unknown",
+      "sizeLines": 21,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/config-assertions.nix",
+      "language": "nix",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/config-backend.nix",
+      "language": "nix",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/config-networking.nix",
+      "language": "nix",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/default.nix",
+      "language": "nix",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/gateway.nix",
+      "language": "nix",
+      "sizeLines": 306,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/health-monitor.nix",
+      "language": "nix",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/monitor.nix",
+      "language": "nix",
+      "sizeLines": 197,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/options.nix",
+      "language": "nix",
+      "sizeLines": 943,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/qdrant.nix",
+      "language": "nix",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/redis-cache.nix",
+      "language": "nix",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/router.nix",
+      "language": "nix",
+      "sizeLines": 63,
+      "fileCategory": "code"
+    },
+    {
+      "path": "nix/scripts/ensure-opencode-gateway.sh",
+      "language": "shell",
+      "sizeLines": 0,
+      "fileCategory": "script"
+    },
+    {
+      "path": "nix/shell.nix",
+      "language": "nix",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "phase1-endpoints.patch",
+      "language": "patch",
+      "sizeLines": 403,
+      "fileCategory": "code"
+    },
+    {
+      "path": "PLAN-CONCURRENCY.md",
+      "language": "markdown",
+      "sizeLines": 151,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "pyproject.toml",
+      "language": "toml",
+      "sizeLines": 142,
+      "fileCategory": "config"
+    },
+    {
+      "path": "pytest.ini",
+      "language": "config",
+      "sizeLines": 48,
+      "fileCategory": "config"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 211,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "src/__init__.py",
+      "language": "python",
+      "sizeLines": 2,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/agent_search.py",
+      "language": "python",
+      "sizeLines": 470,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/audio_handler.py",
+      "language": "python",
+      "sizeLines": 471,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/category_router.py",
+      "language": "python",
+      "sizeLines": 569,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/circuit_breaker.py",
+      "language": "python",
+      "sizeLines": 312,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/claude_client.py",
+      "language": "python",
+      "sizeLines": 317,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/cloud_discovery.py",
+      "language": "python",
+      "sizeLines": 367,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/config.py",
+      "language": "python",
+      "sizeLines": 705,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/contexts.py",
+      "language": "python",
+      "sizeLines": 237,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/dependencies.py",
+      "language": "python",
+      "sizeLines": 15,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/files.py",
+      "language": "python",
+      "sizeLines": 414,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/gpu_scheduler.py",
+      "language": "python",
+      "sizeLines": 396,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/hermes_integration.py",
+      "language": "python",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/hybrid_search.py",
+      "language": "python",
+      "sizeLines": 744,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/main.py",
+      "language": "python",
+      "sizeLines": 6676,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_broker.py",
+      "language": "python",
+      "sizeLines": 1371,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_cache.py",
+      "language": "python",
+      "sizeLines": 303,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_http_bridge.py",
+      "language": "python",
+      "sizeLines": 290,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_servers/__init__.py",
+      "language": "python",
+      "sizeLines": 6,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_servers/maplespike_server.py",
+      "language": "python",
+      "sizeLines": 302,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_servers/searxng_server.py",
+      "language": "python",
+      "sizeLines": 690,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/mcp_servers/searxng_settings.yml",
+      "language": "yaml",
+      "sizeLines": 462,
+      "fileCategory": "config"
+    },
+    {
+      "path": "src/metrics.py",
+      "language": "python",
+      "sizeLines": 598,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/__init__.py",
+      "language": "python",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/audit_log.py",
+      "language": "python",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/auth.py",
+      "language": "python",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/base.py",
+      "language": "python",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/circuit_breaker.py",
+      "language": "python",
+      "sizeLines": 340,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/concurrency_limiter.py",
+      "language": "python",
+      "sizeLines": 147,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/__init__.py",
+      "language": "python",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/circuit_breaker.py",
+      "language": "python",
+      "sizeLines": 408,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/core.py",
+      "language": "python",
+      "sizeLines": 197,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/fabric.py",
+      "language": "python",
+      "sizeLines": 524,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/fusion.py",
+      "language": "python",
+      "sizeLines": 382,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/metrics.py",
+      "language": "python",
+      "sizeLines": 643,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/routing.py",
+      "language": "python",
+      "sizeLines": 262,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/__init__.py",
+      "language": "python",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "language": "python",
+      "sizeLines": 296,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "language": "python",
+      "sizeLines": 345,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "language": "python",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "language": "python",
+      "sizeLines": 628,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/sources/web_search_source.py",
+      "language": "python",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/tests/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/tests/fixtures/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/tests/integration/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/tests/performance/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/knowledge_fabric/tests/unit/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/load_balancer.py",
+      "language": "python",
+      "sizeLines": 406,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/observability_plugin.py",
+      "language": "python",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/observability.py",
+      "language": "python",
+      "sizeLines": 124,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/pii_input.py",
+      "language": "python",
+      "sizeLines": 271,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/plugin_base.py",
+      "language": "python",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/rag_injector.py",
+      "language": "python",
+      "sizeLines": 487,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/rate_limiter.py",
+      "language": "python",
+      "sizeLines": 338,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/scope_enforcer.py",
+      "language": "python",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/security_filter.py",
+      "language": "python",
+      "sizeLines": 296,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/middleware/validation.py",
+      "language": "python",
+      "sizeLines": 180,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/model_benchmark.py",
+      "language": "python",
+      "sizeLines": 780,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/model_defaults.py",
+      "language": "python",
+      "sizeLines": 514,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/model_discovery.py",
+      "language": "python",
+      "sizeLines": 300,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/moderation.py",
+      "language": "python",
+      "sizeLines": 356,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/observability/__init__.py",
+      "language": "python",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/observability/otel_sanitizer.py",
+      "language": "python",
+      "sizeLines": 104,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/observability/sanitizing_logger.py",
+      "language": "python",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/observability/tracing.py",
+      "language": "python",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/openai_client.py",
+      "language": "python",
+      "sizeLines": 828,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/output/__init__.py",
+      "language": "python",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/output/reasoning_sanitizer.py",
+      "language": "python",
+      "sizeLines": 181,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/output/response_sanitizer.py",
+      "language": "python",
+      "sizeLines": 428,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/output/tool_call_sanitizer.py",
+      "language": "python",
+      "sizeLines": 178,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pii_redactor.py",
+      "language": "python",
+      "sizeLines": 319,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/pipeline.py",
+      "language": "python",
+      "sizeLines": 148,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/privacy_filter_client.py",
+      "language": "python",
+      "sizeLines": 246,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/prompt_injection_scorer.py",
+      "language": "python",
+      "sizeLines": 245,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/provider_rate_limiter.py",
+      "language": "python",
+      "sizeLines": 223,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/query_expansion.py",
+      "language": "python",
+      "sizeLines": 119,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/__init__.py",
+      "language": "python",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/chunker.py",
+      "language": "python",
+      "sizeLines": 224,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/config.py",
+      "language": "python",
+      "sizeLines": 161,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/embeddings.py",
+      "language": "python",
+      "sizeLines": 345,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/ingestion.py",
+      "language": "python",
+      "sizeLines": 510,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/qdrant_client.py",
+      "language": "python",
+      "sizeLines": 457,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/rag/search.py",
+      "language": "python",
+      "sizeLines": 388,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/response_format.py",
+      "language": "python",
+      "sizeLines": 338,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/retry_handler.py",
+      "language": "python",
+      "sizeLines": 543,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/roundtable.py",
+      "language": "python",
+      "sizeLines": 510,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/router.py",
+      "language": "python",
+      "sizeLines": 2685,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/routes/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/routes/admin.py",
+      "language": "python",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/routes/virtual_keys.py",
+      "language": "python",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/search_cache.py",
+      "language": "python",
+      "sizeLines": 145,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/searxng_clustering.py",
+      "language": "python",
+      "sizeLines": 606,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/searxng_exports.py",
+      "language": "python",
+      "sizeLines": 351,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/searxng_history.py",
+      "language": "python",
+      "sizeLines": 674,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/searxng_integration.py",
+      "language": "python",
+      "sizeLines": 633,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/searxng_monitoring.py",
+      "language": "python",
+      "sizeLines": 429,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/searxng_rag.py",
+      "language": "python",
+      "sizeLines": 460,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/self_improvement_api.py",
+      "language": "python",
+      "sizeLines": 409,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/self_improvement.py",
+      "language": "python",
+      "sizeLines": 474,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/semantic_cache.py",
+      "language": "python",
+      "sizeLines": 674,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/services/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/services/anthropic_service.py",
+      "language": "python",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/services/cost_tracker.py",
+      "language": "python",
+      "sizeLines": 208,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/services/virtual_keys.py",
+      "language": "python",
+      "sizeLines": 220,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/tts_handler.py",
+      "language": "python",
+      "sizeLines": 846,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/utils/__init__.py",
+      "language": "python",
+      "sizeLines": 79,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/utils/message_utils.py",
+      "language": "python",
+      "sizeLines": 189,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/utils/metrics.py",
+      "language": "python",
+      "sizeLines": 364,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/utils/redis_client.py",
+      "language": "python",
+      "sizeLines": 274,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/utils/tool_utils.py",
+      "language": "python",
+      "sizeLines": 233,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/vision_handler.py",
+      "language": "python",
+      "sizeLines": 426,
+      "fileCategory": "code"
+    },
+    {
+      "path": "src/vision.py",
+      "language": "python",
+      "sizeLines": 308,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/__init__.py",
+      "language": "python",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/conftest.py",
+      "language": "python",
+      "sizeLines": 283,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/load/locustfile.py",
+      "language": "python",
+      "sizeLines": 216,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/load/README.md",
+      "language": "markdown",
+      "sizeLines": 38,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "tests/requirements-test.txt",
+      "language": "txt",
+      "sizeLines": 21,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "tests/run_tests.py",
+      "language": "python",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_circuit_breaker.py",
+      "language": "python",
+      "sizeLines": 347,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_config.py",
+      "language": "python",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_fabric_fusion.py",
+      "language": "python",
+      "sizeLines": 555,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_fabric_routing.py",
+      "language": "python",
+      "sizeLines": 332,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_fabric_sources.py",
+      "language": "python",
+      "sizeLines": 496,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_hybrid_search_live.py",
+      "language": "python",
+      "sizeLines": 300,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_integration.py",
+      "language": "python",
+      "sizeLines": 554,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_knowledge_fabric_metrics.py",
+      "language": "python",
+      "sizeLines": 331,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_knowledge_fabric.py",
+      "language": "python",
+      "sizeLines": 1518,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_load_balancer.py",
+      "language": "python",
+      "sizeLines": 334,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_main.py",
+      "language": "python",
+      "sizeLines": 408,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_mcp_cache.py",
+      "language": "python",
+      "sizeLines": 484,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_metrics.py",
+      "language": "python",
+      "sizeLines": 176,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_middleware_base.py",
+      "language": "python",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_mlsec_integration.py",
+      "language": "python",
+      "sizeLines": 407,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_mlsec_phase2.py",
+      "language": "python",
+      "sizeLines": 421,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_mlsec_phase3.py",
+      "language": "python",
+      "sizeLines": 381,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_mlsec_sanitizers.py",
+      "language": "python",
+      "sizeLines": 531,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_model_availability.py",
+      "language": "python",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_moderation.py",
+      "language": "python",
+      "sizeLines": 611,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_observability.py",
+      "language": "python",
+      "sizeLines": 204,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_pii_redactor.py",
+      "language": "python",
+      "sizeLines": 513,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_pipeline.py",
+      "language": "python",
+      "sizeLines": 357,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_rate_limiter.py",
+      "language": "python",
+      "sizeLines": 327,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_redis_client.py",
+      "language": "python",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_response_format.py",
+      "language": "python",
+      "sizeLines": 286,
+      "fileCategory": "code"
+    },
+    {
+      "path": "tests/test_security_filter.py",
+      "language": "python",
+      "sizeLines": 361,
+      "fileCategory": "code"
+    }
+  ],
+  "totalFiles": 193,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "large",
+  "stats": {
+    "filesScanned": 193,
+    "byCategory": {
+      "config": 15,
+      "docs": 12,
+      "infra": 3,
+      "code": 162,
+      "script": 1
+    },
+    "byLanguage": {
+      "json": 10,
+      "markdown": 11,
+      "yaml": 5,
+      "unknown": 3,
+      "nix": 17,
+      "shell": 1,
+      "patch": 1,
+      "toml": 1,
+      "config": 1,
+      "python": 142,
+      "txt": 1
+    }
+  },
+  "importMap": {
+    ".diff-scores.json": [],
+    ".github/ISSUE_TEMPLATE/01-bug-report.md": [],
+    ".github/ISSUE_TEMPLATE/02-feature-request.md": [],
+    ".github/ISSUE_TEMPLATE/03-agent-task.md": [],
+    ".github/ISSUE_TEMPLATE/config.yml": [],
+    ".github/pull_request_template.md": [],
+    ".github/workflows/doc-rot-guard.yml": [],
+    ".github/workflows/garnix.yml": [],
+    ".pi-lens/cache/jscpd.json": [],
+    ".pi-lens/cache/jscpd.meta.json": [],
+    ".pi-lens/cache/knip.json": [],
+    ".pi-lens/cache/knip.meta.json": [],
+    ".pi-lens/cache/turn-end-findings-last.json": [],
+    ".pi-lens/cache/turn-end-findings-last.meta.json": [],
+    ".pi-lens/cache/turn-end-findings.json": [],
+    ".pi-lens/cache/turn-end-findings.meta.json": [],
+    ".pi-lens/turn-state.json": [],
+    ".pre-commit-config.yaml": [],
+    ".understand-anything/.understandignore": [],
+    "AGENTS.md": [],
+    "CONTRIBUTING.md": [],
+    "DOCS-MAINTENANCE.md": [],
+    "docs/AUTONOMOUS_MODEL_SELECTION.md": [],
+    "flake.nix": [],
+    "garnix.nix": [],
+    "kubernetes/module.nix": [],
+    "nix/auth/default.nix": [],
+    "nix/auth/tailscale.nix": [],
+    "nix/bin/opencode-searxng-mcp": [],
+    "nix/bin/searxng-mcp-wrapper": [],
+    "nix/config-assertions.nix": [],
+    "nix/config-backend.nix": [],
+    "nix/config-networking.nix": [],
+    "nix/default.nix": [],
+    "nix/gateway.nix": [],
+    "nix/health-monitor.nix": [],
+    "nix/monitor.nix": [],
+    "nix/options.nix": [],
+    "nix/qdrant.nix": [],
+    "nix/redis-cache.nix": [],
+    "nix/router.nix": [],
+    "nix/scripts/ensure-opencode-gateway.sh": [],
+    "nix/shell.nix": [],
+    "phase1-endpoints.patch": [],
+    "PLAN-CONCURRENCY.md": [],
+    "pyproject.toml": [],
+    "pytest.ini": [],
+    "README.md": [],
+    "src/__init__.py": [],
+    "src/agent_search.py": [],
+    "src/audio_handler.py": [],
+    "src/category_router.py": [],
+    "src/circuit_breaker.py": [],
+    "src/claude_client.py": [],
+    "src/cloud_discovery.py": [],
+    "src/config.py": [],
+    "src/contexts.py": [],
+    "src/dependencies.py": [],
+    "src/files.py": [],
+    "src/gpu_scheduler.py": [],
+    "src/hermes_integration.py": [],
+    "src/hybrid_search.py": [],
+    "src/main.py": [],
+    "src/mcp_broker.py": [],
+    "src/mcp_cache.py": [],
+    "src/mcp_http_bridge.py": [],
+    "src/mcp_servers/__init__.py": [
+      "src/mcp_servers/maplespike_server.py",
+      "src/mcp_servers/searxng_server.py"
+    ],
+    "src/mcp_servers/maplespike_server.py": [],
+    "src/mcp_servers/searxng_server.py": [],
+    "src/mcp_servers/searxng_settings.yml": [],
+    "src/metrics.py": [],
+    "src/middleware/__init__.py": [
+      "src/middleware/base.py"
+    ],
+    "src/middleware/audit_log.py": [],
+    "src/middleware/auth.py": [],
+    "src/middleware/base.py": [],
+    "src/middleware/circuit_breaker.py": [],
+    "src/middleware/concurrency_limiter.py": [
+      "src/middleware/base.py"
+    ],
+    "src/middleware/knowledge_fabric/__init__.py": [
+      "src/middleware/knowledge_fabric/circuit_breaker.py",
+      "src/middleware/knowledge_fabric/core.py",
+      "src/middleware/knowledge_fabric/fabric.py",
+      "src/middleware/knowledge_fabric/fusion.py",
+      "src/middleware/knowledge_fabric/metrics.py",
+      "src/middleware/knowledge_fabric/routing.py",
+      "src/middleware/knowledge_fabric/sources/__init__.py"
+    ],
+    "src/middleware/knowledge_fabric/circuit_breaker.py": [],
+    "src/middleware/knowledge_fabric/core.py": [],
+    "src/middleware/knowledge_fabric/fabric.py": [
+      "src/middleware/base.py",
+      "src/middleware/knowledge_fabric/circuit_breaker.py",
+      "src/middleware/knowledge_fabric/core.py",
+      "src/middleware/knowledge_fabric/fusion.py",
+      "src/middleware/knowledge_fabric/metrics.py",
+      "src/middleware/knowledge_fabric/routing.py",
+      "src/middleware/knowledge_fabric/sources/__init__.py"
+    ],
+    "src/middleware/knowledge_fabric/fusion.py": [
+      "src/middleware/knowledge_fabric/core.py",
+      "src/middleware/knowledge_fabric/routing.py"
+    ],
+    "src/middleware/knowledge_fabric/metrics.py": [],
+    "src/middleware/knowledge_fabric/routing.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/__init__.py": [
+      "src/middleware/knowledge_fabric/sources/brain_source.py",
+      "src/middleware/knowledge_fabric/sources/code_search_source.py",
+      "src/middleware/knowledge_fabric/sources/rag_source.py",
+      "src/middleware/knowledge_fabric/sources/searxng_source.py",
+      "src/middleware/knowledge_fabric/sources/web_search_source.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/brain_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/code_search_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/rag_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/searxng_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/sources/web_search_source.py": [
+      "src/middleware/knowledge_fabric/core.py"
+    ],
+    "src/middleware/knowledge_fabric/tests/__init__.py": [],
+    "src/middleware/knowledge_fabric/tests/fixtures/__init__.py": [],
+    "src/middleware/knowledge_fabric/tests/integration/__init__.py": [],
+    "src/middleware/knowledge_fabric/tests/performance/__init__.py": [],
+    "src/middleware/knowledge_fabric/tests/unit/__init__.py": [],
+    "src/middleware/load_balancer.py": [],
+    "src/middleware/observability_plugin.py": [],
+    "src/middleware/observability.py": [],
+    "src/middleware/pii_input.py": [],
+    "src/middleware/plugin_base.py": [],
+    "src/middleware/rag_injector.py": [],
+    "src/middleware/rate_limiter.py": [],
+    "src/middleware/scope_enforcer.py": [],
+    "src/middleware/security_filter.py": [],
+    "src/middleware/validation.py": [],
+    "src/model_benchmark.py": [],
+    "src/model_defaults.py": [
+      "src/contexts.py"
+    ],
+    "src/model_discovery.py": [],
+    "src/moderation.py": [],
+    "src/observability/__init__.py": [],
+    "src/observability/otel_sanitizer.py": [],
+    "src/observability/sanitizing_logger.py": [],
+    "src/observability/tracing.py": [],
+    "src/openai_client.py": [
+      "src/provider_rate_limiter.py"
+    ],
+    "src/output/__init__.py": [],
+    "src/output/reasoning_sanitizer.py": [],
+    "src/output/response_sanitizer.py": [],
+    "src/output/tool_call_sanitizer.py": [],
+    "src/pii_redactor.py": [],
+    "src/pipeline.py": [],
+    "src/privacy_filter_client.py": [],
+    "src/prompt_injection_scorer.py": [],
+    "src/provider_rate_limiter.py": [],
+    "src/query_expansion.py": [],
+    "src/rag/__init__.py": [
+      "src/rag/chunker.py",
+      "src/rag/config.py",
+      "src/rag/embeddings.py",
+      "src/rag/qdrant_client.py",
+      "src/rag/search.py"
+    ],
+    "src/rag/chunker.py": [
+      "src/rag/config.py"
+    ],
+    "src/rag/config.py": [],
+    "src/rag/embeddings.py": [
+      "src/rag/config.py"
+    ],
+    "src/rag/ingestion.py": [
+      "src/rag/chunker.py",
+      "src/rag/config.py",
+      "src/rag/embeddings.py",
+      "src/rag/qdrant_client.py"
+    ],
+    "src/rag/qdrant_client.py": [
+      "src/rag/config.py",
+      "src/rag/qdrant_client.py"
+    ],
+    "src/rag/search.py": [
+      "src/rag/config.py",
+      "src/rag/embeddings.py",
+      "src/rag/qdrant_client.py"
+    ],
+    "src/response_format.py": [],
+    "src/retry_handler.py": [],
+    "src/roundtable.py": [],
+    "src/router.py": [
+      "src/contexts.py",
+      "src/model_benchmark.py",
+      "src/provider_rate_limiter.py"
+    ],
+    "src/routes/__init__.py": [],
+    "src/routes/admin.py": [],
+    "src/routes/virtual_keys.py": [],
+    "src/search_cache.py": [],
+    "src/searxng_clustering.py": [],
+    "src/searxng_exports.py": [],
+    "src/searxng_history.py": [],
+    "src/searxng_integration.py": [],
+    "src/searxng_monitoring.py": [],
+    "src/searxng_rag.py": [],
+    "src/self_improvement_api.py": [],
+    "src/self_improvement.py": [],
+    "src/semantic_cache.py": [],
+    "src/services/__init__.py": [],
+    "src/services/anthropic_service.py": [],
+    "src/services/cost_tracker.py": [],
+    "src/services/virtual_keys.py": [],
+    "src/tts_handler.py": [],
+    "src/utils/__init__.py": [
+      "src/utils/redis_client.py"
+    ],
+    "src/utils/message_utils.py": [],
+    "src/utils/metrics.py": [],
+    "src/utils/redis_client.py": [],
+    "src/utils/tool_utils.py": [],
+    "src/vision_handler.py": [],
+    "src/vision.py": [],
+    "tests/__init__.py": [],
+    "tests/conftest.py": [],
+    "tests/load/locustfile.py": [],
+    "tests/load/README.md": [],
+    "tests/requirements-test.txt": [],
+    "tests/run_tests.py": [],
+    "tests/test_circuit_breaker.py": [],
+    "tests/test_config.py": [],
+    "tests/test_fabric_fusion.py": [],
+    "tests/test_fabric_routing.py": [],
+    "tests/test_fabric_sources.py": [],
+    "tests/test_hybrid_search_live.py": [],
+    "tests/test_integration.py": [],
+    "tests/test_knowledge_fabric_metrics.py": [],
+    "tests/test_knowledge_fabric.py": [],
+    "tests/test_load_balancer.py": [],
+    "tests/test_main.py": [],
+    "tests/test_mcp_cache.py": [],
+    "tests/test_metrics.py": [],
+    "tests/test_middleware_base.py": [],
+    "tests/test_mlsec_integration.py": [],
+    "tests/test_mlsec_phase2.py": [],
+    "tests/test_mlsec_phase3.py": [],
+    "tests/test_mlsec_sanitizers.py": [],
+    "tests/test_model_availability.py": [],
+    "tests/test_moderation.py": [],
+    "tests/test_observability.py": [],
+    "tests/test_pii_redactor.py": [],
+    "tests/test_pipeline.py": [],
+    "tests/test_rate_limiter.py": [],
+    "tests/test_redis_client.py": [],
+    "tests/test_response_format.py": [],
+    "tests/test_security_filter.py": []
+  },
+  "name": "ai-inference-gateway",
+  "description": "OpenAI-compatible API gateway with intelligent routing, circuit breaker failover, security proxy, RAG, and MCP brokerage. Designed for sovereign Canadian AI stack on NixOS/K3s.",
+  "languages": [
+    "python",
+    "nix",
+    "markdown",
+    "yaml",
+    "json",
+    "toml",
+    "shell",
+    "patch",
+    "txt"
+  ],
+  "frameworks": [
+    "FastAPI",
+    "NixOS",
+    "Uvicorn",
+    "Pydantic",
+    "Prometheus",
+    "Qdrant",
+    "Redis",
+    "MCP",
+    "SearXNG"
+  ],
+  "readmeHead": "# AI Inference Gateway\n\nOpenAI-compatible API gateway with intelligent routing, circuit breaker failover, security proxy, RAG, and MCP brokerage. Designed for sovereign Canadian AI stack on NixOS/K3s.\n\n## Architecture\n\n```\nClient (\"model\": \"auto\") \u2192 Gateway (Port 8080)\n  \u251c\u2500\u2500 detect_specialization(messages)\n  \u2502   \u251c\u2500\u2500 detect_vision_content() \u2192 Nemotron Omni 30B\n  \u2502   \u251c\u2500\u2500 detect_code_patterns() \u2192 Nemotron Super 120B\n  \u2502   \u2514\u2500\u2500 default \u2192 Nemotron Omni 30B\n  \u251c\u2500\u2500 Security Layer (rate limit, PII, injection scoring)\n  \u251c\u2500\u2500 Intelligent Router (model ranking, cost awareness)\n  \u251c\u2500\u2500 MCP Broker (SearXNG, MapleSpike)\n  \u251c\u2500\u2500 RAG Engine (Qdrant + Redis cache)\n  \u2514\u2500\u2500 Backend Pool (NIM, llama-cpp, vLLM, ZAI, Pollinations)\n```"
+}

@@ -28,10 +28,11 @@ wheels = [
 
 [[package]]
 name = "ai-inference-gateway"
-version = "2.4.6"
+version = "2.4.15"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
+    { name = "cryptography" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "mcp" },
@@ -40,6 +41,7 @@ dependencies = [
     { name = "prometheus-client" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pyjwt" },
     { name = "python-multipart" },
     { name = "qdrant-client" },
     { name = "rank-bm25" },
@@ -49,10 +51,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-auth = [
-    { name = "cryptography" },
-    { name = "pyjwt" },
-]
 dev = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -64,14 +62,12 @@ full = [
     { name = "accelerate" },
     { name = "aiohttp" },
     { name = "anthropic" },
-    { name = "cryptography" },
     { name = "einops" },
     { name = "librosa" },
     { name = "lxml" },
     { name = "pillow" },
     { name = "psutil" },
     { name = "pydub" },
-    { name = "pyjwt" },
     { name = "scikit-learn" },
     { name = "sentry-sdk" },
     { name = "soundfile" },
@@ -103,8 +99,7 @@ requires-dist = [
     { name = "aiohttp", marker = "extra == 'full'", specifier = ">=3.9.0" },
     { name = "anthropic", marker = "extra == 'full'", specifier = ">=0.18.0" },
     { name = "beautifulsoup4", specifier = ">=4.12.0" },
-    { name = "cryptography", marker = "extra == 'auth'", specifier = ">=41.0.0" },
-    { name = "cryptography", marker = "extra == 'full'", specifier = ">=41.0.0" },
+    { name = "cryptography", specifier = ">=41.0.0" },
     { name = "einops", marker = "extra == 'full'", specifier = ">=0.7.0" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", specifier = ">=0.25.0" },
@@ -123,13 +118,12 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pydub", marker = "extra == 'full'", specifier = ">=0.25.0" },
     { name = "pydub", marker = "extra == 'tts'", specifier = ">=0.25.0" },
-    { name = "pyjwt", marker = "extra == 'auth'", specifier = ">=2.8.0" },
-    { name = "pyjwt", marker = "extra == 'full'", specifier = ">=2.8.0" },
+    { name = "pyjwt", specifier = ">=2.8.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
-    { name = "python-multipart", specifier = ">=0.0.27" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
     { name = "qdrant-client", specifier = ">=1.7.0" },
     { name = "rank-bm25", specifier = ">=0.2.2" },
     { name = "redis", specifier = ">=5.0.0" },
