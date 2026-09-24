@@ -325,7 +325,7 @@ class SemanticCache:
             return None
 
         try:
-            # Generate embedding for query (placeholder - would call embedding service)
+            # Generate embedding for the query via the configured embedding endpoint
             query_embedding = await self._generate_embedding(messages)
 
             # Search for similar vectors

@@ -298,8 +298,10 @@ class CircuitBreakerManager:
 
     def _update_backend_kwargs(self, kwargs: Dict, backend_name: str) -> Dict:
         """Update kwargs to use different backend."""
-        # This is a placeholder - actual implementation depends on your backend structure
-        # You might need to update URLs, client configs, etc.
+        # TRAP: returning kwargs unchanged makes call_with_fallback retry the SAME backend,
+        # so a fallback would silently never fall back. Nothing calls call_with_fallback
+        # today (verified 2026-09-24). Before wiring it, rewrite the per-call URL here -
+        # kwargs carry the request, not the client's base_url.
         return kwargs
 
 
